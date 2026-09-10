@@ -609,6 +609,40 @@ table.tbl tr:hover td{background:#fafbfc}
     </div>
 
     <div class="card pad mb">
+      <h3 class="mb">기기 간 동기화</h3>
+      <div class="small muted mb">PC · 아이패드 · 휴대폰이 같은 기록을 쓰게 합니다. 어느 기기에서 저장하든 다른 기기를 열면 자동으로 맞춰집니다.</div>
+      <div id="syncBox"></div>
+      <details class="small muted mt">
+        <summary style="cursor:pointer">처음 연결하는 방법 (10분)</summary>
+        <div style="margin-top:10px;line-height:1.85">
+          <b>1. 기록을 담을 비공개 저장소 만들기</b><br>
+          깃허브에서 <b>＋ → New repository</b> 를 누르고, 이름을 <b>daily-report-data</b> 로 넣습니다.
+          이번에는 반드시 <b>Private</b> 을 고르고 <b>Create repository</b> 를 누릅니다.
+          앱을 올려둔 저장소와는 <b>다른</b> 저장소여야 합니다. 이 저장소는 나만 볼 수 있어 학생 정보가 안전합니다.<br><br>
+
+          <b>2. 접근 토큰 만들기</b><br>
+          오른쪽 위 내 사진 → <b>Settings</b> → 왼쪽 맨 아래 <b>Developer settings</b> →
+          <b>Personal access tokens → Fine-grained tokens</b> → <b>Generate new token</b><br>
+          · Token name: 아무 이름 (예: daily-report)<br>
+          · Expiration: <b>No expiration</b> 또는 1년<br>
+          · Repository access: <b>Only select repositories</b> → 방금 만든 <b>daily-report-data</b> 선택<br>
+          · Permissions → Repository permissions → <b>Contents</b> 를 <b>Read and write</b> 로<br>
+          · 맨 아래 <b>Generate token</b> → 나온 긴 글자를 <b>복사</b><br>
+          이 글자는 그 화면을 벗어나면 다시 볼 수 없으니 바로 복사해 두세요.<br><br>
+
+          <b>3. 앱에 넣기</b><br>
+          위 칸에 <b>아이디/daily-report-data</b> 와 복사한 토큰을 넣고 <b>연결하기</b> 를 누릅니다.
+          다른 기기에서도 같은 두 가지를 똑같이 넣으면 연결됩니다.<br><br>
+
+          <b>알아두실 점</b><br>
+          · 토큰은 각 기기 안에만 저장되고, 백업 파일에는 들어가지 않습니다.<br>
+          · 두 기기에서 <b>같은 학생의 같은 날짜</b>를 동시에 고치면 나중에 저장한 쪽이 남습니다.<br>
+          · 한쪽에서 지운 기록은 다른 기기에서도 지워집니다.
+        </div>
+      </details>
+    </div>
+
+    <div class="card pad mb">
       <h3 class="mb">클라우드 폴더에 저장</h3>
       <div class="small muted mb">구글 드라이브·원드라이브·아이클라우드 같은 <b>동기화 폴더</b>를 연결하면, 저장할 때마다 그 폴더의 데이터 파일에 기록되고 클라우드에도 자동으로 올라갑니다. 브라우저 캐시를 지워도, 컴퓨터가 고장 나도 기록은 남습니다. 폴더 안에는 날짜별 백업본도 함께 쌓입니다.</div>
       <div id="fsStatus" class="mb"></div>
@@ -982,8 +1016,10 @@ function updateBookCatalog(){
 }
 var saveT=null;
 function save(){
+  DB.meta.updatedAt=new Date().toISOString();
   rawSet(JSON.stringify(DB));
   scheduleFileWrite();                 // 연결된 데이터 파일에도 기록
+  scheduleSync();                      // 다른 기기와도 맞춥니다
   var s=$("#saveState");
   s.textContent="저장 중…";
   s.classList.add("on");
@@ -2519,6 +2555,267 @@ window.addEventListener("pagehide", function(){
   if(fileHandle){ clearTimeout(fileWriteT); fsWriteNow(); }
 });
 /* =========================================================
+   기기 간 동기화 — 비공개 깃허브 저장소를 공용 보관함으로 사용
+   PC · 아이패드 · 휴대폰이 같은 파일을 읽고 씁니다.
+   ========================================================= */
+var SYNC_KEY  = "dailyreport.sync";     // 저장소 · 파일 이름 (내보내기에 포함되지 않음)
+var TOKEN_KEY = "dailyreport.token";    // 접근 토큰 (내보내기에 절대 포함되지 않음)
+var BASE_KEY  = "dailyreport.syncbase"; // 마지막으로 맞춘 시점의 목록
+
+var syncCfg   = {repo:"", path:"데일리리포트_데이터.json", auto:true};
+var syncSha   = null;
+var syncBusy  = false;
+var syncT     = null;
+var syncMsg   = "";
+
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+
+function syncToken(){ return lsGet(TOKEN_KEY)||""; }
+function syncOn(){ return !!(syncCfg.repo && syncToken()); }
+
+function loadSyncCfg(){
+  try{
+    var o=JSON.parse(lsGet(SYNC_KEY)||"{}");
+    if(o.repo) syncCfg.repo=o.repo;
+    if(o.path) syncCfg.path=o.path;
+    syncCfg.auto = o.auto!==false;
+  }catch(e){}
+}
+function saveSyncCfg(){ lsSet(SYNC_KEY, JSON.stringify(syncCfg)); }
+
+/* ---------- 한글이 섞인 글을 base64 로 ---------- */
+function b64encode(str){
+  var bytes=new TextEncoder().encode(str), bin="";
+  for(var i=0;i<bytes.length;i++) bin+=String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+function b64decode(b64){
+  var bin=atob(String(b64).replace(/\s/g,""));
+  var bytes=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+/* ---------- 깃허브 파일 읽기 · 쓰기 ---------- */
+function ghUrl(){
+  var p=syncCfg.repo.replace(/^https?:\/\/github\.com\//,"").replace(/\.git$/,"").replace(/^\/|\/$/g,"");
+  return "https://api.github.com/repos/"+p+"/contents/"+encodeURIComponent(syncCfg.path);
+}
+function ghHeaders(){
+  return {"Authorization":"Bearer "+syncToken(),
+          "Accept":"application/vnd.github+json",
+          "X-GitHub-Api-Version":"2022-11-28"};
+}
+function ghRead(){
+  return fetch(ghUrl()+"?ref=HEAD&t="+Date.now(), {headers:ghHeaders(), cache:"no-store"})
+    .then(function(res){
+      if(res.status===404){ syncSha=null; return null; }        // 아직 파일이 없음
+      if(res.status===401) throw new Error("토큰이 올바르지 않거나 만료되었습니다.");
+      if(res.status===403) throw new Error("이 저장소에 접근할 권한이 없습니다. 토큰 권한을 확인해 주세요.");
+      if(!res.ok) throw new Error("불러오기 실패 ("+res.status+")");
+      return res.json().then(function(j){
+        syncSha=j.sha;
+        try{ return JSON.parse(b64decode(j.content)); }
+        catch(e){ throw new Error("보관된 파일을 읽을 수 없습니다."); }
+      });
+    });
+}
+function ghWrite(obj){
+  var body={ message:"데일리리포트 "+new Date().toISOString().slice(0,19).replace("T"," "),
+             content:b64encode(JSON.stringify(obj,null,1)) };
+  if(syncSha) body.sha=syncSha;
+  return fetch(ghUrl(), {method:"PUT", headers:ghHeaders(), body:JSON.stringify(body)})
+    .then(function(res){
+      if(res.status===409 || res.status===422) return "conflict";
+      if(res.status===401) throw new Error("토큰이 올바르지 않거나 만료되었습니다.");
+      if(res.status===403) throw new Error("쓰기 권한이 없습니다. 토큰 권한에서 Contents를 Read and write로 맞춰 주세요.");
+      if(!res.ok) throw new Error("올리기 실패 ("+res.status+")");
+      return res.json().then(function(j){ syncSha=j.content && j.content.sha; return "ok"; });
+    });
+}
+
+/* ---------- 세 방향 합치기 ---------- */
+function idMap(arr){
+  var m={}; (arr||[]).forEach(function(x){ if(x&&x.id) m[x.id]=x; }); return m;
+}
+function loadBase(){
+  try{ return JSON.parse(lsGet(BASE_KEY)||"null") || {records:[],students:[],books:[]}; }
+  catch(e){ return {records:[],students:[],books:[]}; }
+}
+function saveBase(db){
+  lsSet(BASE_KEY, JSON.stringify({
+    records:(db.records||[]).map(function(x){return x.id;}),
+    students:(db.students||[]).map(function(x){return x.id;}),
+    books:(db.books||[]).map(function(x){return x.id;})
+  }));
+}
+function ts(x){ return Date.parse(x||0)||0; }
+
+function mergeSide(localArr, remoteArr, baseIds, pickNewer){
+  var L=idMap(localArr), R=idMap(remoteArr), B={};
+  (baseIds||[]).forEach(function(id){ B[id]=1; });
+  var ids={}, out=[];
+  Object.keys(L).forEach(function(id){ ids[id]=1; });
+  Object.keys(R).forEach(function(id){ ids[id]=1; });
+  Object.keys(ids).forEach(function(id){
+    var l=L[id], r=R[id];
+    if(l && r){ out.push(pickNewer(l,r)); return; }
+    if(l && !r){ if(!B[id]) out.push(l); return; }   // 저쪽에서 지운 것이면 버립니다
+    if(!l && r){ if(!B[id]) out.push(r); return; }   // 이쪽에서 지운 것이면 버립니다
+  });
+  return out;
+}
+function mergeDB(local, remote){
+  var base=loadBase();
+  var lNew = ts(local.meta&&local.meta.updatedAt) >= ts(remote.meta&&remote.meta.updatedAt);
+  var out={
+    v:1,
+    meta: JSON.parse(JSON.stringify((lNew? local.meta : remote.meta)||{})),
+    records: mergeSide(local.records, remote.records, base.records, function(l,r){
+      return ts(r.savedAt) > ts(l.savedAt) ? r : l;      // 나중에 저장한 쪽
+    }),
+    students: mergeSide(local.students, remote.students, base.students, function(l,r){ return lNew? l : r; }),
+    books:    mergeSide(local.books,    remote.books,    base.books,    function(l,r){ return lNew? l : r; })
+  };
+  out.records.sort(function(a,b){ return a.date<b.date? -1 : a.date>b.date? 1 : 0; });
+  return out;
+}
+
+/* ---------- 동기화 ---------- */
+function setSyncMsg(m){ syncMsg=m; if($("#view-settings").classList.contains("on")) renderSyncBox(); }
+
+function syncNow(silent){
+  if(!syncOn()) return Promise.resolve(false);
+  if(syncBusy) return Promise.resolve(false);
+  syncBusy=true; setSyncMsg("맞추는 중…");
+  var before=null;
+  return ghRead().then(function(remote){
+    if(remote && remote.records && remote.students){
+      before=JSON.stringify({r:DB.records,s:DB.students,b:DB.books});
+      DB=mergeDB(DB, remote);
+      rawSet(JSON.stringify(DB));
+    }
+    DB.meta.updatedAt=new Date().toISOString();
+    return ghWrite(DB).then(function(r){
+      if(r==="conflict"){                    // 그 사이 다른 기기가 올렸을 때
+        return ghRead().then(function(again){
+          if(again) { DB=mergeDB(DB, again); rawSet(JSON.stringify(DB)); }
+          return ghWrite(DB);
+        });
+      }
+      return r;
+    });
+  }).then(function(){
+    saveBase(DB);
+    DB.meta.syncedAt=new Date().toISOString();
+    rawSet(JSON.stringify(DB));
+    scheduleFileWrite();
+    syncBusy=false;
+    setSyncMsg("");
+    var changed = before!==null && before!==JSON.stringify({r:DB.records,s:DB.students,b:DB.books});
+    var unsaved = (typeof drafts!=="undefined") && drafts.some(function(d){ return !d.saved; });
+    if(changed && !unsaved){
+      boot();                                  // 화면을 새 기록으로 다시 그립니다
+      if(silent) toast("다른 기기의 기록을 가져왔습니다");
+    }else{
+      refreshPickers(); renderSettings();      // 입력 중이면 화면은 건드리지 않습니다
+      if(changed && silent) toast("다른 기기의 기록을 가져왔습니다. 저장 후 화면을 새로 고쳐 주세요");
+    }
+    if(!silent) toast("기기 간 기록을 맞췄습니다");
+    return true;
+  }).catch(function(e){
+    syncBusy=false;
+    console.warn(e);
+    setSyncMsg(e.message||"동기화하지 못했습니다");
+    if(!silent) toast(e.message||"동기화하지 못했습니다");
+    return false;
+  });
+}
+function scheduleSync(){
+  if(!syncOn() || !syncCfg.auto) return;
+  clearTimeout(syncT);
+  syncT=setTimeout(function(){ syncNow(true); }, 4000);
+}
+
+var syncInited=false;
+function initSync(){
+  if(syncInited) return;
+  syncInited=true;
+  loadSyncCfg();
+  if(!syncOn()) return;
+  syncNow(true);
+  document.addEventListener("visibilitychange", function(){
+    if(!document.hidden && syncCfg.auto) syncNow(true);
+  });
+  window.addEventListener("online", function(){ if(syncCfg.auto) syncNow(true); });
+}
+
+/* ---------- 설정 화면 ---------- */
+function renderSyncBox(){
+  var box=$("#syncBox"); if(!box) return;
+  var on=syncOn();
+  var h='';
+  if(on){
+    h+='<div class="banner ok" style="display:flex"><span>✓</span><div>'
+      +'<b>'+esc(syncCfg.repo)+'</b> 에 연결되어 있습니다.'
+      +(DB.meta.syncedAt? ' 마지막으로 맞춘 시각 '+new Date(DB.meta.syncedAt).toLocaleString("ko-KR"):'')
+      +(syncMsg? '<div class="tiny" style="margin-top:3px;color:var(--low)">'+esc(syncMsg)+'</div>':'')
+      +'</div></div>';
+  }else{
+    h+='<div class="banner warn" style="display:flex"><span>⚠</span><div>'
+      +'아직 연결되지 않았습니다. 아래 두 칸을 채우면 기기끼리 기록이 자동으로 맞춰집니다.'
+      +(syncMsg? '<div class="tiny" style="margin-top:3px">'+esc(syncMsg)+'</div>':'')
+      +'</div></div>';
+  }
+  h+='<div class="row mt">'
+    +'<div style="flex:2;min-width:200px"><label class="f">비공개 저장소 (아이디/저장소이름)</label>'
+    +'<input type="text" id="syncRepo" value="'+esc(syncCfg.repo)+'" placeholder="예: Hongs-sudo/daily-report-data" autocapitalize="off" autocorrect="off" spellcheck="false"></div>'
+    +'<div style="flex:2;min-width:200px"><label class="f">접근 토큰</label>'
+    +'<input type="password" id="syncToken" value="'+(syncToken()? "••••••••••••••••":"")+'" placeholder="github_pat_… 로 시작" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></div>'
+    +'</div>';
+  h+='<div class="row mt">'
+    +'<button class="btn primary" data-sy="save">연결하기</button>'
+    +'<button class="btn" data-sy="now"'+(on?"":" disabled")+'>지금 맞추기</button>'
+    +'<label class="row small" style="gap:6px;margin-left:6px"><input type="checkbox" id="syncAuto"'+(syncCfg.auto?" checked":"")+' style="width:16px;height:16px;accent-color:var(--brand)"> 자동으로 맞추기</label>'
+    +'<span style="flex:1"></span>'
+    +'<button class="btn ghost danger" data-sy="off"'+(on?"":" disabled")+'>연결 끊기</button>'
+    +'</div>';
+  box.innerHTML=h;
+}
+
+document.addEventListener("click", function(e){
+  var b=e.target.closest("[data-sy]"); if(!b) return;
+  var a=b.getAttribute("data-sy");
+  if(a==="save"){
+    var repo=$("#syncRepo").value.trim()
+      .replace(/^https?:\/\/github\.com\//,"").replace(/\.git$/,"").replace(/^\/|\/$/g,"");
+    var tk=$("#syncToken").value.trim();
+    if(!/^[^\/\s]+\/[^\/\s]+$/.test(repo)){ toast("‘아이디/저장소이름’ 형태로 넣어주세요"); return; }
+    if(tk && tk.indexOf("•")<0) lsSet(TOKEN_KEY, tk);
+    if(!syncToken()){ toast("접근 토큰을 넣어주세요"); return; }
+    syncCfg.repo=repo; saveSyncCfg(); syncSha=null;
+    setSyncMsg("연결을 확인하는 중…");
+    syncNow().then(function(ok){ if(ok) renderSyncBox(); });
+    return;
+  }
+  if(a==="now"){ syncNow(); return; }
+  if(a==="off"){
+    if(!confirm("연결을 끊습니다. 이 기기의 기록은 그대로 남습니다. 계속할까요?")) return;
+    lsDel(TOKEN_KEY); lsDel(BASE_KEY);
+    syncCfg.repo=""; saveSyncCfg(); syncSha=null; setSyncMsg("");
+    renderSyncBox(); toast("연결을 끊었습니다");
+    return;
+  }
+});
+document.addEventListener("change", function(e){
+  if(e.target && e.target.id==="syncAuto"){
+    syncCfg.auto=e.target.checked; saveSyncCfg();
+    toast(syncCfg.auto? "자동으로 맞춥니다":"자동 맞추기를 껐습니다");
+  }
+});
+/* =========================================================
    기록 검색
    ========================================================= */
 function runSearch(){
@@ -2825,6 +3122,7 @@ $("#bookSearch").addEventListener("input", renderBooks);
    설정 · 백업
    ========================================================= */
 function renderSettings(){
+  renderSyncBox();
   $("#setTeacher").value=DB.meta.teacher||"";
   $("#setAcademy").value=DB.meta.academy||"";
   $("#setPhone").value=DB.meta.phone||"";
@@ -3134,6 +3432,7 @@ function boot(){
   loadDay();
   renderSettings();
   initFileStore();
+  initSync();
   if(window.__bookUpdate){
     var u=window.__bookUpdate; window.__bookUpdate=null;
     setTimeout(function(){
