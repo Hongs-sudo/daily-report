@@ -1,0 +1,3157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#152233">
+<meta name="color-scheme" content="light">
+<meta name="format-detection" content="telephone=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="데일리리포트">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>데일리 리포트 · 수학학원 학습보고</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<style>
+:root{
+  --ink:#152233;
+  --ink-2:#3d4d63;
+  --ink-3:#77869b;
+  --line:#dfe5ec;
+  --line-2:#eef2f6;
+  --paper:#ffffff;
+  --wash:#f4f6f9;
+  --brand:#1d5e7a;
+  --brand-2:#2b7f9e;
+  --brand-wash:#e7f1f5;
+  --good:#2b8f63;
+  --mid:#c98a12;
+  --low:#c0453f;
+  --gold:#b8873a;
+  --r:10px;
+  --shadow:0 1px 2px rgba(21,34,51,.06), 0 8px 24px -12px rgba(21,34,51,.18);
+}
+*{box-sizing:border-box}
+html,body{
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);margin:0;padding:0}
+body{
+  font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",system-ui,sans-serif;
+  background:var(--wash); color:var(--ink);
+  font-size:14px; line-height:1.55;
+  -webkit-text-size-adjust:100%;
+}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+h1,h2,h3,h4{margin:0;font-weight:650;letter-spacing:-.01em}
+a{color:var(--brand)}
+
+/* ---------- shell ---------- */
+.topbar{
+  position:sticky;top:0;z-index:60;
+  padding-top:env(safe-area-inset-top);
+  background:var(--ink); color:#fff;
+  display:flex;align-items:center;gap:14px;
+  padding:10px 18px;
+}
+.topbar .mark{
+  display:flex;align-items:baseline;gap:9px;
+}
+.topbar .mark b{font-size:16px;font-weight:700;letter-spacing:-.02em}
+.topbar .mark span{font-size:12px;color:#9fb2c6}
+.topbar .grow{flex:1}
+.topbar .teacher{
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
+  color:#fff;border-radius:999px;padding:5px 12px;font-size:12.5px;
+}
+.savestate{font-size:12px;color:#9fb2c6;white-space:nowrap;background:none;border:0;padding:4px 6px;border-radius:7px}
+.savestate:hover{background:rgba(255,255,255,.12);color:#fff}
+.savestate.on{color:#7fd6a8}
+
+nav.tabs{
+  background:var(--paper);border-bottom:1px solid var(--line);
+  display:flex;gap:2px;padding:0 12px;overflow-x:auto;
+  position:sticky;top:44px;z-index:55;
+}
+nav.tabs button{
+  background:none;border:0;padding:12px 14px 10px;
+  font-size:13.5px;font-weight:550;color:var(--ink-3);
+  border-bottom:2.5px solid transparent;white-space:nowrap;
+}
+nav.tabs button:hover{color:var(--ink)}
+nav.tabs button[aria-selected="true"]{color:var(--brand);border-bottom-color:var(--brand)}
+
+main{max-width:1240px;margin:0 auto;padding:18px 16px calc(110px + env(safe-area-inset-bottom))}
+.view{display:none}
+.view.on{display:block}
+
+/* ---------- primitives ---------- */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.pad{padding:16px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.spread{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.muted{color:var(--ink-3)}
+.small{font-size:12.5px}
+.tiny{font-size:11.5px}
+.mt{margin-top:14px}
+.mb{margin-bottom:12px}
+
+label.f{display:block;font-size:12px;color:var(--ink-3);margin-bottom:4px;font-weight:550}
+input[type=text],input[type=date],input[type=number],input[type=tel],select,textarea{
+  width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;
+  outline:none;transition:border-color .12s, box-shadow .12s;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px var(--brand-wash)}
+textarea{resize:vertical;min-height:70px;line-height:1.5}
+select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4.5L6 8.5L10 4.5' stroke='%2377869b' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 9px center;padding-right:28px}
+
+.btn{
+  border:1px solid var(--line);background:#fff;border-radius:8px;
+  padding:8px 13px;font-size:13px;font-weight:550;color:var(--ink-2);
+  transition:background .12s,border-color .12s,color .12s;
+}
+.btn:hover{background:var(--wash);border-color:#cfd8e3}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{background:#17506a}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--ink-3)}
+.btn.ghost:hover{background:var(--line-2);color:var(--ink)}
+.btn.danger{color:var(--low);border-color:#f0d3d2}
+.btn.danger:hover{background:#fdf3f2}
+.btn.sm{padding:5px 9px;font-size:12px;border-radius:7px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:var(--line-2);font-size:11.5px;font-weight:600;color:var(--ink-2)}
+.chip.brand{background:var(--brand-wash);color:var(--brand)}
+.chip.good{background:#e4f3ec;color:var(--good)}
+.chip.mid{background:#fbf1dc;color:var(--mid)}
+.chip.low{background:#fbeae9;color:var(--low)}
+.chip.gray{background:var(--line-2);color:var(--ink-3)}
+
+.empty{padding:44px 20px;text-align:center;color:var(--ink-3);font-size:13.5px}
+.empty b{display:block;color:var(--ink-2);font-size:15px;margin-bottom:6px}
+
+.banner{border-radius:var(--r);padding:11px 14px;font-size:12.5px;display:flex;gap:9px;align-items:flex-start}
+.banner.warn{background:#fdf6e6;border:1px solid #f0e0bb;color:#7a5a11}
+.banner.ok{background:#e9f4ee;border:1px solid #c6e2d2;color:#1f6b48}
+.banner button{vertical-align:baseline}
+
+/* ---------- day header ---------- */
+.daybar{
+  display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--r);
+  padding:14px 16px;box-shadow:var(--shadow);
+}
+.daybar .fld{min-width:132px}
+.daybar .fld.wide{flex:1;min-width:220px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+.seg button{border:0;background:none;padding:8px 14px;font-size:13px;font-weight:550;color:var(--ink-3)}
+.seg button[aria-pressed="true"]{background:var(--brand);color:#fff}
+
+/* ---------- period group ---------- */
+.periodhead{
+  display:flex;align-items:center;gap:9px;
+  margin:20px 0 2px;padding:0 2px;
+}
+.periodhead b{font-size:14px;font-weight:700;letter-spacing:-.02em;color:var(--brand)}
+.periodhead .ln{flex:1;height:1px;background:var(--line)}
+
+/* ---------- student picker ---------- */
+.pickgrp{
+  position:sticky;top:0;z-index:1;
+  background:var(--wash);border-bottom:1px solid var(--line);
+  padding:6px 12px;font-size:11.5px;font-weight:700;color:var(--ink-3);
+}
+.pickrow{
+  display:flex;align-items:center;gap:9px;
+  padding:9px 12px;border-bottom:1px solid var(--line-2);cursor:pointer;
+}
+.pickrow:hover{background:#fafbfc}
+.pickrow.on{opacity:.55;cursor:default}
+.pickrow input{width:16px;height:16px;accent-color:var(--brand);flex:none}
+.pickrow b{font-weight:600;font-size:13.5px}
+
+/* ---------- student entry cards ---------- */
+.entry{margin-top:14px;border:1px solid var(--line);border-radius:var(--r);background:var(--paper);box-shadow:var(--shadow);overflow:hidden}
+.entry.saved{border-color:#bfdcc9}
+.entry > header{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:11px 14px;border-bottom:1px solid var(--line-2);background:linear-gradient(180deg,#fff,#fbfcfd);
+}
+.entry > header .name{font-size:16px;font-weight:700;letter-spacing:-.02em}
+.entry > header .grow{flex:1}
+.entry .body{padding:16px}
+.entry.collapsed .body{display:none}
+
+.sect{border-top:1px dashed var(--line);padding-top:14px;margin-top:14px}
+.sect:first-child{border-top:0;padding-top:0;margin-top:0}
+.sect > h4{font-size:13px;color:var(--ink);margin-bottom:9px;display:flex;align-items:center;gap:8px}
+.sect > h4 .hint{font-weight:450;color:var(--ink-3);font-size:11.5px}
+
+.grid-prog{display:grid;grid-template-columns:minmax(140px,1.1fr) minmax(150px,1.3fr) minmax(150px,1.5fr) 92px 34px;gap:8px;align-items:center}
+.grid-hw{display:grid;grid-template-columns:minmax(140px,1fr) minmax(220px,2.4fr) 34px;gap:8px;align-items:center}
+.gridhead{font-size:11.5px;color:var(--ink-3);font-weight:600;margin-bottom:5px}
+@media(max-width:760px){
+  .grid-prog,.grid-hw{grid-template-columns:1fr 1fr;}
+  .grid-prog > *:nth-child(3){grid-column:1/-1}
+  .gridhead{display:none}
+}
+
+.prevhw{background:var(--wash);border:1px solid var(--line);border-radius:9px;padding:12px}
+.prevhw .item{display:grid;grid-template-columns:minmax(120px,1fr) minmax(160px,1.8fr) auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.prevhw .item:first-of-type{border-top:0}
+@media(max-width:700px){.prevhw .item{grid-template-columns:1fr}}
+.rates{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.rates button{border:1px solid var(--line);background:#fff;border-radius:7px;padding:4px 8px;font-size:11.5px;font-weight:600;color:var(--ink-3);min-width:40px}
+.rates button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
+.rates input[type=range]{width:104px;accent-color:var(--brand)}
+
+.stars{display:inline-flex;gap:2px}
+.stars button{border:0;background:none;padding:1px;font-size:19px;line-height:1;color:#d6dde6}
+.stars button.on{color:var(--gold)}
+
+/* ---------- compact entry ---------- */
+.entry > header{padding:8px 12px}
+.entry > header .name{font-size:15px}
+.entry .body{padding:6px 12px 8px}
+.crow{display:flex;align-items:flex-start;gap:6px;flex-wrap:wrap;padding:3px 0;border-top:1px solid var(--line-2)}
+.crow:first-child{border-top:0;padding-top:0}
+.crow > .clab{
+  flex:none;width:42px;font-size:11px;font-weight:700;color:var(--ink-3);
+  align-self:flex-start;padding-top:6px;letter-spacing:-.02em;
+}
+.cstack{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.cline{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.cline.nw{flex-wrap:nowrap}
+.cline.nw > *{min-width:0}
+.mini{padding:5px 8px;font-size:12.5px;border-radius:7px;height:30px}
+select.mini{padding-right:22px;background-position:right 6px center;height:30px}
+textarea.mini{height:auto;min-height:50px;padding:6px 8px;font-size:12.5px;line-height:1.45;resize:vertical}
+.cline .w-bk{width:132px;flex:none}
+.cline .w-un{width:170px;flex:none}
+.cline .w-tx{flex:1 1 120px;width:auto;min-width:80px}
+.cline .w-rt{width:54px;flex:none;text-align:right;padding-left:6px;padding-right:6px}
+.cline .w-rg{flex:1 1 140px;width:auto;min-width:100px}
+.cline .w-un2{flex:1 1 150px;width:auto;min-width:110px}
+.pgrid{
+  display:grid;
+  grid-template-columns:132px minmax(96px,1fr) auto 66px auto 66px minmax(110px,1.15fr) 62px 24px auto;
+  gap:5px;align-items:center;
+}
+.pghead{font-size:10.5px;font-weight:700;color:var(--ink-3);padding:0 0 1px}
+.pghead > span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.tac{text-align:center}
+/* 숫자 칸의 증감 화살표를 숨겨 글자가 잘리지 않게 합니다 */
+.pgrid input[type=number],.cline input[type=number]{-moz-appearance:textfield}
+.pgrid input[type=number]::-webkit-outer-spin-button,
+.pgrid input[type=number]::-webkit-inner-spin-button,
+.cline input[type=number]::-webkit-outer-spin-button,
+.cline input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.tar{text-align:right;padding-left:6px;padding-right:6px}
+@media(max-width:900px){
+  .pgrid{grid-template-columns:auto 1fr auto 1fr}
+  .pgrid > *:nth-child(1),
+  .pgrid > *:nth-child(2),
+  .pgrid > *:nth-child(7){grid-column:1 / -1}
+  .pgrid > *:nth-child(8){grid-column:1 / span 2;text-align:left}
+  .pghead{display:none}
+}
+
+/* ---------- 작은 화면 ---------- */
+@media(max-width:560px){
+  .topbar{padding:8px 12px;gap:8px}
+  .topbar .mark b{font-size:15px;white-space:nowrap}
+  .topbar .mark span{display:none}
+  .topbar .teacher{padding:5px 10px;font-size:11.5px;white-space:nowrap}
+  .savestate{font-size:11px;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  nav.tabs{top:40px}
+  nav.tabs button{padding:11px 11px 9px;font-size:13px}
+  main{padding:12px 12px calc(112px + env(safe-area-inset-bottom))}
+  .daybar{padding:12px}
+  .daybar .fld{flex:1 1 46%;min-width:0}
+  .daybar .fld.wide{flex:1 1 100%}
+  .entry > header{gap:6px 7px}
+  .entry > header .seg.mini{order:9;flex:1 1 100%}
+  .entry > header .grow{display:none}
+  .crow > .clab{width:38px;font-size:10.5px}
+  .entry .body{padding:6px 10px 8px}
+  .tmplbar.g2{grid-template-columns:repeat(2,1fr);width:100%}
+  .cline.nw > .w-rg{order:9}
+  .modal .pft{gap:6px}
+  .modal .pft .btn{flex:1 1 auto}
+}
+.cline .pg{width:66px;flex:none;text-align:center;padding-left:5px;padding-right:5px}
+.cline .w-pct{width:62px;flex:none;text-align:right;padding-left:6px;padding-right:6px}
+.tilde{flex:none;font-size:11.5px;color:var(--ink-3)}
+.unitbtn{
+  display:flex;align-items:center;gap:5px;height:30px;
+  border:1px solid var(--line);background:#fff;border-radius:7px;
+  padding:0 8px;font-size:12.5px;color:var(--ink);text-align:left;
+  overflow:hidden;
+}
+.unitbtn:hover{border-color:var(--brand-2)}
+.unitbtn .txt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.unitbtn .txt.ph{color:var(--ink-3)}
+.unitbtn .cnt{flex:none;font-size:10.5px;font-weight:700;color:#fff;background:var(--brand);border-radius:99px;padding:1px 6px}
+.unitpick{max-height:46vh;overflow:auto}
+.unitpick label{
+  display:flex;align-items:center;gap:9px;padding:8px 12px;
+  border-bottom:1px solid var(--line-2);cursor:pointer;font-size:13.5px;
+}
+.unitpick label:hover{background:#fafbfc}
+.unitpick input{width:16px;height:16px;accent-color:var(--brand);flex:none}
+@media(max-width:900px){
+  .cline.nw{flex-wrap:wrap}
+  .cline .w-bk,.cline .w-un{width:calc(50% - 3px)}
+  .cline .w-tx,.cline .w-rg{flex-basis:100%}
+  .tmplbar.g2{width:100%;grid-template-columns:repeat(4,1fr)}
+}
+.seg.mini{padding:0;height:auto;align-items:stretch;border-radius:8px}
+.seg.mini button{
+  display:flex;align-items:center;justify-content:center;
+  min-height:32px;padding:0 12px;font-size:12.5px;line-height:1;
+}
+.entry > header .seg.mini{align-self:center}
+.rates.mini{gap:3px}
+.rates.mini button{padding:3px 6px;font-size:11px;min-width:0;border-radius:6px}
+.xbtn{
+  flex:none;border:0;background:none;color:var(--ink-3);
+  font-size:15px;line-height:1;padding:4px 5px;border-radius:6px;
+}
+.xbtn:hover{background:var(--line-2);color:var(--low)}
+.addbtn{
+  border:1px dashed var(--line);background:none;color:var(--ink-3);
+  font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:7px;
+}
+.addbtn:hover{border-color:var(--brand-2);color:var(--brand)}
+.pvrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pvrow .bk{font-size:12px;font-weight:650;color:var(--ink-2);white-space:nowrap}
+.pvrow .rg{font-size:11.5px;color:var(--ink-3);flex:1;min-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.moreblk{border-top:1px dashed var(--line);margin-top:6px;padding-top:8px}
+.tmplbar{display:flex;gap:3px;flex-wrap:wrap}
+.tmplbar.g2{display:grid;grid-template-columns:1fr 1fr;gap:3px;width:152px;flex:none}
+.tmplbar button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:2px 6px;font-size:10.5px;color:var(--ink-3);white-space:nowrap}
+.tmplbar button:hover{border-color:var(--brand-2);color:var(--brand)}
+
+/* ---------- meters ---------- */
+.meter{height:8px;border-radius:99px;background:var(--line-2);overflow:hidden}
+.meter > i{display:block;height:100%;border-radius:99px;background:var(--brand-2)}
+.meter > i.good{background:var(--good)}
+.meter > i.mid{background:var(--mid)}
+.meter > i.low{background:var(--low)}
+
+.segbar{display:flex;gap:2px;height:10px}
+.segbar > i{flex:1;border-radius:2px;background:var(--line-2)}
+.segbar > i.f{background:var(--brand-2)}
+.segbar > i.cur{background:var(--brand);box-shadow:0 0 0 2px var(--brand-wash)}
+
+/* ---------- report sheet ---------- */
+.reportwrap{overflow:auto;padding:2px}
+#sheetFit{margin:0 auto;overflow:hidden}
+.sheet{
+  width:720px;margin:0 auto;background:#fff;color:var(--ink);
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;
+}
+.sheet .hd{background:var(--ink);color:#fff;padding:16px 22px}
+.sheet .hd .k{font-size:11.5px;color:#9fb2c6;letter-spacing:.02em}
+.sheet .hd .t{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-top:2px}
+.sheet .hd .sub{font-size:12.5px;color:#b9c8d8;margin-top:3px}
+.sheet .nm{display:flex;align-items:baseline;gap:10px;padding:14px 22px;border-bottom:2px solid var(--ink)}
+.sheet .nm b{font-size:22px;font-weight:750;letter-spacing:-.03em}
+.sheet .blk{padding:16px 22px;border-bottom:1px solid var(--line-2)}
+.sheet .blk:last-child{border-bottom:0}
+.sheet .blk > .lab{
+  font-size:12px;font-weight:700;color:var(--brand);
+  display:flex;align-items:center;gap:7px;margin-bottom:10px;
+}
+.sheet .blk > .lab:after{content:"";flex:1;height:1px;background:var(--line)}
+.sheet .line{display:grid;grid-template-columns:126px 1fr;gap:12px;padding:7px 0;border-top:1px solid var(--line-2);align-items:start}
+.sheet .line:first-of-type{border-top:0}
+.sheet .line .bk{font-weight:650;font-size:13px;color:var(--ink-2)}
+.sheet .line .vl{font-size:13.5px;white-space:pre-wrap}
+.sheet .pgrow{margin-top:7px}
+.sheet .pgrow .top{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3);margin-bottom:4px}
+.sheet .note{background:var(--wash);border-left:3px solid var(--brand-2);padding:11px 13px;border-radius:0 8px 8px 0;white-space:pre-wrap;font-size:13px}
+.sheet .ft{background:var(--wash);padding:12px 22px;font-size:11.5px;color:var(--ink-3);display:flex;justify-content:space-between;gap:10px}
+
+.donutwrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.donut{position:relative;width:104px;height:104px;flex:none}
+.donut .val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.donut .val b{font-size:22px;font-weight:750;letter-spacing:-.03em;line-height:1}
+.donut .val span{font-size:10.5px;color:var(--ink-3);margin-top:2px}
+.hwlist{flex:1;min-width:240px}
+.hwlist .it{padding:6px 0;border-top:1px solid var(--line-2)}
+.hwlist .it:first-child{border-top:0}
+.hwlist .it .r1{display:flex;justify-content:space-between;gap:10px;font-size:12.5px}
+.hwlist .it .r1 b{font-weight:650}
+
+.trend{display:flex;align-items:flex-end;gap:5px;height:44px}
+.trend .b{flex:1;min-width:8px;background:var(--brand-wash);border-radius:3px 3px 0 0;position:relative}
+.trend .b > i{display:block;width:100%;background:var(--brand-2);border-radius:3px 3px 0 0;position:absolute;bottom:0}
+
+.kv{display:flex;gap:8px;flex-wrap:wrap}
+.kv .b{border:1px solid var(--line);border-radius:9px;padding:8px 12px;min-width:104px}
+.kv .b .k{font-size:11px;color:var(--ink-3)}
+.kv .b .v{font-size:15px;font-weight:700;letter-spacing:-.02em;margin-top:1px}
+
+/* ---------- modal ---------- */
+.modal{position:fixed;inset:0;z-index:200;display:none}
+.modal.on{display:block}
+.modal .scrim{position:absolute;inset:0;background:rgba(15,25,38,.55)}
+.modal .panel{
+  position:relative;max-width:820px;margin:22px auto;background:var(--paper);
+  border-radius:14px;overflow:hidden;box-shadow:0 30px 70px -20px rgba(0,0,0,.5);
+  max-height:calc(100vh - 44px);display:flex;flex-direction:column;
+}
+.modal .phd{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.modal .phd h3{font-size:15px}
+.modal .pbody{overflow:auto;padding:16px;background:var(--wash)}
+.modal .pft{display:flex;gap:8px;padding:11px 16px;border-top:1px solid var(--line);flex-wrap:wrap;background:var(--paper)}
+@media(max-width:860px){.modal .panel{margin:0;border-radius:0;max-height:100vh;height:100vh}}
+
+/* ---------- tables ---------- */
+table.tbl{width:100%;border-collapse:collapse;font-size:13px}
+table.tbl th{text-align:left;font-size:11.5px;color:var(--ink-3);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line)}
+table.tbl td{padding:9px 10px;border-bottom:1px solid var(--line-2);vertical-align:top}
+table.tbl tr:hover td{background:#fafbfc}
+.tblwrap{overflow:auto}
+
+.reclist .rec{display:grid;grid-template-columns:96px 96px 1fr auto;gap:12px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line-2)}
+.reclist .rec:last-child{border-bottom:0}
+.reclist .rec:hover{background:#fafbfc}
+@media(max-width:700px){.reclist .rec{grid-template-columns:1fr auto}.reclist .rec .dt{grid-column:1}}
+
+.toast{
+  position:fixed;left:50%;bottom:74px;transform:translateX(-50%) translateY(12px);
+  background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;
+  opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:300;box-shadow:0 10px 30px -10px rgba(0,0,0,.5)
+}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.stickybar{
+  position:fixed;left:0;right:0;bottom:0;z-index:70;
+  padding-bottom:calc(10px + env(safe-area-inset-bottom));
+  background:rgba(255,255,255,.94);backdrop-filter:blur(8px);
+  border-top:1px solid var(--line);padding:10px 16px;
+  display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;
+}
+.stickybar .info{font-size:12.5px;color:var(--ink-3)}
+
+@media print{
+  .topbar,nav.tabs,.stickybar,.modal .phd,.modal .pft{display:none!important}
+  body{background:#fff}
+  .modal .panel{margin:0;max-height:none;box-shadow:none}
+  .modal .pbody{padding:0;background:#fff;overflow:visible}
+  .sheet{border:0;width:100%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="mark"><b>Daily Report</b><span id="brandSub">수학 학습보고</span></div>
+  <div class="grow"></div>
+  <button class="teacher" id="btnInstall" data-fs="install" style="display:none">앱으로 설치</button>
+  <button class="teacher" id="teacherBtn">담당 · <span id="teacherName">홍재화</span>T</button>
+  <button class="savestate" id="saveState" title="눌러서 지금 파일에 저장">불러오는 중</button>
+</div>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" data-view="today" aria-selected="true">오늘 수업</button>
+  <button role="tab" data-view="search">기록 검색</button>
+  <button role="tab" data-view="stats">학생 현황</button>
+  <button role="tab" data-view="students">학생 관리</button>
+  <button role="tab" data-view="books">교재 · 단원</button>
+  <button role="tab" data-view="settings">설정 · 백업</button>
+</nav>
+
+<main>
+  <div id="fileBanner" class="banner warn mb" style="display:none"></div>
+
+  <div id="storeWarn" class="banner warn mb" style="display:none">
+    <span>⚠</span>
+    <div>이 브라우저에서 자동 저장을 쓸 수 없습니다. 창을 닫으면 입력한 내용이 사라집니다. 파일을 컴퓨터에 내려받아 직접 열면 자동 저장이 켜집니다. 지금 작업한 내용은 <b>설정 · 백업 → 백업 파일 내려받기</b>로 보관하세요.</div>
+  </div>
+
+  <!-- ============ 오늘 수업 ============ -->
+  <section class="view on" id="view-today">
+    <div class="daybar">
+      <div class="fld">
+        <label class="f" for="dDate">수업 날짜</label>
+        <input type="date" id="dDate">
+      </div>
+      <div class="fld">
+        <label class="f">수업 구분</label>
+        <div class="seg" id="dType">
+          <button data-v="정규" aria-pressed="true">정규</button>
+          <button data-v="특강" aria-pressed="false">특강</button>
+        </div>
+      </div>
+      <div class="fld">
+        <label class="f" for="dPeriod">교시</label>
+        <select id="dPeriod"></select>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="btnPick">학생 불러오기</button>
+        <button class="btn" id="btnAddAll">이 요일 학생 전체 추가</button>
+        <button class="btn" id="btnCarry">지난 수업 진도 이어받기</button>
+      </div>
+    </div>
+
+    <div id="entries"></div>
+
+    <div class="card mt" id="todayEmpty">
+      <div class="empty">
+        <b>오늘 수업할 학생을 추가하세요</b>
+        위에서 학생을 고르면 입력 카드가 생깁니다. 학생 명단은 <a href="#" data-goto="students">학생 관리</a>에서 만들 수 있어요.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 기록 검색 ============ -->
+  <section class="view" id="view-search">
+    <div class="card pad">
+      <div class="row">
+        <div style="flex:1;min-width:130px"><label class="f">시작일</label><input type="date" id="sFrom"></div>
+        <div style="flex:1;min-width:130px"><label class="f">종료일</label><input type="date" id="sTo"></div>
+        <div style="flex:1;min-width:130px"><label class="f">학생</label><select id="sStudent"><option value="">전체</option></select></div>
+        <div style="flex:1;min-width:110px"><label class="f">교시</label><select id="sPeriod"><option value="">전체</option></select></div>
+        <div style="flex:1;min-width:130px"><label class="f">교재</label><select id="sBook"><option value="">전체</option></select></div>
+        <div style="flex:1.4;min-width:150px"><label class="f">검색어 (단원·과제·리포팅)</label><input type="text" id="sQuery" placeholder="예: 이차방정식, 보강"></div>
+        <div style="padding-top:18px"><button class="btn primary" id="btnSearch">검색</button></div>
+        <div style="padding-top:18px"><button class="btn ghost" id="btnSearchReset">초기화</button></div>
+      </div>
+      <div class="row mt small muted" id="searchQuick">
+        <span>빠른 조회:</span>
+        <button class="btn sm" data-q="today">오늘</button>
+        <button class="btn sm" data-q="week">최근 7일</button>
+        <button class="btn sm" data-q="month">최근 30일</button>
+        <button class="btn sm" data-q="all">전체 기간</button>
+      </div>
+    </div>
+    <div class="card mt" id="searchResult"></div>
+  </section>
+
+  <!-- ============ 학생 현황 ============ -->
+  <section class="view" id="view-stats">
+    <div class="card pad mb">
+      <div class="spread">
+        <h3>학생별 학습 현황</h3>
+        <div class="row">
+          <label class="f" style="margin:0">최근</label>
+          <select id="statRange" style="width:auto"><option value="14">2주</option><option value="30" selected>30일</option><option value="90">90일</option><option value="9999">전체</option></select>
+        </div>
+      </div>
+    </div>
+    <div id="statsBody"></div>
+  </section>
+
+  <!-- ============ 학생 관리 ============ -->
+  <section class="view" id="view-students">
+    <div class="card pad mb">
+      <div class="spread">
+        <div>
+          <h3>학생 명단</h3>
+          <div class="small muted" style="margin-top:3px">학년 → 이름 순으로 정렬됩니다. 학년을 고치면 다음에 이 화면을 열 때 자리가 옮겨집니다.</div>
+        </div>
+        <div class="row">
+          <button class="btn" id="btnStuImport">엑셀 이름 붙여넣기</button>
+          <button class="btn primary" id="btnStuAdd">학생 추가</button>
+        </div>
+      </div>
+    </div>
+    <div class="card"><div class="tblwrap"><table class="tbl" id="stuTable"></table></div></div>
+  </section>
+
+  <!-- ============ 교재 · 단원 ============ -->
+  <section class="view" id="view-books">
+    <div class="card pad mb">
+      <div class="spread">
+        <div>
+          <h3>교재별 단원 등록</h3>
+          <div class="small muted" style="margin-top:3px">단원을 한 줄에 하나씩 넣어두면, 진도를 고를 때 달성률이 자동으로 계산됩니다.</div>
+        </div>
+        <div class="row">
+          <select id="bookLevelFilter" style="width:auto"><option value="">전체 과정</option><option value="초">초등</option><option value="중">중등</option><option value="고">고등</option><option value="특">특강·기타</option></select>
+          <input type="text" id="bookSearch" placeholder="교재 검색" style="width:160px">
+          <button class="btn primary" id="btnBookAdd">교재 추가</button>
+        </div>
+      </div>
+    </div>
+    <div id="bookList"></div>
+  </section>
+
+  <!-- ============ 설정 · 백업 ============ -->
+  <section class="view" id="view-settings">
+    <div class="card pad mb">
+      <h3 class="mb">기본 정보</h3>
+      <div class="row">
+        <div style="flex:1;min-width:160px"><label class="f">담당 강사</label><input type="text" id="setTeacher"></div>
+        <div style="flex:1;min-width:160px"><label class="f">학원 이름</label><input type="text" id="setAcademy" placeholder="리포트 하단에 표시됩니다"></div>
+        <div style="flex:1;min-width:160px"><label class="f">문의 연락처</label><input type="text" id="setPhone" placeholder="예: 031-000-0000"></div>
+      </div>
+      <div class="mt"><label class="f">리포트 맺음말</label><input type="text" id="setClosing" placeholder="예: 오늘도 성실하게 수업에 참여했습니다. 감사합니다."></div>
+      <div class="row mt"><button class="btn primary" id="btnSaveSettings">저장</button></div>
+    </div>
+
+    <div class="card pad mb">
+      <h3 class="mb">휴대폰 · 아이패드에서 쓰기</h3>
+      <div class="small muted mb">이 주소를 홈 화면에 추가하면 앱처럼 실행됩니다. 주소창 없이 전체 화면으로 열리고, 인터넷이 끊겨도 동작합니다.</div>
+      <div class="row">
+        <button class="btn primary" data-fs="install">홈 화면에 추가</button>
+        <button class="btn" data-fs="export">이 기기 기록 내보내기</button>
+        <button class="btn" id="btnImport2">다른 기기 기록 불러오기</button>
+      </div>
+      <div class="small muted mt" id="appStat"></div>
+    </div>
+
+    <div class="card pad mb">
+      <h3 class="mb">클라우드 폴더에 저장</h3>
+      <div class="small muted mb">구글 드라이브·원드라이브·아이클라우드 같은 <b>동기화 폴더</b>를 연결하면, 저장할 때마다 그 폴더의 데이터 파일에 기록되고 클라우드에도 자동으로 올라갑니다. 브라우저 캐시를 지워도, 컴퓨터가 고장 나도 기록은 남습니다. 폴더 안에는 날짜별 백업본도 함께 쌓입니다.</div>
+      <div id="fsStatus" class="mb"></div>
+      <div class="row">
+        <button class="btn primary" data-fs="folder">클라우드 폴더 연결</button>
+        <button class="btn" data-fs="saveNow">지금 저장</button>
+        <button class="btn" data-fs="snap">오늘 백업본 만들기</button>
+        <button class="btn ghost" data-fs="forget">연결 끊기</button>
+        <button class="btn ghost" data-fs="diag">저장소 진단</button>
+      </div>
+      <div class="row mt small muted">
+        <span>폴더 없이 파일 하나만 쓰려면:</span>
+        <button class="btn sm" data-fs="new">데이터 파일 만들기</button>
+        <button class="btn sm" data-fs="open">기존 파일 열기</button>
+      </div>
+      <details class="small muted mt">
+        <summary style="cursor:pointer">동기화 폴더는 어디에 있나요?</summary>
+        <div style="margin-top:8px;line-height:1.7">
+          먼저 구글 드라이브(데스크톱용) 또는 원드라이브 프로그램이 컴퓨터에 설치되어 있어야 합니다. 설치하면 내 컴퓨터 안에 폴더가 하나 생기고, 그 안에 넣은 파일이 자동으로 클라우드에 올라갑니다.<br>
+          · 윈도우 원드라이브 — <b>C:\사용자\(내 이름)\OneDrive</b><br>
+          · 윈도우 구글 드라이브 — <b>내 PC → Google Drive(G:) → 내 드라이브</b><br>
+          · 맥 아이클라우드 — <b>Finder 사이드바의 iCloud Drive</b><br>
+          그 안에 <b>데일리리포트</b> 같은 폴더를 하나 만들어 두고, 위의 “클라우드 폴더 연결”에서 그 폴더를 골라주세요.
+        </div>
+      </details>
+    </div>
+
+    <div class="card pad mb">
+      <h3 class="mb">백업 파일 받기</h3>
+      <div class="small muted mb">다른 컴퓨터로 옮기거나, 특정 시점의 기록을 따로 보관하고 싶을 때 사용하세요. 폴더를 연결하지 않았다면 기록이 이 브라우저 안에만 남으므로 주기적으로 받아두시는 것이 좋습니다.</div>
+      <div class="row">
+        <button class="btn" id="btnExport">백업 파일 내려받기 (JSON)</button>
+        <button class="btn" id="btnImport">백업 파일 불러오기</button>
+        <button class="btn" id="btnCsv">기록 내보내기 (CSV · 엑셀)</button>
+        <input type="file" id="fileImport" accept="application/json,.json" style="display:none">
+      </div>
+      <div class="small muted mt" id="dbStat"></div>
+    </div>
+
+    <div class="card pad">
+      <h3 class="mb">초기화</h3>
+      <div class="row">
+        <button class="btn danger" id="btnResetRecords">수업 기록만 모두 지우기</button>
+        <button class="btn danger" id="btnResetAll">전체 초기화</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ 리포트 모달 ============ -->
+<div class="modal" id="reportModal">
+  <div class="scrim" data-close></div>
+  <div class="panel">
+    <div class="phd">
+      <h3 id="rmTitle">리포트</h3>
+      <div class="grow" style="flex:1"></div>
+      <button class="btn ghost" data-close>닫기</button>
+    </div>
+    <div class="pbody">
+      <div class="reportwrap"><div id="sheetHost"></div></div>
+    </div>
+    <div class="pft">
+      <button class="btn primary" id="btnCapture">이미지로 저장</button>
+      <button class="btn" id="btnShare">카톡·문자로 보내기</button>
+      <button class="btn" id="btnSms">문자 앱 열기</button>
+      <button class="btn" id="btnCopyText">글로 복사</button>
+      <button class="btn ghost" id="btnPrint">인쇄</button>
+      <div style="flex:1"></div>
+      <button class="btn ghost" id="btnPrevStu">◀ 이전</button>
+      <button class="btn ghost" id="btnNextStu">다음 ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 일반 모달 ============ -->
+<div class="modal" id="dlg">
+  <div class="scrim" data-close></div>
+  <div class="panel" style="max-width:560px">
+    <div class="phd"><h3 id="dlgTitle"></h3><div style="flex:1"></div><button class="btn ghost" data-close>닫기</button></div>
+    <div class="pbody" id="dlgBody"></div>
+    <div class="pft" id="dlgFoot"></div>
+  </div>
+</div>
+
+<div class="stickybar" id="stickybar" style="display:none">
+  <span class="info" id="stickyInfo"></span>
+  <button class="btn" id="btnFoldAll">전체 접기</button>
+  <button class="btn primary" id="btnSaveAll">모두 저장</button>
+  <button class="btn" id="btnReportAll">저장된 학생 리포트 보기</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   데일리 리포트 — 단일 HTML 학습보고 프로그램
+   데이터는 이 브라우저(localStorage)에만 저장됩니다.
+   ========================================================= */
+(function(){
+"use strict";
+
+/* ---------- 저장소 ---------- */
+var KEY = "dailyreport.v1";
+var memFallback = {};
+var storeOK = true;
+try{
+  window.localStorage.setItem("__t","1");
+  window.localStorage.removeItem("__t");
+}catch(e){ storeOK = false; }
+
+function rawGet(){
+  try{ return storeOK ? window.localStorage.getItem(KEY) : (memFallback[KEY]||null); }
+  catch(e){ return memFallback[KEY]||null; }
+}
+function rawSet(v){
+  try{
+    if(storeOK) window.localStorage.setItem(KEY, v);
+    else memFallback[KEY]=v;
+  }catch(e){ storeOK=false; memFallback[KEY]=v; showStoreWarn(); }
+}
+function showStoreWarn(){
+  var el=document.getElementById("storeWarn");
+  if(el) el.style.display="flex";
+}
+
+/* ---------- 유틸 ---------- */
+function $(s,r){ return (r||document).querySelector(s); }
+function $$(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+function nl2br(s){ return esc(s).replace(/\n/g,"<br>"); }
+function clamp(n,a,b){ n=Number(n); if(isNaN(n)) n=a; return Math.max(a,Math.min(b,n)); }
+var DOW = ["일","월","화","수","목","금","토"];
+function todayISO(){
+  var d=new Date(), p=function(n){return (n<10?"0":"")+n;};
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
+}
+function parseISO(s){ var p=String(s||"").split("-"); return new Date(+p[0],(+p[1]||1)-1,+p[2]||1); }
+function fmtKo(iso){
+  var d=parseISO(iso);
+  return d.getFullYear()+"년 "+(d.getMonth()+1)+"월 "+d.getDate()+"일 "+DOW[d.getDay()]+"요일";
+}
+function fmtShort(iso){
+  var d=parseISO(iso);
+  return (d.getMonth()+1)+"/"+d.getDate()+"("+DOW[d.getDay()]+")";
+}
+function shiftISO(iso,days){
+  var d=parseISO(iso); d.setDate(d.getDate()+days);
+  var p=function(n){return (n<10?"0":"")+n;};
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
+}
+function rateClass(r){ if(r==null) return ""; return r>=85?"good":(r>=60?"mid":"low"); }
+function rateWord(r){ if(r==null) return "—"; return r>=95?"완료":r>=85?"우수":r>=60?"양호":r>=30?"보충 필요":"미이행"; }
+var toastT=null;
+function toast(msg){
+  var t=$("#toast"); t.textContent=msg; t.classList.add("on");
+  clearTimeout(toastT); toastT=setTimeout(function(){t.classList.remove("on");},2000);
+}
+
+/* ---------- 기본 교재 · 단원 ---------- */
+var SEED_BOOKS = [
+ ["고","개념쎈 공수1",["1.다항식의 연산","2.항등식과 나머지 정리","3.인수분해","4.복소수","5.이차방정식","6.이차방정식과 이차함수","7.고차방정식","8.연립방정식","9.일차부등식","10.이차부등식","11.순열과 조합","12.행렬"]],
+ ["고","개념쎈 공수2",["1.평면좌표","2.직선의 방정식","3.원의 방정식","4.도형의 이동","5.집합의 뜻과 표현","6.집합의 연산","7.명제","8.절대부등식","9.함수","10.합성함수와 역함수","11.여러 가지 함수의 그래프","12.유리함수","13.무리함수"]],
+ ["고","개념쎈 대수",["1.지수","2.로그","3.지수함수","4.로그함수","5.삼각함수","6.삼각함수의 그래프","7.삼각함수의 활용","8.등차수열","9.등비수열","10.수열의 합","11.수학적 귀납법"]],
+ ["고","개념쎈 미적분Ⅰ",["1.함수의 극한","2.함수의 연속","3.미분계수와 도함수","4.도함수의 활용(1)","5.도함수의 활용(2)","6.도함수의 활용(3)","7.부정적분","8.정적분","9.정적분의 활용"]],
+ ["고","개념쎈 확통",["1.여러 가지 순열","2.중복조합과 이항정리","3.확률의 뜻과 활용","4.조건부확률","5.확률변수와 확률분포","6.이항분포와 정규분포","7.통계적 추정"]],
+ ["고","개념쎈 미적분Ⅱ",["1.수열의 극한","2.급수","3.지수함수와 로그함수의 미분","4.삼각함수의 미분","5.여러 가지 미분법","6.도함수의 활용(1)","7.도함수의 활용(2)","8.여러 가지 적분법","9.정적분","10.정적분의 활용"]],
+ ["고","개념쎈 기하",["1.이차곡선","2.이차곡선과 직선","3.벡터의 연산","4.평면벡터의 성분","5.평면벡터의 내적","6.공간도형","7.공간좌표"]],
+ ["고","쎈 공수1",["1.다항식의 연산","2.나머지 정리와 인수분해","3.복소수","4.이차방정식","5.이차방정식과 이차함수","6.여러 가지 방정식","7.일차부등식","8.이차부등식","9.순열과 조합","10.행렬과 그 연산"]],
+ ["고","쎈 공수2",["1.평면좌표","2.직선의 방정식","3.원의 방정식","4.도형의 이동","5.집합의 뜻과 표현","6.집합의 연산","7.명제","8.함수","9.유리식과 유리함수","10.무리식과 무리함수"]],
+ ["고","쎈 대수",["1.지수","2.로그","3.지수함수","4.로그함수","5.삼각함수","6.삼각함수의 그래프","7.삼각함수의 활용","8.등차수열과 등비수열","9.수열의 합","10.수학적 귀납법"]],
+ ["고","쎈 미적분Ⅰ",["1.함수의 극한","2.함수의 연속","3.미분계수와 도함수","4.도함수의 활용(1)","5.도함수의 활용(2)","6.도함수의 활용(3)","7.부정적분","8.정적분","9.정적분의 활용"]],
+ ["고","쎈 확통",["1.여러 가지 순열","2.중복조합과 이항정리","3.확률의 뜻과 활용","4.조건부확률","5.확률변수와 확률분포","6.이항분포와 정규분포","7.통계적 추정"]],
+ ["고","쎈 미적분Ⅱ",["1.수열의 극한","2.급수","3.지수함수와 로그함수의 미분","4.삼각함수의 미분","5.여러 가지 미분법","6.도함수의 활용(1)","7.도함수의 활용(2)","8.여러 가지 적분법","9.정적분","10.정적분의 활용"]],
+ ["고","쎈 기하",["1.이차곡선","2.이차곡선과 직선","3.벡터의 연산","4.평면벡터의 성분","5.평면벡터의 내적","6.공간도형","7.공간좌표"]],
+ ["고","라이트쎈 공수1",["1.다항식의 연산","2.나머지정리와 인수분해","3.복소수","4.이차방정식","5.이차방정식과 이차함수","6.여러 가지 방정식","7.일차부등식","8.이차부등식","9.순열","10.조합","11.행렬과 그 연산"]],
+ ["고","라이트쎈 공수2",["1.평면좌표","2.직선의 방정식","3.원의 방정식","4.도형의 이동","5.집합의 뜻과 표현","6.집합의 연산","7.명제","8.함수","9.유리식과 유리함수","10.무리식과 무리함수"]],
+ ["고","라이트쎈 대수",["1.지수","2.로그","3.지수함수","4.로그함수","5.삼각함수","6.삼각함수의 그래프","7.삼각함수의 활용","8.등차수열","9.등비수열","10.수열의 합","11.수학적 귀납법"]],
+ ["고","라이트쎈 미적분Ⅰ",["1.함수의 극한","2.함수의 연속","3.미분계수와 도함수","4.도함수의 활용(1)","5.도함수의 활용(2)","6.도함수의 활용(3)","7.부정적분","8.정적분","9.정적분의 활용"]],
+ ["고","라이트쎈 확통",["1.여러 가지 순열","2.중복조합과 이항정리","3.확률의 뜻과 활용","4.조건부확률","5.확률변수와 확률분포","6.이항분포와 정규분포","7.통계적 추정"]],
+ ["고","라이트쎈 미적분Ⅱ",["1.수열의 극한","2.급수","3.지수함수와 로그함수의 미분","4.삼각함수의 미분","5.여러 가지 미분법","6.도함수의 활용(1)","7.도함수의 활용(2)","8.여러 가지 적분법","9.정적분","10.정적분의 활용"]],
+ ["고","RPM 공수1",["1.다항식의 연산","2.항등식과 나머지정리","3.인수분해","4.복소수","5.이차방정식","6.이차방정식과 이차함수","7.여러 가지 방정식","8.여러 가지 부등식","9.경우의 수와 순열","10.조합","11.행렬"]],
+ ["고","RPM 공수2",["1.평면좌표","2.직선의 방정식","3.원의 방정식","4.도형의 이동","5.집합의 뜻과 포함 관계","6.집합의 연산","7.명제","8.함수","9.유리함수","10.무리함수"]],
+ ["고","RPM 대수",["1.지수","2.로그","3.지수함수","4.로그함수","5.삼각함수","6.삼각함수의 그래프","7.삼각함수의 활용","8.등차수열과 등비수열","9.수열의 합","10.수학적 귀납법"]],
+ ["고","RPM 미적분Ⅰ",["1.함수의 극한","2.함수의 연속","3.미분계수와 도함수","4.도함수의 활용(1)","5.도함수의 활용(2)","6.도함수의 활용(3)","7.부정적분","8.정적분","9.정적분의 활용"]],
+ ["고","개+유 공수1",["1.다항식의 연산","2.나머지정리","3.인수분해","4.복소수의 뜻과 사칙연산","5.이차방정식의 판별식","6.이차방정식의 근과 계수의 관계","7.이차함수와 이차방정식의 관계","8.이차함수의 최대, 최소","9.삼차방정식과 사차방정식","10.연립이차방정식","11.연립일차부등식","12.이차부등식","13.연립이차부등식","14.합의 법칙과 곱의 법칙","15.순열","16.조합","17.행렬의 덧셈, 뺄셈과 실수배","18.행렬의 곱셈"]],
+ ["고","개+유 공수2",["1.두 점 사이의 거리","2.선분의 내분점과 외분점","3.직선의 방정식","4.두 직선의 위치 관계","5.원의 방정식","6.원과 직선의 위치 관계","7.평행이동","8.대칭이동","9.집합의 뜻과 집합 사이의 포함 관계","10.집합의 연산","11.명제와 조건","12.명제의 역과 대우","13.명제의 증명","14.함수의 뜻과 그래프","15.합성함수","16.역함수","17.유리함수","18.무리함수"]],
+ ["고","개+유 대수",["1.지수","2.로그","3.상용로그","4.지수함수","5.지수함수의 활용","6.로그함수","7.로그함수의 활용","8.삼각함수","9.삼각함수의 그래프","10.삼각함수의 그래프의 활용","11.사인법칙과 코사인법칙","12.등차수열","13.등비수열","14.수열의 합","15.수학적 귀납법"]],
+ ["고","개+유 미적분Ⅰ",["1.함수의 극한","2.함수의 극한에 대한 성질","3.함수의 연속","4.미분계수","5.도함수","6.접선의 방정식과 평균값 정리","7.함수의 증가, 감소와 극대, 극소","8.함수의 그래프","9.방정식과 부등식에의 활용","10.속도와 가속도","11.부정적분","12.정적분(1)","13.정적분(2)","14.정적분의 활용"]],
+ ["고","수력충전 공수1",[]],
+ ["고","수력충전 공수2",[]],
+ ["고","수력충전 대수",["1.지수","2.로그","3.지수함수","4.로그함수","5.지수방정식과 지수부등식","6.로그방정식과 로그부등식","7.일반각과 호도법","8.삼각함수의 뜻","9.삼각함수의 그래프","10.사인법칙과 코사인법칙","11.등차수열과 등비수열","12.수열의 합","13.수학적 귀납법"]],
+ ["고","수력충전 미적분Ⅰ",["1.함수의 극한","2.함수의 연속","3.미분계수","4.도함수","5.도함수의 활용","6.부정적분","7.정적분","8.정적분의 활용"]],
+ ["고","수력충전 확통",["1.순열","2.조합","3.확률의 뜻과 활용","4.조건부확률","5.이산확률분포","6.연속확률분포","7.통계적 추정"]],
+ ["고","수력충전 미적분Ⅱ",["1.수열의 극한","2.급수","3.지수함수와 로그함수의 도함수","4.삼각함수의 도함수","5.여러 가지 미분법","6.도함수의 활용(1)","7.여러 가지 함수의 부정적분","8.여러 가지 함수의 정적분","9.정적분의 활용"]],
+ ["고","수력충전 기하",["1.이차곡선","2.이차곡선과 직선","3.벡터의 연산","4.평면벡터의 성분","5.평면벡터의 내적","6.직선의 방정식과 원의 방정식","7.공간도형","8.삼수선과 정사영","9.공간좌표"]],
+ ["중","개념쎈 1-1",["1.소인수분해","2.정수와 유리수","3.유리수의 계산","4.문자와 식","5.일차방정식의 풀이","6.일차방정식의 활용","7.좌표평면과 그래프","8.정비례와 반비례"]],
+ ["중","개념쎈 1-2",["1.기본도형","2.위치관계","3.작도와 합동","4.다각형","5.원과 부채꼴","6.다면체와 회전체","7.입체도형의 겉넓이와 부피","8.자료의 정리와 해석"]],
+ ["중","개념쎈 2-1",["1.유리수와 소수","2.단항식의 계산","3.다항식의 계산","4.일차부등식","5.일차부등식의 활용","6.연립일차방정식","7.연립일차방정식의 활용","8.일차함수의 그래프(1)","9.일차함수의 그래프(2)","10.일차함수와 일차방정식의 관계"]],
+ ["중","개념쎈 2-2",["1.삼각형의 성질","2.사각형의 성질","3.도형의 닮음","4.평행선 사이의 선분의 길이의 비","5.닮음의 활용","6.피타고라스의 정리","7.경우의 수","8.확률"]],
+ ["중","개념쎈 3-1",["1.제곱근과 실수","2.근호를 포함한 식의 계산","3.다항식의 곱셈","4.다항식의 인수분해","5.이차방정식의 풀이","6.이차방정식의 활용","7.이차함수의 그래프(1)","8.이차함수의 그래프(2)"]],
+ ["중","개념쎈 3-2",["1.삼각비","2.삼각비의 활용","3.원과 직선","4.원주각","5.대푯값과 산포도","6.상관관계"]],
+ ["중","유형해결 1-1",["1.소인수분해","2.최대공약수와 최소공배수","3.정수와 유리수","4.정수와 유리수의 계산","5.문자와 식","6.일차방정식","7.일차방정식의 활용","8.좌표평면과 그래프"]],
+ ["중","유형해결 1-2",["1.기본도형","2.위치관계","3.평행선의 성질","4.작도와 합동","5.다각형","6.원과 부채꼴","7.다면체와 회전체","8.입체도형의 겉넓이와 부피","9.자료의 정리와 해석"]],
+ ["중","유형해결 2-1",["1.유리수와 순환소수","2.단항식의 계산","3.다항식의 계산","4.일차부등식","5.연립방정식의 풀이","6.연립방정식의 활용","7.일차함수와 그래프(1)","8.일차함수와 그래프(2)","9.일차함수와 일차방정식"]],
+ ["중","유형해결 2-2",["1.이등변삼각형","2.삼각형의 외심과 내심","3.평행사변형","4.여러 가지 사각형","5.도형의 닮음","6.평행선과 선분의 길이의 비","7.닮음의 활용","8.피타고라스 정리","9.경우의 수","10.확률"]],
+ ["중","유형해결 3-1",["1.제곱근의 뜻과 성질","2.무리수와 실수","3.근호를 포함한 식의 계산","4.다항식의 곱셈","5.인수분해","6.인수분해 공식의 활용","7.이차방정식의 풀이","8.근의 공식과 이차방정식의 활용","9.이차함수의 그래프(1)","10.이차함수의 그래프(2)"]],
+ ["중","유형해결 3-2",["1.삼각비","2.삼각비의 활용","3.원과 직선","4.원주각","5.통계"]],
+ ["중","쎈 1-1",["1.소인수분해","2.최대공약수와 최소공배수","3.정수와 유리수","4.유리수의 계산","5.문자와 식","6.일차방정식의 풀이","7.일차방정식의 활용","8.좌표평면과 그래프","9.정비례와 반비례"]],
+ ["중","쎈 1-2",["1.기본도형","2.위치관계","3.평행선","4.작도와 합동","5.다각형","6.원과 부채꼴","7.다면체","8.회전체","9.입체도형의 겉넓이와 부피","10.자료의 정리","11.자료의 해석"]],
+ ["중","쎈 2-1",["1.유리수와 소수","2.단항식의 계산","3.다항식의 계산","4.일차부등식","5.일차부등식의 활용","6.연립일차방정식","7.연립일차방정식의 풀이","8.연립일차방정식의 활용","9.일차함수와 그래프(1)","10.일차함수와 그래프(2)","11.일차함수와 일차방정식의 관계"]],
+ ["중","쎈 2-2",["1.삼각형의 성질(1)","2.삼각형의 성질(2)","3.평행사변형","4.여러 가지 사각형","5.도형의 닮음","6.평행선 사이의 선분의 길이의 비","7.삼각형의 무게중심","8.닮음의 활용","9.피타고라스 정리","10.경우의 수","11.확률"]],
+ ["중","쎈 3-1",["1.제곱근의 뜻과 성질","2.무리수와 실수","3.근호를 포함한 식의 곱셈과 나눗셈","4.근호를 포함한 식의 덧셈과 뺄셈","5.다항식의 곱셈","6.다항식의 인수분해","7.인수분해 공식의 활용","8.이차방정식의 풀이(1)","9.이차방정식의 풀이(2)","10.이차방정식의 활용","11.이차함수의 그래프(1)","12.이차함수의 그래프(2)"]],
+ ["중","쎈 3-2",["1.삼각비","2.삼각비의 활용","3.원과 직선","4.원주각","5.원주각의 활용","6.대푯값과 산포도","7.상관관계"]],
+ ["중","일품 1-1",["1.소인수분해","2.정수와 유리수","3.유리수의 계산","4.문자와 식","5.일차방정식","6.좌표평면과 그래프","7.정비례와 반비례"]],
+ ["중","일품 1-2",["1.기본도형","2.위치관계","3.작도와 합동","4.다각형","5.원과 부채꼴","6.다면체와 회전체","7.입체도형의 겉넓이와 부피","8.자료의 정리","9.자료의 해석"]],
+ ["중","일품 2-1",["1.유리수와 소수","2.단항식의 계산","3.다항식의 계산","4.일차부등식","5.일차부등식의 활용","6.일차방정식의 풀이","7.연립일차방정식의 활용","8.일차함수와 그래프","9.일차함수와 일차방정식의 관계"]],
+ ["중","일품 2-2",["1.삼각형의 성질","2.평행사변형의 성질","3.여러 가지 사각형의 성질","4.도형의 닮음","5.평행선 사이의 선분의 길이의 비","6.닮음의 활용","7.피타고라스 정리","8.경우의 수","9.확률"]],
+ ["중","일품 3-1",["1.제곱근과 실수","2.근호를 포함한 식의 곱셈과 나눗셈","3.근호를 포함한 식의 덧셈과 뺄셈","4.다항식의 곱셈","5.다항식의 인수분해","6.이차방정식의 풀이","7.이차방정식의 활용","8.이차함수의 그래프"]],
+ ["중","일품 3-2",["1.삼각비","2.삼각비의 활용","3.원과 직선","4.원주각","5.대푯값과 산포도","6.상관관계"]],
+ ["중","RPM 1-1",["1.소인수분해","2.최대공약수와 최소공배수","3.정수와 유리수","4.정수와 유리수의 계산","5.문자의 사용과 식의 계산","6.일차방정식의 풀이","7.일차방정식의 활용","8.좌표와 그래프","9.정비례와 반비례"]],
+ ["중","RPM 1-2",["1.기본도형","2.위치관계","3.작도와 합동","4.다각형","5.원과 부채꼴","6.다면체와 회전체","7.입체도형의 겉넓이와 부피","8.자료의 정리와 해석"]],
+ ["중","RPM 2-1",["1.유리수와 순환소수","2.단항식의 계산","3.다항식의 계산","4.일차부등식","5.일차부등식의 활용","6.연립일차방정식","7.연립일차방정식의 활용","8.일차함수와 그 그래프","9.일차함수와 일차방정식의 관계"]],
+ ["중","RPM 2-2",["1.이등변삼각형","2.삼각형의 외심과 내심","3.평행사변형","4.여러 가지 사각형","5.도형의 닮음","6.평행선과 선분의 길이의 비","7.삼각형의 무게중심","8.피타고라스 정리","9.경우의 수","10.확률"]],
+ ["중","RPM 3-1",["1.제곱근과 실수","2.근호를 포함한 식의 계산","3.다항식의 곱셈","4.인수분해","5.이차방정식의 풀이","6.이차방정식의 활용","7.이차함수와 그 그래프","8.이차함수 y=ax²+bx+c의 그래프"]],
+ ["중","RPM 3-2",["1.삼각비","2.삼각비의 활용","3.원과 직선","4.원주각","5.대푯값과 산포도","6.상관관계"]],
+ ["중","블랙라벨 1-1",["1.소인수분해","2.최대공약수와 최소공배수","3.정수와 유리수","4.정수와 유리수의 사칙계산","5.문자의 사용과 식의 계산","6.일차방정식의 풀이","7.일차방정식의 활용","8.좌표평면과 그래프","9.정비례와 반비례"]],
+ ["중","블랙라벨 1-2",["1.기본도형","2.위치관계","3.작도와 합동","4.다각형","5.원과 부채꼴","6.다면체와 회전체","7.입체도형의 겉넓이와 부피","8.도수분포표와 그래프","9.상대도수"]],
+ ["중","블랙라벨 2-1",["1.유리수와 순환소수","2.단항식의 계산","3.다항식의 계산","4.일차부등식과 그 활용","5.연립일차방정식","6.연립일차방정식의 활용","7.일차함수와 그래프","8.일차함수와 일차방정식의 관계"]],
+ ["중","블랙라벨 2-2",["1.삼각형의 성질","2.삼각형의 외심과 내심","3.평행사변형","4.여러 가지 사각형","5.도형의 닮음","6.닮음의 활용","7.피타고라스 정리","8.경우의 수","9.확률"]],
+ ["중","블랙라벨 3-1",["1.제곱근과 실수","2.근호를 포함한 식의 계산","3.다항식의 곱셈과 곱셈 공식","4.인수분해","5.이차방정식","6.근의 공식","7.이차함수와 그래프","8.이차함수 y=ax²+bx+c의 그래프"]],
+ ["중","블랙라벨 3-2",["1.삼각비","2.삼각비의 활용","3.원과 직선","4.원주각","5.원주각의 활용","6.대푯값과 산포도","7.산점도와 상관관계"]],
+ ["중","개념+유형 1-1",[]],
+ ["중","개념원리 1-1",[]],
+ ["중","개념+유형 1-2",[]],
+ ["중","개념원리 1-2",[]],
+ ["중","개념+유형 2-1",[]],
+ ["중","개념원리 2-1",[]],
+ ["중","개념+유형 2-2",[]],
+ ["중","개념원리 2-2",[]],
+ ["중","개념+유형 3-1",[]],
+ ["중","개념원리 3-1",[]],
+ ["중","개념+유형 3-2",[]],
+ ["중","개념원리 3-2",[]],
+ ["초","디딤돌(기) 4-1",[]],
+ ["초","디딤돌(응) 4-1",[]],
+ ["초","디딤돌(기응) 4-1",[]],
+ ["초","디딤돌(기) 5-1",[]],
+ ["초","디딤돌(응) 5-1",[]],
+ ["초","디딤돌(기응) 5-1",[]],
+ ["초","디딤돌(기) 6-1",[]],
+ ["초","디딤돌(응) 6-1",[]],
+ ["초","디딤돌(기응) 6-1",[]],
+ ["초","디딤돌(기) 4-2",[]],
+ ["초","디딤돌(응) 4-2",[]],
+ ["초","디딤돌(기응) 4-2",[]],
+ ["초","디딤돌(기) 5-2",[]],
+ ["초","디딤돌(응) 5-2",[]],
+ ["초","디딤돌(기응) 5-2",[]],
+ ["초","디딤돌(기) 6-2",[]],
+ ["초","디딤돌(응) 6-2",[]],
+ ["초","디딤돌(기응) 6-2",[]],
+ ["초","최상위S 4-1",[]],
+ ["초","최상위S 4-2",[]],
+ ["초","최상위S 5-1",[]],
+ ["초","최상위S 5-2",[]],
+ ["초","최상위S 6-1",[]],
+ ["초","최상위S 6-2",[]],
+ ["초","최상위 4-1",[]],
+ ["초","최상위 4-2",[]],
+ ["초","최상위 5-1",[]],
+ ["초","최상위 5-2",[]],
+ ["초","최상위 6-1",[]],
+ ["초","최상위 6-2",[]],
+ ["초","최고수준 5-2",[]],
+ ["특","방특교재 중등3-2",["삼각비_Part-1","삼각비_Part-2","삼각비_Part-3","삼각비_단원Test","원_Part-1","원_Part-2","원_Part-3","원의 성질_단원Test","통계_Part-1","통계_단원Test"]],
+ ["특","여름방특 중등3-2",["삼각비_Part-1","삼각비_Part-2","삼각비_Part-3","삼각비_단원Test","원_Part-1","원_Part-2","원_Part-3","원의 성질_단원Test"]],
+ ["특","HB교재 공수1_Review",["1강","2강","3강","4강","5강","6강","7강","8강","9강","10강"]],
+ ["특","내신대비교재 A1",["1회","2회","3회","4회","5회","6회"]],
+ ["특","내신대비교재 A2",["1회","2회","3회","4회","5회","6회"]]
+];
+var OLD_SEED_NAMES = ["개+유 공수1","개+유 공수2","개념쎈 공수1","개념쎈 공수2","쎈 공수1","쎈 공수2","개념쎈 대수","라이트쎈 대수","개+유 대수","개념쎈 미적분","라이트쎈 미적분","개+유 미적분1","개념쎈 확통","라이트쎈 확통","라이트쎈 공수1","라이트쎈 공수2","수력충전 공수1","수력충전 공수2","수력충전 대수","RPM 공수1","RPM 공수2","개념쎈 3-1","개념쎈 3-2","유형해결 3-1","유형해결 3-2","쎈3-1","쎈3-2","개념쎈 2-2","유형해결 2-2","일품 2-2","일품 3-2","블랙라벨 2-2","블랙라벨 3-2","개념쎈 1-1","개념쎈 1-2","개념쎈 2-1","유형해결 1-1","유형해결 1-2","유형해결 2-1","유형해결 3-1(2)","일품 1-1","일품 1-2","일품 2-1","일품 3-1","블랙라벨 1-1","블랙라벨 1-2","블랙라벨 2-1","블랙라벨 3-1","개념+유형 3-1","개념+유형 3-2","쎈2-1","쎈2-2","쎈1-1","쎈1-2","RPM3-1","RPM3-2","개념원리3-1","개념원리3-2","디딤돌(기) 6-1","디딤돌(응) 6-1","최상위S 6-1","최상위 6-2","방특교재 중등3-2","여름방특 중등3-2","HB교재 공수1_Review","내신대비교재 A1","내신대비교재 A2"];
+
+var SEED_STUDENTS = [
+ ["장주하","중3"],["김도현","고1"],["신지윤","고1"],["김지훈","고1"],["박준하","고2"],
+ ["이 현","고1"],["신성빈","고2"],["주지윤","중3"],["구시연","고2"],["이용욱","고1"],
+ ["육은서","고1"],["이준서","고1"],["김가온","중3"],["조효빈","중3"],["유지율","중2"],
+ ["송태경","중3"],["이유민","고1"],["이세아","중3"],["신하임","고1"],["이윤수","중2"]
+];
+
+/* ---------- DB ---------- */
+var BOOK_CATALOG = 2;      // 2 = 2022 개정 교육과정 기준 교재 목록
+var DB = null;
+function freshDB(){
+  return {
+    v:1,
+    meta:{bookCatalog:BOOK_CATALOG, teacher:"홍재화", academy:"", phone:"", closing:"오늘도 성실하게 수업에 참여했습니다. 가정에서도 격려 부탁드립니다."},
+    students:SEED_STUDENTS.map(function(s){
+      return {id:uid(), name:s[0], grade:s[1], school:"", parent:"", phone:"", memo:"", active:true, days:[]};
+    }),
+    books:SEED_BOOKS.map(function(b){
+      return {id:uid(), level:b[0], name:b[1], units:b[2].slice()};
+    }),
+    records:[]
+  };
+}
+function load(){
+  var raw = rawGet();
+  if(!raw){ DB = freshDB(); save(); return; }
+  try{
+    DB = JSON.parse(raw);
+    if(!DB.students) DB.students=[];
+    if(!DB.books) DB.books=[];
+    if(!DB.records) DB.records=[];
+    if(!DB.meta) DB.meta={teacher:"홍재화"};
+  }catch(e){
+    DB = freshDB();
+  }
+  window.__bookUpdate = updateBookCatalog();
+}
+
+/* 교재 목록을 최신 교육과정 기준으로 맞춥니다.
+   학생 명단과 수업 기록은 건드리지 않고, 교재만 정리합니다. */
+function updateBookCatalog(){
+  if((DB.meta.bookCatalog||0) >= BOOK_CATALOG) return null;
+  var used={};
+  DB.records.forEach(function(r){
+    [].concat(r.progress||[], r.homework||[], r.prev||[]).forEach(function(x){
+      if(x && x.book) used[x.book]=1;
+    });
+  });
+  var byName={};
+  DB.books.forEach(function(b){ byName[b.name]=b; });
+
+  var added=0, updated=0, keep={};
+  SEED_BOOKS.forEach(function(c){
+    var lv=c[0], nm=c[1], units=c[2];
+    keep[nm]=1;
+    var b=byName[nm];
+    if(b){
+      b.level=lv;
+      if(!b.edited && units.length && b.units.join("|")!==units.join("|")){
+        b.units=units.slice(); updated++;
+      }else if(!b.units.length && units.length){
+        b.units=units.slice(); updated++;
+      }
+    }else{
+      DB.books.push({id:uid(), level:lv, name:nm, units:units.slice()});
+      added++;
+    }
+  });
+
+  // 예전 기본 목록에만 있던 교재는 정리합니다.
+  // 단, 직접 고친 교재나 수업 기록에 쓰인 교재는 그대로 둡니다.
+  var before=DB.books.length;
+  DB.books=DB.books.filter(function(b){
+    if(keep[b.name]) return true;
+    if(b.edited) return true;
+    if(used[b.name]) return true;
+    return OLD_SEED_NAMES.indexOf(b.name) < 0;   // 사용자가 추가한 교재는 유지
+  });
+  var removed=before-DB.books.length;
+
+  DB.meta.bookCatalog=BOOK_CATALOG;
+  rawSet(JSON.stringify(DB));
+  return {added:added, updated:updated, removed:removed};
+}
+var saveT=null;
+function save(){
+  rawSet(JSON.stringify(DB));
+  scheduleFileWrite();                 // 연결된 데이터 파일에도 기록
+  var s=$("#saveState");
+  s.textContent="저장 중…";
+  s.classList.add("on");
+  clearTimeout(saveT);
+  saveT=setTimeout(function(){ setFileStatus(); },1400);
+}
+/* ---------- 교시 ---------- */
+var PERIODS = ["1교시","2교시","3교시","4교시","5교시","6교시","7교시","8교시","미지정"];
+function periodRank(p){
+  var i=PERIODS.indexOf(p);
+  return i<0? 98 : i;
+}
+function periodOptions(sel){
+  return PERIODS.map(function(p){
+    return '<option value="'+p+'"'+(p===sel?" selected":"")+'>'+p+'</option>';
+  }).join("");
+}
+
+/* ---------- 학년 → 이름 오름차순 ---------- */
+function gradeRank(g){
+  g=String(g==null?"":g).replace(/\s/g,"");
+  var m=g.match(/(초|중|고)(\d)/);
+  if(m) return {"초":10,"중":20,"고":30}[m[1]] + (+m[2]);
+  m=g.match(/^(\d)학년$/);
+  if(m) return 10 + (+m[1]);
+  if(/N수|재수|검정/.test(g)) return 40;
+  return 90;                      // 학년을 비워둔 학생은 뒤로
+}
+function cmpStudent(a,b){
+  var d=gradeRank(a&&a.grade)-gradeRank(b&&b.grade);
+  if(d) return d;
+  var ga=String((a&&a.grade)||""), gb=String((b&&b.grade)||"");
+  if(ga!==gb) return ga.localeCompare(gb,"ko");
+  return String((a&&a.name)||"").replace(/\s/g,"").localeCompare(String((b&&b.name)||"").replace(/\s/g,""),"ko");
+}
+function cmpByName(n1,n2){
+  return cmpStudent(studentByName(n1)||{name:n1}, studentByName(n2)||{name:n2});
+}
+function sortStudents(){
+  DB.students.sort(cmpStudent);
+}
+
+function bookByName(n){
+  for(var i=0;i<DB.books.length;i++) if(DB.books[i].name===n) return DB.books[i];
+  return null;
+}
+function studentByName(n){
+  for(var i=0;i<DB.students.length;i++) if(DB.students[i].name===n) return DB.students[i];
+  return null;
+}
+function recordsOf(name){
+  return DB.records.filter(function(r){return r.studentName===name;})
+    .sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:0; });
+}
+function prevRecord(name, date, excludeId){
+  var list = recordsOf(name).filter(function(r){ return r.date < date && r.id!==excludeId; });
+  return list.length ? list[list.length-1] : null;
+}
+/* =========================================================
+   오늘 수업 입력
+   ========================================================= */
+var drafts = [];
+var curDate = todayISO();
+var curType = "정규";
+var curPeriod = "1교시";
+
+function bookOptions(sel){
+  var levels={"고":"고등","중":"중등","초":"초등","특":"특강·기타"};
+  var out='<option value="">교재 선택…</option>';
+  ["고","중","초","특"].forEach(function(lv){
+    var list=DB.books.filter(function(b){return b.level===lv;});
+    if(!list.length) return;
+    out+='<optgroup label="'+levels[lv]+'">';
+    list.forEach(function(b){
+      out+='<option value="'+esc(b.name)+'"'+(b.name===sel?" selected":"")+'>'+esc(b.name)+(b.units.length?"":" (단원 미등록)")+'</option>';
+    });
+    out+='</optgroup>';
+  });
+  if(sel && !bookByName(sel)) out+='<option value="'+esc(sel)+'" selected>'+esc(sel)+'</option>';
+  return out;
+}
+function unitOptions(bookName, idx){
+  var b=bookByName(bookName);
+  var out='<option value="">단원 선택…</option>';
+  if(b && b.units.length){
+    b.units.forEach(function(u,i){
+      out+='<option value="'+i+'"'+(i===idx?" selected":"")+'>'+esc(u)+'</option>';
+    });
+  }
+  out+='<option value="-2"'+(idx===-2?" selected":"")+'>직접 입력 / 오답·정리</option>';
+  return out;
+}
+function calcRate(bookName, idx){
+  var b=bookByName(bookName);
+  if(!b || !b.units.length || idx==null || idx<0) return null;
+  return Math.round((idx+1)/b.units.length*100);
+}
+function newProg(){ return {book:"",unit:"",unitIdx:null,unitIdxs:[],doneIdxs:[],pFrom:"",pTo:"",note:"",rate:null}; }
+function newHw(){ return {book:"",pFrom:"",pTo:"",note:""}; }
+
+/* 선택한 단원들을 리포트 표기 문구로 만듭니다 */
+function composeUnits(bookName, idxs){
+  var b=bookByName(bookName);
+  if(!b || !idxs || !idxs.length) return "";
+  var names=idxs.slice().sort(function(x,y){return x-y;})
+    .map(function(i){ return b.units[i]; }).filter(Boolean);
+  if(!names.length) return "";
+  return names.length===1? "~"+names[0] : names.join(", ");
+}
+/* 이 학생이 이 교재에서 지금까지 나간 단원 (오늘 것 제외) */
+function priorUnitMap(studentName, bookName, date, excludeId){
+  var m={};
+  if(!bookName) return m;
+  DB.records.forEach(function(r){
+    if(r.studentName!==studentName) return;
+    if(excludeId && r.id===excludeId) return;
+    if(r.date>date) return;
+    (r.progress||[]).forEach(function(p){
+      if(p.book!==bookName) return;
+      var list=(p.unitIdxs&&p.unitIdxs.length)? p.unitIdxs
+             : (p.unitIdx!=null&&p.unitIdx>=0? [p.unitIdx] : []);
+      list.forEach(function(x){ m[x]=1; });
+    });
+  });
+  return m;
+}
+/* 지난 단원 + 오늘 단원을 합쳐 중복 없이 정리 */
+function mergeDone(priorMap, idxs){
+  var m={};
+  Object.keys(priorMap||{}).forEach(function(k){ m[+k]=1; });
+  (idxs||[]).forEach(function(x){ m[x]=1; });
+  return Object.keys(m).map(Number).sort(function(a,b){ return a-b; });
+}
+/* 달성률 = 나간 단원 수 ÷ 교재 전체 단원 수 */
+function calcDoneRate(bookName, doneIdxs){
+  var b=bookByName(bookName);
+  if(!b || !b.units.length || !doneIdxs || !doneIdxs.length) return null;
+  return Math.round(doneIdxs.length / b.units.length * 100);
+}
+function recalcProgress(d, p){
+  var prior=priorUnitMap(d.studentName, p.book, curDate, d.id);
+  p.doneIdxs=mergeDone(prior, p.unitIdxs);
+  p.rate=calcDoneRate(p.book, p.doneIdxs);
+}
+
+function unitSummary(p){
+  var b=bookByName(p.book);
+  if(!b || !b.units.length) return null;
+  var n=(p.unitIdxs||[]).length;
+  if(!n) return "";
+  var names=p.unitIdxs.slice().sort(function(x,y){return x-y;}).map(function(i){return b.units[i];}).filter(Boolean);
+  return names.join(", ");
+}
+/* 페이지 + 추가 내용 → 리포트에 쓰는 한 줄 */
+function joinRange(h){
+  var p="";
+  if(h.pFrom||h.pTo) p="p."+(h.pFrom||"")+"~"+(h.pTo||"");
+  var n=String(h.note||"").trim();
+  return (p&&n)? (p+" · "+n) : (p||n);
+}
+/* 예전 기록의 "p.18-21 오답" 같은 글을 페이지와 내용으로 나눕니다 */
+function splitRange(s){
+  s=String(s==null?"":s);
+  var m=s.match(/p\.?\s*(\d+)\s*[-~–]\s*p?\.?\s*(\d+)/);
+  if(m){
+    var rest=(s.slice(0,m.index)+s.slice(m.index+m[0].length)).replace(/^[\s·,]+|[\s·,]+$/g,"");
+    return {pFrom:m[1], pTo:m[2], note:rest};
+  }
+  return {pFrom:"", pTo:"", note:s};
+}
+
+function draftFromRecord(r){
+  return {
+    key:uid(), id:r.id, studentId:r.studentId, studentName:r.studentName,
+    period:r.period||"미지정",
+    attendance:r.attendance||"출석",
+    prev:(r.prev||[]).map(function(p){return {book:p.book,range:p.range,rate:p.rate};}),
+    prevComment:r.prevComment||"",
+    progress:(r.progress&&r.progress.length?r.progress.map(function(p){
+      return {book:p.book, unit:p.unit,
+        unitIdx:(p.unitIdx==null?null:p.unitIdx),
+        unitIdxs:(p.unitIdxs&&p.unitIdxs.length? p.unitIdxs.slice() : (p.unitIdx!=null&&p.unitIdx>=0?[p.unitIdx]:[])),
+        doneIdxs:(p.doneIdxs||[]).slice(),
+        pFrom:p.pFrom||"", pTo:p.pTo||"", note:p.note||"", rate:p.rate};
+    }):[newProg()]),
+    homework:(r.homework&&r.homework.length?r.homework.map(function(h){
+      if(h.pFrom!=null || h.note!=null) return {book:h.book, pFrom:h.pFrom||"", pTo:h.pTo||"", note:h.note||""};
+      var sp=splitRange(h.range);
+      return {book:h.book, pFrom:sp.pFrom, pTo:sp.pTo, note:sp.note};
+    }):[newHw()]),
+    attitude:r.attitude||0, focus:r.focus||0,
+    test:r.test?{name:r.test.name,score:r.test.score,total:r.test.total}:{name:"",score:"",total:""},
+    reporting:r.reporting||"", next:r.next||"",
+    more:false, saved:true, collapsed:false
+  };
+}
+function newDraft(stu, period){
+  var d={
+    key:uid(), id:null, studentId:stu.id, studentName:stu.name,
+    period:period||curPeriod,
+    attendance:"출석", prev:[], prevComment:"",
+    progress:[newProg()], homework:[newHw()],
+    attitude:0, focus:0, test:{name:"",score:"",total:""},
+    reporting:"", next:"", more:false, saved:false, collapsed:false
+  };
+  var p=prevRecord(stu.name, curDate, null);
+  if(p){
+    d.prevDate=p.date;
+    d.prev=(p.homework||[]).filter(function(h){return h.book||h.range;})
+      .map(function(h){ return {book:h.book, range:h.range, rate:null}; });
+    // 직전 진도를 기본값으로 이어받기
+    if(p.progress && p.progress.length){
+      d.progress=p.progress.filter(function(x){return x.book;}).map(function(x){
+        return {book:x.book, unit:x.unit||"", unitIdx:(x.unitIdx==null?null:x.unitIdx),
+          unitIdxs:(x.unitIdxs&&x.unitIdxs.length? x.unitIdxs.slice() : (x.unitIdx!=null&&x.unitIdx>=0?[x.unitIdx]:[])),
+          doneIdxs:(x.doneIdxs||[]).slice(),
+          pFrom:"", pTo:"", note:"", rate:x.rate};
+      });
+      if(!d.progress.length) d.progress=[newProg()];
+      d.homework=p.progress.filter(function(x){return x.book;}).map(function(x){
+        return {book:x.book, pFrom:"", pTo:"", note:""};
+      });
+      if(!d.homework.length) d.homework=[newHw()];
+    }
+  }
+  return d;
+}
+
+function loadDay(){
+  drafts = DB.records.filter(function(r){return r.date===curDate && r.type===curType;})
+    .map(draftFromRecord);
+  renderEntries();
+}
+function sortDrafts(){
+  drafts.sort(function(a,b){
+    var d=periodRank(a.period)-periodRank(b.period);
+    if(d) return d;
+    return cmpByName(a.studentName,b.studentName);
+  });
+}
+
+function avgPrev(d){
+  var vals=d.prev.filter(function(p){return p.rate!=null;}).map(function(p){return Number(p.rate);});
+  if(!vals.length) return null;
+  return Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length);
+}
+
+function renderEntries(){
+  sortDrafts();
+  var host=$("#entries");
+  var cnt={};
+  drafts.forEach(function(d){ cnt[d.period]=(cnt[d.period]||0)+1; });
+  var last=null, out="";
+  drafts.forEach(function(d){
+    if(d.period!==last){
+      out+='<div class="periodhead"><b>'+esc(d.period)+'</b><span class="chip gray">'+cnt[d.period]+'명</span><span class="ln"></span></div>';
+      last=d.period;
+    }
+    out+=entryHTML(d);
+  });
+  host.innerHTML = out;
+  $("#todayEmpty").style.display = drafts.length? "none":"block";
+  $("#stickybar").style.display = drafts.length? "flex":"none";
+  updateSticky();
+}
+function updateSticky(){
+  var saved=drafts.filter(function(d){return d.saved;}).length;
+  var cnt={}, order=[];
+  drafts.forEach(function(d){ if(!cnt[d.period]){cnt[d.period]=0;order.push(d.period);} cnt[d.period]++; });
+  var by=order.map(function(p){ return p.replace("교시","")+"교시 "+cnt[p]+"명"; }).join(" · ");
+  $("#stickyInfo").textContent = fmtShort(curDate)+" "+curType+" · "+(by||"학생 없음")+" · 저장 "+saved+"/"+drafts.length;
+  $("#btnReportAll").disabled = saved===0;
+}
+
+function starHTML(k,field,val){
+  var out='<span class="stars" data-k="'+k+'" data-field="'+field+'">';
+  for(var i=1;i<=5;i++) out+='<button type="button" data-v="'+i+'" class="'+(i<=val?"on":"")+'">★</button>';
+  out+='</span>';
+  return out;
+}
+
+function entryHTML(d){
+  var pr=avgPrev(d);
+  var stu=studentByName(d.studentName)||{};
+  var h='';
+  h+='<div class="entry'+(d.saved?" saved":"")+(d.collapsed?" collapsed":"")+'" data-k="'+d.key+'">';
+
+  /* ── 머리 : 이름 · 교시 · 출결 · 상태 ── */
+  h+='<header>';
+  h+='<span class="name">'+esc(d.studentName)+'</span>';
+  if(stu.grade) h+='<span class="chip gray">'+esc(stu.grade)+'</span>';
+  h+='<select data-field="period" title="교시" class="mini" style="width:auto">'+periodOptions(d.period)+'</select>';
+  h+='<div class="seg mini" data-field="attendance">';
+  ["출석","지각","보강","결석","휴회"].forEach(function(a){
+    h+='<button type="button" data-v="'+a+'" aria-pressed="'+(d.attendance===a)+'">'+a+'</button>';
+  });
+  h+='</div>';
+  h+='<span class="chip '+(pr==null?"gray":rateClass(pr))+'" data-out="prevHead">'+(pr==null?"과제 미확인":"과제 "+pr+"%")+'</span>';
+  h+='<span class="chip'+(d.saved?" good":"")+'" data-out="stateChip">'+(d.saved?"저장됨":"작성 중")+'</span>';
+  h+='<span class="grow"></span>';
+  h+='<button class="btn sm ghost" data-act="more" title="태도 · 테스트 · 다음 수업">'+(d.more?"상세 ▴":"상세 ▾")+'</button>';
+  h+='<button class="btn sm ghost" data-act="toggle">'+(d.collapsed?"펼치기":"접기")+'</button>';
+  h+='<button class="btn sm primary" data-act="save">저장</button>';
+  h+='<button class="btn sm" data-act="report"'+(d.saved?"":" disabled")+'>리포트</button>';
+  h+='<button class="btn sm ghost" data-act="remove">×</button>';
+  h+='</header><div class="body">';
+
+  /* ── 지난 과제 ── */
+  h+='<div class="crow"><span class="clab">지난<br>과제</span><div class="cstack">';
+  if(!d.prev.length){
+    h+='<div class="cline"><span class="small muted">확인할 과제 없음</span>'
+      +'<button class="addbtn" data-act="addPrev">+ 항목</button></div>';
+  }
+  d.prev.forEach(function(p,i){
+    var last=(i===d.prev.length-1);
+    h+='<div class="pvrow">';
+    h+='<input type="text" class="mini" data-field="prev.book" data-i="'+i+'" value="'+esc(p.book)+'" placeholder="교재" style="width:112px;flex:none">';
+    h+='<input type="text" class="mini" data-field="prev.range" data-i="'+i+'" value="'+esc(p.range)+'" placeholder="범위" style="flex:1;min-width:100px">';
+    h+='<button type="button" class="btn sm" data-act="prevZero" data-i="'+i+'" aria-pressed="'+(Number(p.rate)===0)+'" style="flex:none">미이행</button>';
+    h+='<input type="number" min="0" max="100" step="1" class="mini w-pct" data-field="prev.num" data-i="'+i+'" value="'+(p.rate==null?"":p.rate)+'" placeholder="달성률">';
+    h+='<span class="tilde" data-out="prev'+i+'">%</span>';
+    h+='<button class="xbtn" data-act="delPrev" data-i="'+i+'">×</button>';
+    if(last){
+      h+='<button class="addbtn" data-act="addPrev">+</button>';
+      h+='<button class="addbtn" data-act="allDone">모두 100%</button>';
+    }
+    h+='</div>';
+  });
+  h+='</div></div>';
+
+  /* ── 진도 ── */
+  h+='<div class="crow"><span class="clab">진도</span><div class="cstack">';
+  h+='<div class="pgrid pghead">'
+    +'<span>교재</span><span>단원</span>'
+    +'<span style="grid-column:3 / span 4" class="tac">페이지</span>'
+    +'<span>특이사항</span><span class="tar">달성률</span>'
+    +'<span></span><span></span></div>';
+  d.progress.forEach(function(p,i){
+    h+='<div class="pgrid">';
+    h+='<select class="mini" data-field="prog.book" data-i="'+i+'">'+bookOptions(p.book)+'</select>';
+    var us=unitSummary(p), n=(p.unitIdxs||[]).length;
+    h+='<button type="button" class="unitbtn" data-act="units" data-i="'+i+'" title="단원 선택">';
+    if(us===null) h+='<span class="txt ph">'+(p.book? "단원 미등록 교재":"교재를 먼저 선택")+'</span>';
+    else if(!n)   h+='<span class="txt ph">단원 선택…</span>';
+    else          h+='<span class="txt">'+esc(us)+'</span><span class="cnt">'+n+'</span>';
+    h+='</button>';
+    h+='<span class="tilde">p.</span>';
+    h+='<input type="number" min="0" class="mini tac" data-field="prog.pFrom" data-i="'+i+'" value="'+esc(p.pFrom)+'" placeholder="시작">';
+    h+='<span class="tilde">~</span>';
+    h+='<input type="number" min="0" class="mini tac" data-field="prog.pTo" data-i="'+i+'" value="'+esc(p.pTo)+'" placeholder="끝">';
+    h+='<input type="text" class="mini" data-field="prog.note" data-i="'+i+'" value="'+esc(p.note||"")+'" placeholder="예: 전체오답, 심화 보충">';
+    h+='<input type="number" min="0" max="100" class="mini tar" data-field="prog.rate" data-i="'+i+'" value="'+(p.rate==null?"":p.rate)+'" placeholder="%" title="교재 전체 대비 진도 달성률">';
+    h+='<button class="xbtn" data-act="delProg" data-i="'+i+'">×</button>';
+    h+= (i===d.progress.length-1)? '<button class="addbtn" data-act="addProg">+ 교재</button>' : '<span></span>';
+    h+='</div>';
+  });
+  h+='</div></div>';
+
+  /* ── 과제 ── */
+  h+='<div class="crow"><span class="clab">과제</span><div class="cstack">';
+  d.homework.forEach(function(x,i){
+    h+='<div class="cline nw">';
+    h+='<select class="mini w-bk" data-field="hw.book" data-i="'+i+'">'+bookOptions(x.book)+'</select>';
+    h+='<span class="tilde">p.</span>';
+    h+='<input type="number" min="0" class="mini pg" data-field="hw.pFrom" data-i="'+i+'" value="'+esc(x.pFrom)+'" placeholder="시작">';
+    h+='<span class="tilde">~</span>';
+    h+='<input type="number" min="0" class="mini pg" data-field="hw.pTo" data-i="'+i+'" value="'+esc(x.pTo)+'" placeholder="끝">';
+    h+='<input type="text" class="mini w-rg" data-field="hw.note" data-i="'+i+'" value="'+esc(x.note)+'" placeholder="추가 내용 (예: 연습문제 제외, 오답 마무리)">';
+    h+='<button class="xbtn" data-act="delHw" data-i="'+i+'">×</button>';
+    if(i===d.homework.length-1) h+='<button class="addbtn" data-act="addHw">+ 교재</button>';
+    h+='</div>';
+  });
+  h+='</div></div>';
+
+  /* ── 리포팅 : 오른쪽에 상용구 ── */
+  h+='<div class="crow"><span class="clab">리포팅</span><div class="cstack">';
+  h+='<div class="cline" style="flex-wrap:nowrap;align-items:stretch">';
+  h+='<textarea class="mini" data-field="reporting" placeholder="특이사항 · 보강 일정 등 (비워두면 리포트에 나오지 않습니다)" style="flex:1;min-width:0">'+esc(d.reporting)+'</textarea>';
+  h+='<div class="tmplbar g2">';
+  [["보강 일정","※ 보강일정 안내입니다.\n → "],["교재 준비","※ 새과정 교재 준비 안내입니다.\n → "],
+   ["전체오답","※ 다음 시간부터 전체오답 진행 시작"],["결석보강","※ 결석보강 진행_"]].forEach(function(t){
+    h+='<button data-act="tmpl" data-t="'+esc(t[1])+'">'+esc(t[0])+'</button>';
+  });
+  h+='</div></div></div>';
+  h+='</div>';
+
+  /* ── 자세히 (기본 숨김) ── */
+  if(d.more){
+    h+='<div class="moreblk">';
+    h+='<div class="crow"><span class="clab">한마디</span><div class="cstack">'
+      +'<input type="text" class="mini" data-field="prevComment" value="'+esc(d.prevComment)+'" placeholder="과제 관련 한마디 (예: 오답 정리가 꼼꼼했습니다)"></div></div>';
+    h+='<div class="crow"><span class="clab">태도</span><div class="cstack"><div class="cline" style="gap:12px">';
+    h+='<span class="tiny muted">참여</span>'+starHTML(d.key,"attitude",d.attitude);
+    h+='<span class="tiny muted">집중</span>'+starHTML(d.key,"focus",d.focus);
+    h+='<span class="tiny muted" style="margin-left:8px">테스트</span>'
+      +'<input type="text" class="mini" data-field="test.name" value="'+esc(d.test.name)+'" placeholder="이름" style="width:130px;flex:none">'
+      +'<input type="number" class="mini" data-field="test.score" value="'+esc(d.test.score)+'" placeholder="점수" style="width:68px;flex:none">'
+      +'<span class="tiny muted">/</span>'
+      +'<input type="number" class="mini" data-field="test.total" value="'+esc(d.test.total)+'" placeholder="100" style="width:68px;flex:none">';
+    h+='</div></div></div>';
+    h+='<div class="crow"><span class="clab">다음<br>수업</span><div class="cstack">'
+      +'<input type="text" class="mini" data-field="next" value="'+esc(d.next)+'" placeholder="예: 다음 수업에 수열 마무리 후 단원평가"></div></div>';
+    h+='</div>';
+  }
+
+  h+='</div></div>';
+  return h;
+}
+
+/* ---------- 단원 복수 선택 ---------- */
+function openUnitPicker(d, i){
+  var p=d.progress[i];
+  var b=bookByName(p.book);
+  if(!p.book){ toast("교재를 먼저 선택해 주세요"); return; }
+  if(!b || !b.units.length){
+    openDialog("단원이 등록되지 않은 교재",
+      '<div class="small">「'+esc(p.book)+'」에 등록된 단원이 없습니다. 교재 · 단원 화면에서 단원을 먼저 넣어주세요.</div>',
+      [["교재 · 단원으로 가기","primary",function(){ closeModals(); switchView("books"); }],
+       ["닫기","ghost",closeModals]]);
+    return;
+  }
+  var sel={};
+  (p.unitIdxs||[]).forEach(function(x){ sel[x]=1; });
+  var prior=priorUnitMap(d.studentName, p.book, curDate, d.id);
+  var priorN=Object.keys(prior).length;
+  var tot=b.units.length;
+  var h='<div class="row mb"><button class="btn sm" data-up="all">전체 선택</button>'
+    +'<button class="btn sm" data-up="none">선택 해제</button>'
+    +'<span style="flex:1"></span><span class="small muted" id="upCount"></span></div>';
+  if(priorN){
+    h+='<div class="small muted mb">이전 수업에서 이미 나간 '+priorN+'개 단원은 <b>완료</b>로 표시했습니다. 오늘 나간 단원만 체크해 주세요.</div>';
+  }
+  h+='<div class="card unitpick" id="upList">';
+  b.units.forEach(function(u,idx){
+    h+='<label><input type="checkbox" value="'+idx+'"'+(sel[idx]?" checked":"")+'>'
+      +'<span>'+esc(u)+'</span>'
+      +'<span style="flex:1"></span>'
+      +(prior[idx]? '<span class="chip good">완료</span>':'')
+      +'</label>';
+  });
+  h+='</div>';
+  openDialog(p.book+" · 단원 선택", h, [
+    ["적용","primary",function(){
+      var idxs=$$('#upList input:checked').map(function(c){ return +c.value; })
+        .sort(function(x,y){ return x-y; });
+      p.unitIdxs=idxs;
+      p.unitIdx = idxs.length? idxs[idxs.length-1] : null;
+      p.unit = composeUnits(p.book, idxs);
+      recalcProgress(d, p);
+      closeModals(); markDirty(d); rerenderEntry(d);
+    }],
+    ["취소","ghost",closeModals]
+  ]);
+  var body=$("#dlgBody");
+  function upCount(){
+    var idxs=$$('#upList input:checked').map(function(c){ return +c.value; });
+    var done=mergeDone(prior, idxs);
+    var el=$("#upCount");
+    if(!el) return;
+    el.innerHTML = "오늘 "+idxs.length+"개 · 누적 <b>"+done.length+" / "+tot+"단원</b> · 달성률 <b>"
+      + (done.length? Math.round(done.length/tot*100) : 0) + "%</b>";
+  }
+  body.addEventListener("change", upCount);
+  body.addEventListener("click", function(e){
+    var t=e.target.closest("[data-up]"); if(!t) return;
+    var on=t.getAttribute("data-up")==="all";
+    $$('#upList input',body).forEach(function(c){ c.checked=on; });
+    upCount();
+  });
+  upCount();
+}
+
+function findDraft(k){
+  for(var i=0;i<drafts.length;i++) if(drafts[i].key===k) return drafts[i];
+  return null;
+}
+function entryEl(k){ return $('.entry[data-k="'+k+'"]'); }
+
+/* ----- 이벤트 위임 ----- */
+$("#entries").addEventListener("click", function(e){
+  var starBtn = e.target.closest(".stars button");
+  if(starBtn){
+    var wrap=starBtn.parentNode, d=findDraft(wrap.getAttribute("data-k"));
+    var f=wrap.getAttribute("data-field"), v=+starBtn.getAttribute("data-v");
+    d[f] = (d[f]===v? 0 : v);
+    $$("button",wrap).forEach(function(b,i){ b.classList.toggle("on", (i+1)<=d[f]); });
+    markDirty(d); return;
+  }
+  var segBtn = e.target.closest('.seg[data-field] button');
+  if(segBtn){
+    var seg=segBtn.parentNode, ent=segBtn.closest(".entry"), dd=findDraft(ent.getAttribute("data-k"));
+    dd[seg.getAttribute("data-field")] = segBtn.getAttribute("data-v");
+    $$("button",seg).forEach(function(b){ b.setAttribute("aria-pressed", b===segBtn); });
+    markDirty(dd); return;
+  }
+  var act = e.target.closest("[data-act]");
+  if(!act) return;
+  var ent2 = act.closest(".entry");
+  var d3 = findDraft(ent2.getAttribute("data-k"));
+  var a = act.getAttribute("data-act"), i = +act.getAttribute("data-i");
+  if(a==="toggle"){ d3.collapsed=!d3.collapsed; renderEntries(); return; }
+  if(a==="more"){ d3.more=!d3.more; rerenderEntry(d3); return; }
+  if(a==="prevZero"){
+    var pv=d3.prev[i];
+    pv.rate = (Number(pv.rate)===0? null : 0);
+    refreshPrevRow(d3,i); markDirty(d3); return;
+  }
+  if(a==="units"){ openUnitPicker(d3,i); return; }
+  if(a==="save"){ saveDraft(d3); return; }
+  if(a==="report"){ openReport(d3.id); return; }
+  if(a==="remove"){
+    if(!confirm(d3.studentName+" 학생의 이 날짜 입력을 삭제할까요?")) return;
+    if(d3.id){ DB.records=DB.records.filter(function(r){return r.id!==d3.id;}); save(); }
+    drafts=drafts.filter(function(x){return x!==d3;}); renderEntries(); return;
+  }
+  if(a==="addPrev"){ d3.prev.push({book:"",range:"",rate:null}); rerenderEntry(d3); return; }
+  if(a==="delPrev"){ d3.prev.splice(i,1); rerenderEntry(d3); return; }
+  if(a==="allDone"){ d3.prev.forEach(function(p){p.rate=100;}); markDirty(d3); rerenderEntry(d3); return; }
+  if(a==="addProg"){ d3.progress.push(newProg()); rerenderEntry(d3); return; }
+  if(a==="delProg"){ d3.progress.splice(i,1); if(!d3.progress.length)d3.progress=[newProg()]; rerenderEntry(d3); return; }
+  if(a==="addHw"){ d3.homework.push(newHw()); rerenderEntry(d3); return; }
+  if(a==="delHw"){ d3.homework.splice(i,1); if(!d3.homework.length)d3.homework=[newHw()]; rerenderEntry(d3); return; }
+  if(a==="tmpl"){
+    var ta=$('textarea[data-field="reporting"]', ent2);
+    var t=act.getAttribute("data-t");
+    ta.value = ta.value ? (ta.value.replace(/\s+$/,"")+"\n"+t) : t;
+    d3.reporting=ta.value; ta.focus(); markDirty(d3); return;
+  }
+});
+
+$("#entries").addEventListener("input", function(e){
+  var el=e.target, f=el.getAttribute("data-field");
+  if(!f) return;
+  var ent=el.closest(".entry"); if(!ent) return;
+  var d=findDraft(ent.getAttribute("data-k")); if(!d) return;
+  var i=+el.getAttribute("data-i");
+  if(f==="prev.book"){ d.prev[i].book=el.value; }
+  else if(f==="prev.range"){ d.prev[i].range=el.value; }
+  else if(f==="prev.num"){
+    d.prev[i].rate = el.value===""? null : clamp(el.value,0,100);
+    refreshPrevRow(d,i,true);
+  }
+  else if(f==="prevComment"){ d.prevComment=el.value; }
+  else if(f==="prog.note"){ d.progress[i].note=el.value; }
+  else if(f==="prog.rate"){ d.progress[i].rate = el.value===""?null:clamp(el.value,0,100); }
+  else if(f==="hw.note"){ d.homework[i].note=el.value; }
+  else if(f==="hw.pFrom"){ d.homework[i].pFrom=el.value; }
+  else if(f==="hw.pTo"){ d.homework[i].pTo=el.value; }
+  else if(f==="prog.pFrom"){ d.progress[i].pFrom=el.value; }
+  else if(f==="prog.pTo"){ d.progress[i].pTo=el.value; }
+  else if(f==="reporting"){ d.reporting=el.value; }
+  else if(f==="next"){ d.next=el.value; }
+  else if(f==="test.name"){ d.test.name=el.value; }
+  else if(f==="test.score"){ d.test.score=el.value; }
+  else if(f==="test.total"){ d.test.total=el.value; }
+  markDirty(d);
+});
+
+$("#entries").addEventListener("change", function(e){
+  var el=e.target, f=el.getAttribute("data-field");
+  if(!f) return;
+  var ent=el.closest(".entry"); if(!ent) return;
+  var d=findDraft(ent.getAttribute("data-k")); if(!d) return;
+  var i=+el.getAttribute("data-i");
+  if(f==="prog.book"){
+    var pp=d.progress[i];
+    pp.book=el.value; pp.unitIdx=null; pp.unitIdxs=[]; pp.doneIdxs=[]; pp.unit=""; pp.rate=null;
+    rerenderEntry(d); markDirty(d);
+  }
+  else if(f==="hw.book"){ d.homework[i].book=el.value; markDirty(d); }
+  else if(f==="period"){
+    d.period=el.value;
+    if(d.id) saveDraft(d,true); else markDirty(d);
+    renderEntries();
+  }
+});
+
+function refreshPrevRow(d,i,skipInput){
+  var ent=entryEl(d.key); if(!ent) return;
+  var p=d.prev[i];
+  if(!skipInput){
+    var inp=$('input[data-field="prev.num"][data-i="'+i+'"]',ent);
+    if(inp) inp.value = p.rate==null? "" : p.rate;
+  }
+  var z=$('button[data-act="prevZero"][data-i="'+i+'"]',ent);
+  if(z) z.setAttribute("aria-pressed", Number(p.rate)===0);
+  var avg=avgPrev(d);
+  var head=$('[data-out="prevHead"]',ent);
+  if(head){
+    head.textContent = avg==null? "과제 미확인":"과제 "+avg+"%";
+    head.className="chip "+(avg==null?"gray":rateClass(avg));
+  }
+}
+function rerenderEntry(d){
+  var ent=entryEl(d.key); if(!ent) return;
+  var tmp=document.createElement("div");
+  tmp.innerHTML=entryHTML(d);
+  ent.parentNode.replaceChild(tmp.firstChild, ent);
+}
+function markDirty(d){
+  if(!d.saved) return;
+  d.saved=false;
+  var ent=entryEl(d.key);
+  if(ent){
+    ent.classList.remove("saved");
+    var chip=$('[data-out="stateChip"]',ent);
+    if(chip){ chip.textContent="저장 필요"; chip.className="chip mid"; }
+    var rb=$('button[data-act="report"]',ent); if(rb) rb.disabled=false;
+  }
+  updateSticky();
+}
+
+function draftToRecord(d){
+  return {
+    id: d.id || uid(),
+    date: curDate, type: curType, period: d.period||"미지정",
+    studentId: d.studentId, studentName: d.studentName,
+    attendance: d.attendance,
+    prev: d.prev.filter(function(p){return p.book||p.range;}),
+    prevComment: d.prevComment,
+    prevRate: avgPrev(d),
+    progress: d.progress.filter(function(p){return p.book||p.unit||p.note;}).map(function(p){
+      var idxs=(p.unitIdxs||[]).slice();
+      return {book:p.book,
+              unit: idxs.length? composeUnits(p.book, idxs) : (p.unit||""),
+              unitIdx:p.unitIdx, unitIdxs:idxs,
+              doneIdxs:(p.doneIdxs||[]).slice(),
+              pFrom:p.pFrom||"", pTo:p.pTo||"", note:p.note||"", rate:p.rate};
+    }),
+    homework: d.homework.filter(function(h){ return h.book && joinRange(h)!==""; }).map(function(h){
+      return {book:h.book, pFrom:h.pFrom||"", pTo:h.pTo||"", note:h.note||"", range:joinRange(h)};
+    }),
+    attitude: d.attitude, focus: d.focus,
+    test: (d.test.name||d.test.score!=="")? {name:d.test.name,score:d.test.score,total:d.test.total}:null,
+    reporting: d.reporting, next: d.next,
+    savedAt: new Date().toISOString()
+  };
+}
+function saveDraft(d, silent){
+  var rec = draftToRecord(d);
+  var idx = -1;
+  for(var i=0;i<DB.records.length;i++) if(DB.records[i].id===rec.id) idx=i;
+  if(idx>=0) DB.records[idx]=rec; else DB.records.push(rec);
+  d.id = rec.id; d.saved = true;
+  save();
+  rerenderEntry(d); updateSticky();
+  if(!silent) toast(d.studentName+" 리포트 저장 완료");
+}
+
+$("#btnFoldAll").addEventListener("click", function(){
+  var fold = drafts.some(function(d){ return !d.collapsed; });
+  drafts.forEach(function(d){ d.collapsed=fold; });
+  renderEntries();
+  this.textContent = fold? "전체 펼치기":"전체 접기";
+  window.scrollTo(0,0);
+});
+$("#btnSaveAll").addEventListener("click", function(){
+  drafts.forEach(function(d){ saveDraft(d,true); });
+  renderEntries();
+  toast(drafts.length+"명 저장 완료");
+});
+$("#btnReportAll").addEventListener("click", function(){
+  var first=drafts.filter(function(d){return d.saved;})[0];
+  if(first) openReport(first.id);
+});
+/* =========================================================
+   리포트 생성 · 이미지 캡처 · 공유
+   ========================================================= */
+var reportQueue = [];
+var reportPos = 0;
+
+function recById(id){
+  for(var i=0;i<DB.records.length;i++) if(DB.records[i].id===id) return DB.records[i];
+  return null;
+}
+function bookProgressUpTo(name, bookName, date){
+  var best=null;
+  DB.records.forEach(function(r){
+    if(r.studentName!==name || r.date>date) return;
+    (r.progress||[]).forEach(function(p){
+      if(p.book===bookName && p.rate!=null) best = best==null? p.rate : Math.max(best,p.rate);
+    });
+  });
+  return best;
+}
+function hwTrend(name, date, n){
+  var list = recordsOf(name).filter(function(r){ return r.date<=date && r.prevRate!=null; });
+  return list.slice(-n).map(function(r){ return {d:r.date, v:r.prevRate}; });
+}
+
+function donutSVG(pct){
+  var p = pct==null?0:pct;
+  var r=42, c=2*Math.PI*r;
+  var col = p>=85? "#2b8f63" : p>=60? "#c98a12" : "#c0453f";
+  return '<svg width="104" height="104" viewBox="0 0 104 104">'
+    +'<circle cx="52" cy="52" r="'+r+'" fill="none" stroke="#eef2f6" stroke-width="11"/>'
+    +'<circle cx="52" cy="52" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="11" stroke-linecap="round"'
+    +' stroke-dasharray="'+(c*p/100).toFixed(1)+' '+c.toFixed(1)+'" transform="rotate(-90 52 52)"/></svg>';
+}
+
+function sheetHTML(rec){
+  var stu = studentByName(rec.studentName) || {};
+  var m = DB.meta||{};
+  var h='<div class="sheet" id="sheet">';
+  h+='<div class="hd">';
+  h+='<div class="k">'+esc(m.academy||"학습 리포트")+(m.teacher?" · 담당 "+esc(m.teacher)+"T":"")+'</div>';
+  h+='<div class="t">'+fmtKo(rec.date)+' 학습 리포트</div>';
+  h+='<div class="sub">'+esc(rec.type==="특강"?"방학특강":"정규수업")
+    +(rec.period && rec.period!=="미지정"? ' · '+esc(rec.period):'')
+    +' · '+esc(rec.attendance||"출석")+'</div>';
+  h+='</div>';
+
+  h+='<div class="nm"><span class="small muted">이름</span><b>'+esc(rec.studentName)+'</b>'
+    + (stu.grade? '<span class="chip">'+esc(stu.grade)+'</span>':'')
+    + (stu.school? '<span class="chip gray">'+esc(stu.school)+'</span>':'')
+    + '</div>';
+
+  /* 지난 과제 */
+  if(rec.prev && rec.prev.length){
+    var pr = rec.prevRate;
+    h+='<div class="blk"><div class="lab">지난 과제 수행</div>';
+    h+='<div class="donutwrap">';
+    h+='<div class="donut">'+donutSVG(pr)+'<div class="val"><b>'+(pr==null?"—":pr+"%")+'</b><span>'+esc(rateWord(pr))+'</span></div></div>';
+    h+='<div class="hwlist">';
+    rec.prev.forEach(function(p){
+      var v = p.rate==null? null : Number(p.rate);
+      h+='<div class="it"><div class="r1"><b>'+esc(p.book||"과제")+'</b><span class="'+(v==null?"muted":"")+'">'+(v==null?"확인 안 함":v+"%")+'</span></div>';
+      if(p.range) h+='<div class="small muted" style="margin:1px 0 4px">'+esc(p.range)+'</div>';
+      h+='<div class="meter"><i class="'+rateClass(v)+'" style="width:'+(v==null?0:v)+'%"></i></div></div>';
+    });
+    h+='</div></div>';
+    if(rec.prevComment) h+='<div class="small" style="margin-top:11px;color:var(--ink-2)">'+nl2br(rec.prevComment)+'</div>';
+    h+='</div>';
+  }
+
+  /* 진도 */
+  if(rec.progress && rec.progress.length){
+    h+='<div class="blk"><div class="lab">오늘 진도</div>';
+    rec.progress.forEach(function(p){
+      h+='<div class="line"><div class="bk">'+esc(p.book)+'</div><div>';
+      var pages = (p.pFrom||p.pTo)? ("p."+(p.pFrom||"")+"~"+(p.pTo||"")) : "";
+      h+='<div class="vl">'+esc(p.unit||"—")+'</div>';
+      if(pages) h+='<div class="small" style="margin-top:2px;color:var(--ink-2)"><b>'+esc(pages)+'</b></div>';
+      if(p.note) h+='<div class="small" style="margin-top:3px;color:var(--brand)">· '+esc(p.note)+'</div>';
+      var b=bookByName(p.book);
+      if(b && b.units.length && p.unitIdx!=null && p.unitIdx>=0){
+        var tot=b.units.length, cur=p.unitIdx;
+        var picked={};
+        (p.unitIdxs&&p.unitIdxs.length? p.unitIdxs : [cur]).forEach(function(x){ picked[x]=1; });
+        var nsel=Object.keys(picked).length;
+        var done={}, ndone;
+        if(p.doneIdxs && p.doneIdxs.length){
+          p.doneIdxs.forEach(function(x){ done[x]=1; });
+          ndone=p.doneIdxs.length;
+        }else{                                   // 예전 기록은 그때까지의 순서대로 봅니다
+          for(var k=0;k<=cur;k++) done[k]=1;
+          ndone=cur+1;
+        }
+        h+='<div class="pgrow"><div class="top"><span>교재 진행 '+ndone+' / '+tot+'단원'
+          +(nsel? " · 오늘 "+nsel+"단원":"")+'</span><span><b>'+(p.rate==null?"":p.rate+"%")+'</b></span></div>';
+        h+='<div class="segbar">';
+        for(var i=0;i<tot;i++) h+='<i class="'+(picked[i]?"cur":(done[i]?"f":""))+'"></i>';
+        h+='</div></div>';
+      }else if(p.rate!=null){
+        h+='<div class="pgrow"><div class="top"><span>교재 진행률</span><span><b>'+p.rate+'%</b></span></div><div class="meter"><i style="width:'+p.rate+'%"></i></div></div>';
+      }
+      h+='</div></div>';
+    });
+    h+='</div>';
+  }
+
+  /* 과제 */
+  if(rec.homework && rec.homework.length){
+    h+='<div class="blk"><div class="lab">다음 시간까지 과제</div>';
+    rec.homework.forEach(function(x){
+      h+='<div class="line"><div class="bk">'+esc(x.book)+'</div><div class="vl">'+esc(x.range||"—")+'</div></div>';
+    });
+    h+='</div>';
+  }
+
+  /* 태도 · 테스트 · 추이 */
+  var kv=[];
+  if(rec.attitude) kv.push(["수업 참여","★".repeat(rec.attitude)+"☆".repeat(5-rec.attitude)]);
+  if(rec.focus) kv.push(["집중도","★".repeat(rec.focus)+"☆".repeat(5-rec.focus)]);
+  if(rec.test && (rec.test.score!==""&&rec.test.score!=null)) kv.push([rec.test.name||"확인 테스트", rec.test.score+(rec.test.total?" / "+rec.test.total:"")]);
+  var trend = hwTrend(rec.studentName, rec.date, 8);
+  if(kv.length || trend.length>1){
+    h+='<div class="blk"><div class="lab">학습 태도와 과제 흐름</div>';
+    if(kv.length){
+      h+='<div class="kv">';
+      kv.forEach(function(k){ h+='<div class="b"><div class="k">'+esc(k[0])+'</div><div class="v">'+esc(k[1])+'</div></div>'; });
+      h+='</div>';
+    }
+    if(trend.length>1){
+      var avg=Math.round(trend.reduce(function(a,b){return a+b.v;},0)/trend.length);
+      h+='<div style="margin-top:'+(kv.length?"13px":"0")+'">';
+      h+='<div class="small muted" style="margin-bottom:5px">최근 '+trend.length+'회 과제 달성률 · 평균 '+avg+'%</div>';
+      h+='<div class="trend">';
+      trend.forEach(function(t){ h+='<div class="b" style="height:100%"><i style="height:'+Math.max(t.v,3)+'%"></i></div>'; });
+      h+='</div><div class="tiny muted" style="display:flex;justify-content:space-between;margin-top:3px"><span>'+fmtShort(trend[0].d)+'</span><span>'+fmtShort(trend[trend.length-1].d)+'</span></div>';
+      h+='</div>';
+    }
+    h+='</div>';
+  }
+
+  /* 리포팅 */
+  var closing = (DB.meta&&DB.meta.closing)||"";
+  if(rec.reporting || rec.next || closing){
+    h+='<div class="blk"><div class="lab">선생님 알림</div>';
+    if(rec.reporting) h+='<div class="note">'+nl2br(rec.reporting)+'</div>';
+    if(rec.next) h+='<div class="small" style="margin-top:9px"><b>다음 수업</b> · '+esc(rec.next)+'</div>';
+    if(closing) h+='<div class="small muted" style="margin-top:9px">'+nl2br(closing)+'</div>';
+    h+='</div>';
+  }
+
+  h+='<div class="ft"><span>'+esc(m.academy||"")+(m.phone?" · "+esc(m.phone):"")+'</span><span>담당 '+esc(m.teacher||"")+'T</span></div>';
+  h+='</div>';
+  return h;
+}
+
+function reportText(rec){
+  var L=[];
+  var m=DB.meta||{};
+  L.push("["+(m.academy||"학습 리포트")+"] "+fmtKo(rec.date));
+  L.push(rec.studentName+" 학생 · "+(rec.type==="특강"?"방학특강":"정규수업")
+    +(rec.period && rec.period!=="미지정"? " · "+rec.period:"")+" · "+(rec.attendance||"출석"));
+  L.push("");
+  if(rec.prev&&rec.prev.length){
+    L.push("◈ 지난 과제 달성률 : "+(rec.prevRate==null?"확인 중":rec.prevRate+"% ("+rateWord(rec.prevRate)+")"));
+    rec.prev.forEach(function(p){ L.push("  - "+(p.book||"")+" "+(p.range||"")+" → "+(p.rate==null?"미확인":p.rate+"%")); });
+    if(rec.prevComment) L.push("  "+rec.prevComment);
+    L.push("");
+  }
+  if(rec.progress&&rec.progress.length){
+    L.push("◈ 오늘 진도");
+    rec.progress.forEach(function(p){
+      var pg=(p.pFrom||p.pTo)? " / p."+(p.pFrom||"")+"~"+(p.pTo||"") : "";
+      var nt=p.note? " ("+p.note+")" : "";
+      L.push("  - "+p.book+" : "+(p.unit||"")+pg+nt+(p.rate!=null?"  [교재 "+p.rate+"%]":""));
+    });
+    L.push("");
+  }
+  if(rec.homework&&rec.homework.length){
+    L.push("◈ 과제");
+    rec.homework.forEach(function(x){ L.push("  - "+x.book+" : "+(x.range||"")); });
+    L.push("");
+  }
+  if(rec.test&&rec.test.score!=="" && rec.test.score!=null) L.push("◈ "+(rec.test.name||"테스트")+" : "+rec.test.score+(rec.test.total?"/"+rec.test.total:""));
+  if(rec.reporting){ L.push("◈ 알림"); L.push(rec.reporting); L.push(""); }
+  if(rec.next) L.push("◈ 다음 수업 : "+rec.next);
+  if(m.closing) L.push(m.closing);
+  if(m.teacher) L.push("- 담당 "+m.teacher+"T"+(m.phone?" ("+m.phone+")":""));
+  return L.join("\n");
+}
+
+/* ----- 모달 열기 ----- */
+function openReport(id, queue){
+  var rec = recById(id);
+  if(!rec){ toast("리포트를 찾을 수 없습니다"); return; }
+  reportQueue = queue || drafts.filter(function(d){return d.saved;}).map(function(d){return d.id;});
+  if(reportQueue.indexOf(id)<0) reportQueue=[id];
+  reportPos = reportQueue.indexOf(id);
+  $("#reportModal").classList.add("on");
+  document.body.style.overflow="hidden";
+  paintReport();
+}
+function fitSheet(reset){
+  var wrap=$(".reportwrap"), fit=$("#sheetFit"), sc=$("#sheetScale"), sh=$("#sheet");
+  if(!wrap||!fit||!sc||!sh) return 1;
+  if(reset){
+    sc.style.transform=""; fit.style.width=""; fit.style.height="";
+    return 1;
+  }
+  var avail=wrap.clientWidth-4;
+  if(avail<=40) return 1;                 // 모달이 아직 화면에 없으면 건너뜁니다
+  var k=Math.min(1,avail/720);
+  sc.style.transformOrigin="left top";
+  sc.style.transform = k<1? "scale("+k.toFixed(4)+")" : "";
+  fit.style.width  = k<1? Math.round(720*k)+"px" : "";
+  fit.style.height = k<1? Math.round(sh.offsetHeight*k)+"px" : "";
+  return k;
+}
+window.addEventListener("resize", function(){ if($("#reportModal").classList.contains("on")) fitSheet(); });
+
+function paintReport(){
+  var rec = recById(reportQueue[reportPos]);
+  if(!rec) return;
+  $("#sheetHost").innerHTML = '<div id="sheetFit"><div id="sheetScale" style="width:720px">'+sheetHTML(rec)+'</div></div>';
+  fitSheet();
+  $("#rmTitle").textContent = rec.studentName+" · "+fmtShort(rec.date);
+  $("#btnPrevStu").disabled = reportPos<=0;
+  $("#btnNextStu").disabled = reportPos>=reportQueue.length-1;
+  $("#btnPrevStu").style.display = reportQueue.length>1?"":"none";
+  $("#btnNextStu").style.display = reportQueue.length>1?"":"none";
+}
+function closeModals(){
+  $$(".modal").forEach(function(m){m.classList.remove("on");});
+  document.body.style.overflow="";
+}
+document.addEventListener("click", function(e){
+  if(e.target.matches("[data-close]") || e.target.closest("[data-close]")) closeModals();
+});
+document.addEventListener("keydown", function(e){
+  if(e.key==="Escape") closeModals();
+});
+$("#btnPrevStu").addEventListener("click",function(){ if(reportPos>0){reportPos--;paintReport();} });
+$("#btnNextStu").addEventListener("click",function(){ if(reportPos<reportQueue.length-1){reportPos++;paintReport();} });
+
+/* ----- 캡처 ----- */
+var h2cPromise=null;
+function loadH2C(){
+  if(window.html2canvas) return Promise.resolve(window.html2canvas);
+  if(h2cPromise) return h2cPromise;
+  h2cPromise = new Promise(function(res,rej){
+    var s=document.createElement("script");
+    s.src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+    s.onload=function(){ res(window.html2canvas); };
+    s.onerror=function(){ rej(new Error("no-network")); };
+    document.head.appendChild(s);
+    setTimeout(function(){ if(!window.html2canvas) rej(new Error("timeout")); },9000);
+  });
+  return h2cPromise;
+}
+function sheetToCanvas(){
+  return loadH2C().then(function(h2c){
+    fitSheet(true);                      // 캡처 중에는 원래 크기로 되돌립니다
+    var node=$("#sheet");
+    return h2c(node,{scale:2,backgroundColor:"#ffffff",useCORS:true,logging:false,
+      windowWidth:node.scrollWidth, width:node.offsetWidth, height:node.offsetHeight});
+  }).then(function(cv){ fitSheet(); return cv; },
+          function(err){ fitSheet(); throw err; });
+}
+function canvasToBlob(cv){
+  return new Promise(function(res){ cv.toBlob(function(b){res(b);},"image/png",0.95); });
+}
+function fileName(){
+  var rec=recById(reportQueue[reportPos]);
+  return (rec? rec.date.replace(/-/g,"")+"_"+rec.studentName.replace(/\s/g,"") : "report")+"_리포트.png";
+}
+function downloadBlob(blob,name){
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a"); a.href=url; a.download=name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){URL.revokeObjectURL(url);},4000);
+}
+function captureFail(e){
+  console.warn(e);
+  toast("이미지를 만들지 못했습니다. 인쇄(PDF 저장)나 글 복사를 이용하세요.");
+}
+$("#btnCapture").addEventListener("click", function(){
+  var btn=this; btn.disabled=true; btn.textContent="만드는 중…";
+  sheetToCanvas().then(canvasToBlob).then(function(b){
+    downloadBlob(b, fileName());
+    toast("이미지를 저장했습니다");
+  }).catch(captureFail).then(function(){ btn.disabled=false; btn.textContent="이미지로 저장"; });
+});
+$("#btnShare").addEventListener("click", function(){
+  var rec=recById(reportQueue[reportPos]);
+  var btn=this; btn.disabled=true; btn.textContent="준비 중…";
+  sheetToCanvas().then(canvasToBlob).then(function(b){
+    var file=new File([b], fileName(), {type:"image/png"});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      return navigator.share({files:[file], title:rec.studentName+" 학습 리포트",
+        text:rec.studentName+" 학생 "+fmtShort(rec.date)+" 학습 리포트입니다."});
+    }
+    downloadBlob(b, fileName());
+    toast("이 브라우저는 바로 보내기를 지원하지 않아 이미지를 저장했습니다");
+  }).catch(function(e){
+    if(e && e.name==="AbortError") return;
+    captureFail(e);
+  }).then(function(){ btn.disabled=false; btn.textContent="카톡·문자로 보내기"; });
+});
+$("#btnSms").addEventListener("click", function(){
+  var rec=recById(reportQueue[reportPos]);
+  var stu=studentByName(rec.studentName)||{};
+  var body=encodeURIComponent(reportText(rec));
+  var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  var href="sms:"+(stu.phone||"")+(isIOS?"&":"?")+"body="+body;
+  if(!stu.phone) toast("학생 관리에 학부모 연락처를 넣어두면 바로 열립니다");
+  window.location.href=href;
+});
+$("#btnCopyText").addEventListener("click", function(){
+  var rec=recById(reportQueue[reportPos]);
+  var t=reportText(rec);
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(function(){toast("리포트 내용을 복사했습니다");},function(){fallbackCopy(t);});
+  } else fallbackCopy(t);
+});
+function fallbackCopy(t){
+  var ta=document.createElement("textarea");
+  ta.value=t; ta.style.position="fixed"; ta.style.left="-9999px";
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); toast("복사했습니다"); }catch(e){ toast("복사에 실패했습니다"); }
+  ta.remove();
+}
+$("#btnPrint").addEventListener("click", function(){ window.print(); });
+/* =========================================================
+   데이터 보관 — 클라우드 동기화 폴더 / 데이터 파일에 직접 저장
+   브라우저 캐시를 지워도 폴더와 파일에는 그대로 남습니다.
+   ========================================================= */
+var DATA_NAME  = "데일리리포트_데이터.json";
+var BACKUP_DIR = "백업";
+var KEEP_SNAPS = 40;
+
+var dirHandle  = null;      // 연결한 폴더 (클라우드 동기화 폴더)
+var fileHandle = null;      // 실제로 기록하는 파일
+var fileLabel  = "";
+var dirLabel   = "";
+var fileWriteT = null;
+var lastMTime  = 0;
+var conflictOpen = false;
+var fsSupported = (typeof window.showSaveFilePicker === "function");
+var dirSupported = (typeof window.showDirectoryPicker === "function");
+var FS_TYPES = [{description:"데일리 리포트 데이터", accept:{"application/json":[".json"]}}];
+
+var lastFsError = null;
+
+function browserName(){
+  var ua=navigator.userAgent||"";
+  if(navigator.brave || /Brave/i.test(ua)) return "브레이브";
+  if(/Whale/i.test(ua)) return "네이버 웨일";
+  if(/Edg\//.test(ua)) return "마이크로소프트 엣지";
+  if(/OPR\//.test(ua)) return "오페라";
+  if(/SamsungBrowser/i.test(ua)) return "삼성 인터넷";
+  if(/FxiOS|Firefox\//.test(ua)) return "파이어폭스";
+  if(/CriOS/.test(ua)) return "크롬(아이폰)";
+  if(/Chrome\//.test(ua)) return "크롬";
+  if(/Safari\//.test(ua)) return "사파리";
+  return "알 수 없는 브라우저";
+}
+function idbUsable(){
+  try{ return typeof indexedDB!=="undefined" && !!indexedDB; }catch(e){ return false; }
+}
+function fsDiagnostics(){
+  return {
+    브라우저: browserName(),
+    주소: (location.protocol==="file:"? "file:// (내 컴퓨터에 저장된 파일)" : location.protocol+"//"+location.host),
+    보안컨텍스트: window.isSecureContext? "정상":"아님",
+    폴더연결: dirSupported? "사용 가능":"지원하지 않음",
+    파일저장: fsSupported? "사용 가능":"지원하지 않음",
+    연결기억: idbUsable()? "사용 가능":"사용 불가",
+    창: (window.self===window.top)? "일반 창":"iframe 안 (사용 불가)",
+    마지막오류: lastFsError || "없음"
+  };
+}
+function showFsError(e, where){
+  var name=(e && e.name)||"Error";
+  var msg=(e && e.message)||String(e);
+  lastFsError = where+" · "+name+": "+msg;
+  var d=fsDiagnostics();
+  var rows=Object.keys(d).map(function(k){
+    return '<div class="b" style="min-width:0"><div class="k">'+esc(k)+'</div><div class="v" style="font-size:12.5px;word-break:break-all">'+esc(String(d[k]))+'</div></div>';
+  }).join("");
+  var tip="";
+  if(!dirSupported){
+    tip='<b>'+esc(browserName())+'</b>에서는 폴더 연결을 쓸 수 없습니다. 폴더 연결은 <b>크롬</b>과 <b>마이크로소프트 엣지</b> 데스크톱에서만 동작합니다. 컴퓨터에서 크롬으로 이 파일을 열어 다시 시도해 주세요.';
+  }else if(name==="AbortError"){
+    tip='폴더를 고르지 않고 창을 닫았거나, 브라우저가 접근을 막는 폴더를 고르신 경우입니다. 바탕화면·다운로드·문서 폴더 안이나 <b>OneDrive · 내 드라이브 아래에 새 폴더를 하나 만들어</b> 그 폴더를 골라보세요. 드라이브 최상위 폴더는 거부될 수 있습니다.';
+  }else if(name==="SecurityError"){
+    if(inFrame() || /sub frame|iframe|cross origin/i.test(msg)){
+      tip='<b>이 파일이 다른 화면 안에 끼워진 상태로 열려 있습니다.</b> 채팅앱이나 클라우드의 미리보기 창에서 열면 이렇게 됩니다. '
+        +'크롬은 이런 화면에서 파일·폴더 선택창을 띄우지 못하게 막습니다.<br><br>'
+        +'HTML 파일을 컴퓨터에 <b>내려받은 뒤 더블클릭</b>해서 여세요. '
+        +'주소창이 <b>file:///…</b> 로 보이고 아래 “창”이 <b>일반 창</b>이면 정상입니다.';
+    }else{
+      tip='브라우저가 보안상의 이유로 막았습니다. 창을 새로 고친 뒤 버튼을 한 번만 눌러 보세요.';
+    }
+  }else if(name==="NotAllowedError"){
+    tip='폴더 접근 권한이 거부되었습니다. 브라우저가 띄운 권한 창에서 <b>허용</b>을 눌러야 합니다.';
+  }else{
+    tip='아래 내용을 그대로 알려주시면 원인을 더 정확히 찾을 수 있습니다.';
+  }
+  openDialog("폴더를 연결하지 못했습니다",
+    '<div class="small mb">'+tip+'</div>'
+    +'<div class="banner warn mb" style="display:flex"><span>⚠</span><div><b>'+esc(name)+'</b><div class="tiny" style="margin-top:2px;word-break:break-all">'+esc(msg)+'</div></div></div>'
+    +'<div class="kv" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">'+rows+'</div>',
+    [["파일 하나로 저장하기","primary",function(){ closeModals(); fsConnectNew(); }],
+     ["닫기","ghost",closeModals]]);
+  setFileStatus();
+}
+
+/* ---------- 앱(홈 화면) 설치 지원 ---------- */
+var installPrompt=null;
+function isStandalone(){
+  return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches)
+      || window.navigator.standalone===true;
+}
+function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1); }
+function registerSW(){
+  if(!("serviceWorker" in navigator)) return;
+  if(location.protocol!=="https:" && location.hostname!=="localhost" && location.hostname!=="127.0.0.1") return;
+  navigator.serviceWorker.register("sw.js").catch(function(e){ console.warn("sw",e); });
+}
+window.addEventListener("beforeinstallprompt", function(e){
+  e.preventDefault(); installPrompt=e;
+  var b=$("#btnInstall"); if(b) b.style.display="";
+});
+function doInstall(){
+  if(installPrompt){
+    installPrompt.prompt();
+    installPrompt.userChoice.then(function(){ installPrompt=null; var b=$("#btnInstall"); if(b) b.style.display="none"; });
+    return;
+  }
+  openDialog("홈 화면에 추가하기",
+    (isIOS()
+      ? '<div class="small" style="line-height:1.8">아이폰 · 아이패드에서는 <b>사파리</b>로 이 주소를 열고<br>'
+        +'1. 아래(또는 위) 공유 버튼 <b>⬆︎</b> 을 누릅니다<br>'
+        +'2. 목록에서 <b>홈 화면에 추가</b>를 고릅니다<br>'
+        +'3. 이름을 확인하고 <b>추가</b>를 누릅니다<br><br>'
+        +'홈 화면 아이콘으로 열면 주소창 없이 앱처럼 실행되고, 기록도 더 오래 보관됩니다.</div>'
+      : '<div class="small" style="line-height:1.8">안드로이드 크롬에서는 주소창 오른쪽 <b>⋮</b> 메뉴 → '
+        +'<b>앱 설치</b> 또는 <b>홈 화면에 추가</b>를 누르면 됩니다.<br><br>'
+        +'컴퓨터 크롬에서는 주소창 오른쪽의 설치 아이콘을 누르세요.</div>')
+    +'<div class="banner warn" style="display:flex;margin-top:12px"><span>ℹ</span><div>'
+    +(location.protocol==="file:"
+       ? '지금은 <b>내 컴퓨터의 파일</b>로 열려 있어 설치할 수 없습니다. 인터넷 주소(https://…)로 올린 뒤 그 주소에서 열어야 합니다.'
+       : '설치가 보이지 않으면 페이지를 새로 고친 뒤 다시 시도해 보세요.')
+    +'</div></div>',
+    [["닫기","ghost",closeModals]]);
+}
+
+/* ---------- 손잡이 보관 (IndexedDB) ---------- */
+function idbOpen(){
+  return new Promise(function(res,rej){
+    var r=indexedDB.open("dailyreport.fs",1);
+    r.onupgradeneeded=function(){ r.result.createObjectStore("kv"); };
+    r.onsuccess=function(){ res(r.result); };
+    r.onerror=function(){ rej(r.error); };
+  });
+}
+function idbPut(k,v){
+  return idbOpen().then(function(db){
+    return new Promise(function(res,rej){
+      var t=db.transaction("kv","readwrite");
+      t.objectStore("kv").put(v,k);
+      t.oncomplete=function(){ db.close(); res(); };
+      t.onerror=function(){ db.close(); rej(t.error); };
+    });
+  });
+}
+function idbGet(k){
+  return idbOpen().then(function(db){
+    return new Promise(function(res,rej){
+      var t=db.transaction("kv","readonly");
+      var q=t.objectStore("kv").get(k);
+      q.onsuccess=function(){ db.close(); res(q.result); };
+      q.onerror=function(){ db.close(); rej(q.error); };
+    });
+  });
+}
+function idbDel(k){
+  return idbOpen().then(function(db){
+    return new Promise(function(res){
+      var t=db.transaction("kv","readwrite");
+      t.objectStore("kv").delete(k);
+      t.oncomplete=function(){ db.close(); res(); };
+      t.onerror=function(){ db.close(); res(); };
+    });
+  });
+}
+
+/* ---------- 권한 ---------- */
+/* 선택창에서 readwrite 로 고른 폴더·파일은 이미 권한이 있습니다.
+   여기서 requestPermission 을 또 부르면, 사용자가 폴더를 고르는 사이
+   클릭 효력이 만료되어 크롬이 SecurityError 를 냅니다. 먼저 확인만 합니다. */
+function ensurePerm(handle){
+  return fsPerm(handle,false).then(function(p){
+    if(p==="granted") return "granted";
+    return fsPerm(handle,true).then(function(q){ return q; }, function(){ return "prompt"; });
+  }, function(){ return "prompt"; });
+}
+function fsPerm(handle, ask){
+  var o={mode:"readwrite"};
+  try{
+    if(!handle) return Promise.resolve("denied");
+    var fn = ask? handle.requestPermission : handle.queryPermission;
+    if(typeof fn!=="function") return Promise.resolve("granted");
+    return Promise.resolve(fn.call(handle,o));
+  }catch(e){ return Promise.resolve("denied"); }
+}
+
+/* ---------- 클라우드 폴더인지 짐작 ---------- */
+var CLOUD_WORDS = ["google drive","googledrive","내 드라이브","my drive","드라이브","onedrive","원드라이브",
+                   "dropbox","드롭박스","icloud","아이클라우드","naver","mybox","네이버","nextcloud","synology","box sync"];
+function looksCloud(name){
+  var n=String(name||"").toLowerCase();
+  for(var i=0;i<CLOUD_WORDS.length;i++) if(n.indexOf(CLOUD_WORDS[i])>=0) return true;
+  return false;
+}
+
+/* ---------- 읽기 / 쓰기 ---------- */
+function fsRead(){
+  if(!fileHandle) return Promise.resolve(null);
+  return fileHandle.getFile().then(function(f){
+    lastMTime = f.lastModified || Date.now();
+    return f.text();
+  }).then(function(t){
+    if(!t || !t.trim()) return null;
+    try{
+      var o=JSON.parse(t);
+      return (o && o.records && o.students)? o : null;
+    }catch(e){ return null; }
+  });
+}
+function doWrite(){
+  return fileHandle.createWritable().then(function(w){
+    return Promise.resolve(w.write(JSON.stringify(DB,null,1))).then(function(){ return w.close(); });
+  }).then(function(){
+    DB.meta.lastFileWrite=new Date().toISOString();
+    return fileHandle.getFile().then(function(f){ lastMTime=f.lastModified||Date.now(); },function(){ lastMTime=Date.now(); });
+  }).then(function(){
+    setFileStatus();
+    return maybeSnapshot();
+  }).then(function(){ return true; });
+}
+function fsWriteNow(force){
+  if(!fileHandle) return Promise.resolve(false);
+  return fsPerm(fileHandle,false).then(function(p){
+    if(p!=="granted"){ setFileStatus("권한 확인 필요"); return false; }
+    if(force || !lastMTime) return doWrite();
+    // 다른 기기에서 먼저 바뀐 파일을 덮어쓰지 않도록 확인
+    return fileHandle.getFile().then(function(f){
+      if(f.size>0 && f.lastModified > lastMTime+3000){ askConflict(); return false; }
+      return doWrite();
+    },function(){ return doWrite(); });
+  }).catch(function(e){
+    console.warn(e); setFileStatus("파일에 쓰지 못함");
+    return false;
+  });
+}
+function scheduleFileWrite(){
+  if(!fileHandle) return;
+  clearTimeout(fileWriteT);
+  fileWriteT=setTimeout(function(){ fsWriteNow(); }, 600);
+}
+function askConflict(){
+  if(conflictOpen) return;
+  conflictOpen=true;
+  setFileStatus("다른 기기의 수정 확인");
+  openDialog("다른 곳에서 이 파일이 바뀌었습니다",
+    '<div class="small mb">클라우드에서 내려받았거나 다른 기기에서 저장한 내용이 있습니다. 어느 쪽을 남길지 골라주세요.</div>'
+    +'<div class="kv"><div class="b"><div class="k">이 브라우저</div><div class="v">'+DB.records.length+'건</div></div></div>',
+    [["파일 내용 불러오기","primary",function(){ conflictOpen=false; closeModals(); fsSync(true); }],
+     ["내 기록으로 덮어쓰기","",function(){ conflictOpen=false; closeModals(); fsWriteNow(true).then(function(){ toast("파일에 저장했습니다"); }); }]]);
+}
+
+/* ---------- 날짜별 백업본 ---------- */
+function listNames(dir){
+  var out=[];
+  try{
+    var it=dir.keys();
+    var step=function(){
+      return it.next().then(function(r){
+        if(r.done) return out;
+        out.push(r.value); return step();
+      });
+    };
+    return step();
+  }catch(e){ return Promise.resolve(out); }
+}
+function maybeSnapshot(force){
+  if(!dirHandle) return Promise.resolve();
+  var today=todayISO();
+  if(!force && DB.meta.lastSnapshot===today) return Promise.resolve();
+  return dirHandle.getDirectoryHandle(BACKUP_DIR,{create:true}).then(function(bd){
+    return bd.getFileHandle("데일리리포트_"+today+".json",{create:true}).then(function(fh){
+      return fh.createWritable();
+    }).then(function(w){
+      return Promise.resolve(w.write(JSON.stringify(DB,null,1))).then(function(){ return w.close(); });
+    }).then(function(){
+      DB.meta.lastSnapshot=today;
+      DB.meta.lastBackup=new Date().toISOString();
+      rawSet(JSON.stringify(DB));
+      return prune(bd);
+    });
+  }).catch(function(e){ console.warn("백업본 저장 실패",e); });
+}
+function prune(bd){
+  return listNames(bd).then(function(names){
+    var snaps=names.filter(function(n){ return /^데일리리포트_\d{4}-\d{2}-\d{2}\.json$/.test(n); }).sort();
+    var extra=snaps.length-KEEP_SNAPS;
+    if(extra<=0) return;
+    var jobs=snaps.slice(0,extra).map(function(n){ return bd.removeEntry(n).catch(function(){}); });
+    return Promise.all(jobs);
+  }).catch(function(){});
+}
+function countSnaps(){
+  if(!dirHandle) return Promise.resolve(null);
+  return dirHandle.getDirectoryHandle(BACKUP_DIR,{create:false})
+    .then(listNames)
+    .then(function(names){ return names.filter(function(n){ return /\.json$/.test(n); }).length; })
+    .catch(function(){ return 0; });
+}
+
+/* ---------- 상태 표시 ---------- */
+function setFileStatus(msg){
+  var el=$("#saveState");
+  if(el){
+    if(msg){ el.textContent="⚠ "+msg; el.classList.remove("on"); }
+    else if(fileHandle){
+      el.textContent=(dirHandle? "폴더에 저장 중 · "+dirLabel : "파일에 저장 중 · "+(fileLabel||DATA_NAME));
+      el.classList.add("on");
+    }else{
+      el.textContent="브라우저에만 저장됨";
+      el.classList.remove("on");
+    }
+  }
+  updateFileBanner();
+}
+function updateFileBanner(){
+  var b=$("#fileBanner");
+  if(!b) return;
+  if(fileHandle){ b.style.display="none"; return; }
+  if(!fsSupported){
+    var last=DB.meta.lastBackup? DB.meta.lastBackup.slice(0,10) : null;
+    var stale=!last || (Date.now()-parseISO(last).getTime())/86400000>7;
+    if(DB.records.length && stale){
+      b.className="banner warn mb"; b.style.display="flex";
+      b.innerHTML='<span>⚠</span><div>이 브라우저는 파일 자동 저장을 지원하지 않습니다. 기록이 사라지지 않도록 <b>백업 파일을 주기적으로 내려받아</b> 주세요. '
+        +(last? '마지막 백업 '+last+'.':'아직 백업한 적이 없습니다.')
+        +' <button class="btn sm" data-fs="export" style="margin-left:6px">지금 백업받기</button>'
+        +' <span class="muted">컴퓨터에서 크롬이나 엣지로 열면 폴더에 자동 저장할 수 있습니다.</span></div>';
+    } else b.style.display="none";
+    return;
+  }
+  if(inFrame()){
+    b.className="banner warn mb"; b.style.display="flex";
+    b.innerHTML='<span>⚠</span><div>이 파일이 <b>다른 화면 안에 끼워진 상태</b>로 열려 있어, 폴더·파일 저장을 쓸 수 없습니다. '
+      +'HTML 파일을 컴퓨터에 내려받아 <b>더블클릭으로 열어</b> 주세요. 지금 입력한 내용은 이 브라우저에만 남습니다.'
+      +' <button class="btn sm" data-fs="diag" style="margin-left:6px">저장소 진단</button></div>';
+    return;
+  }
+  b.className="banner warn mb"; b.style.display="flex";
+  b.innerHTML='<span>⚠</span><div>지금은 <b>브라우저 저장소</b>에만 기록이 남습니다. 캐시를 지우면 함께 사라집니다. '
+    +'구글 드라이브나 원드라이브 동기화 폴더를 연결해 두면 저장할 때마다 그 폴더에 기록되고 클라우드에도 자동으로 올라갑니다.'
+    +(dirSupported? ' <button class="btn sm primary" data-fs="folder" style="margin-left:6px">클라우드 폴더 연결</button>':'')
+    +' <button class="btn sm" data-fs="new" style="margin-left:4px">파일만 만들기</button>'
+    +' <button class="btn sm ghost" data-fs="open">기존 파일 열기</button></div>';
+}
+function showReconnect(){
+  var b=$("#fileBanner"); if(!b) return;
+  b.className="banner warn mb"; b.style.display="flex";
+  b.innerHTML='<span>🔒</span><div>연결된 '+(dirHandle?'폴더':'파일')+' <b>'+esc(dirHandle?dirLabel:fileLabel)+'</b> 의 접근 권한을 다시 확인해 주세요. '
+    +'브라우저 보안 정책 때문에 창을 새로 열 때 한 번 눌러주셔야 합니다.'
+    +' <button class="btn sm primary" data-fs="grant" style="margin-left:6px">연결 확인</button>'
+    +' <button class="btn sm ghost" data-fs="forget">연결 끊기</button></div>';
+}
+
+/* ---------- 연결 ---------- */
+function rememberHandles(){
+  var jobs=[ idbPut("dir", dirHandle||null), idbPut("handle", dirHandle? null : fileHandle) ];
+  return Promise.all(jobs).catch(function(e){
+    console.warn(e);
+    toast("이번 창에서는 저장되지만, 다음에 열 때 다시 연결해 주셔야 합니다");
+  });
+}
+function fsConnectFolder(){
+  if(!dirSupported){ showFsError({name:"NotSupportedError",message:"이 브라우저에는 showDirectoryPicker 기능이 없습니다."},"폴더 연결"); return; }
+  if(inFrame()){ showFsError({name:"SecurityError",message:FRAME_MSG},"폴더 연결"); return; }
+  window.showDirectoryPicker({id:"dailyreport", mode:"readwrite", startIn:"documents"})
+    .then(function(d){
+      dirHandle=d; dirLabel=d.name;
+      return ensurePerm(d).then(function(){
+        return d.getFileHandle(DATA_NAME,{create:true});   // 권한이 없으면 여기서 오류가 납니다
+      });
+    })
+    .then(function(fh){ fileHandle=fh; fileLabel=fh.name; return rememberHandles(); })
+    .then(function(){ return fsSync(); })
+    .then(function(){
+      if(!looksCloud(dirLabel)){
+        toast("‘"+dirLabel+"’ 폴더에 연결했습니다");
+      }else{
+        toast("클라우드 폴더 ‘"+dirLabel+"’ 에 연결했습니다");
+      }
+    })
+    .catch(function(e){
+      if(e && e.name==="AbortError" && !dirHandle){ return; }   // 그냥 창을 닫은 경우
+      dirHandle=null; dirLabel=""; fileHandle=null; fileLabel="";
+      console.warn(e); showFsError(e,"폴더 연결");
+    });
+}
+function inFrame(){
+  try{ return window.self!==window.top; }catch(e){ return true; }
+}
+var FRAME_MSG="이 페이지가 다른 화면 안에 끼워진 상태(iframe)로 열려 있습니다. 크롬은 이런 화면에서 파일·폴더 선택창을 띄우지 못하게 막습니다.";
+function fsConnectNew(){
+  if(!fsSupported){ showFsError({name:"NotSupportedError",message:"이 브라우저에는 showSaveFilePicker 기능이 없습니다."},"파일 만들기"); return; }
+  if(inFrame()){ showFsError({name:"SecurityError",message:FRAME_MSG},"파일 만들기"); return; }
+  window.showSaveFilePicker({id:"dailyreport", suggestedName:DATA_NAME, types:FS_TYPES, startIn:"documents"})
+    .then(function(h){
+      dirHandle=null; dirLabel="";
+      fileHandle=h; fileLabel=h.name; lastMTime=0;
+      return fsWriteNow(true);
+    })
+    .then(function(){ return rememberHandles(); })
+    .then(function(){ setFileStatus(); renderSettings(); toast("이제 저장할 때마다 이 파일에 기록됩니다"); })
+    .catch(function(e){ if(e && e.name==="AbortError"){ return; } console.warn(e); showFsError(e,"파일 만들기"); });
+}
+function fsConnectExisting(){
+  if(!fsSupported){ toast("이 브라우저는 파일 저장을 지원하지 않습니다"); return; }
+  if(inFrame()){ showFsError({name:"SecurityError",message:FRAME_MSG},"파일 열기"); return; }
+  window.showOpenFilePicker({id:"dailyreport", types:FS_TYPES, multiple:false, startIn:"documents"})
+    .then(function(list){
+      var h=list[0];
+      dirHandle=null; dirLabel="";
+      fileHandle=h; fileLabel=h.name; lastMTime=0;
+      return ensurePerm(h).then(rememberHandles);
+    })
+    .then(function(){ return fsSync(); })
+    .catch(function(e){ if(e && e.name==="AbortError"){ return; } console.warn(e); showFsError(e,"파일 열기"); });
+}
+function fsForget(){
+  dirHandle=null; fileHandle=null; fileLabel=""; dirLabel=""; lastMTime=0;
+  idbDel("dir"); idbDel("handle");
+  setFileStatus(); renderSettings();
+  toast("연결을 끊었습니다. 지금부터는 브라우저에만 저장됩니다");
+}
+
+/* ---------- 파일 ↔ 브라우저 맞추기 ---------- */
+function fsSync(preferFile){
+  return fsRead().then(function(fileDB){
+    var localN=DB.records.length;
+    if(!fileDB){
+      return fsWriteNow(true).then(function(){ setFileStatus(); renderSettings(); toast("연결한 곳에 저장했습니다"); });
+    }
+    var fileN=fileDB.records.length;
+    if(!preferFile && localN>fileN && localN>0){
+      openDialog("어느 쪽 기록을 쓸까요?",
+        '<div class="small mb">두 곳의 기록 수가 다릅니다. 잘못 덮어쓰지 않도록 직접 골라주세요.</div>'
+        +'<div class="kv"><div class="b"><div class="k">연결한 파일</div><div class="v">'+fileN+'건</div></div>'
+        +'<div class="b"><div class="k">이 브라우저</div><div class="v">'+localN+'건</div></div></div>',
+        [["브라우저 기록을 저장","primary",function(){
+            closeModals(); fsWriteNow(true).then(function(){ setFileStatus(); renderSettings(); toast("저장했습니다"); });
+          }],
+         ["파일 기록 불러오기","",function(){
+            closeModals(); DB=fileDB; save(); boot(); toast("파일에서 불러왔습니다");
+          }]]);
+      return;
+    }
+    DB=fileDB; rawSet(JSON.stringify(DB)); boot();
+    setFileStatus(); renderSettings();
+    toast("연결한 곳에서 "+fileN+"건을 불러왔습니다");
+  }).catch(function(e){ console.warn(e); setFileStatus("파일을 읽지 못함"); });
+}
+
+/* ---------- 시작할 때 다시 연결 ---------- */
+var fsInited=false;
+function initFileStore(){
+  if(fsInited) return;
+  fsInited=true;
+  registerSW();
+  var ib=$("#btnInstall");
+  if(ib) ib.style.display = (isStandalone() || location.protocol==="file:")? "none" : "";
+  if(navigator.storage && navigator.storage.persist){
+    try{ navigator.storage.persist(); }catch(e){}
+  }
+  if(!fsSupported){ setFileStatus(); return; }
+  idbGet("dir").then(function(d){
+    if(d && typeof d.getFileHandle==="function"){
+      dirHandle=d; dirLabel=d.name||"연결한 폴더";
+      return fsPerm(d,false).then(function(p){
+        if(p!=="granted"){ setFileStatus(); showReconnect(); return; }
+        return d.getFileHandle(DATA_NAME,{create:true}).then(function(fh){
+          fileHandle=fh; fileLabel=fh.name; setFileStatus();
+          return fsSync();
+        });
+      });
+    }
+    return idbGet("handle").then(function(h){
+      if(!h){ setFileStatus(); return; }
+      if(typeof h.createWritable!=="function" || typeof h.getFile!=="function"){
+        idbDel("handle"); setFileStatus(); return;
+      }
+      fileHandle=h; fileLabel=h.name||DATA_NAME;
+      return fsPerm(h,false).then(function(p){
+        if(p!=="granted"){ setFileStatus(); showReconnect(); return; }
+        setFileStatus();
+        return fsSync();
+      });
+    });
+  }).catch(function(e){ console.warn(e); setFileStatus(); });
+}
+
+/* ---------- 버튼 ---------- */
+document.addEventListener("click", function(e){
+  var b=e.target.closest("[data-fs]"); if(!b) return;
+  var a=b.getAttribute("data-fs");
+  if(a==="folder") fsConnectFolder();
+  else if(a==="new") fsConnectNew();
+  else if(a==="open") fsConnectExisting();
+  else if(a==="forget") fsForget();
+  else if(a==="export") $("#btnExport").click();
+  else if(a==="install") doInstall();
+  else if(a==="diag"){
+    var d=fsDiagnostics();
+    var rows=Object.keys(d).map(function(k){
+      return '<div class="b" style="min-width:0"><div class="k">'+esc(k)+'</div><div class="v" style="font-size:12.5px;word-break:break-all">'+esc(String(d[k]))+'</div></div>';
+    }).join("");
+    openDialog("저장소 진단",
+      '<div class="small muted mb">폴더 연결이 안 될 때 이 내용을 확인해 주세요.</div>'
+      +'<div class="kv" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">'+rows+'</div>',
+      [["내용 복사","primary",function(){
+          fallbackCopy(Object.keys(d).map(function(k){return k+": "+d[k];}).join("\n"));
+        }],["닫기","ghost",closeModals]]);
+  }
+  else if(a==="snap"){
+    if(!dirHandle){ toast("폴더를 연결하면 날짜별 백업본이 쌓입니다"); return; }
+    maybeSnapshot(true).then(function(){ renderSettings(); toast("오늘 날짜로 백업본을 저장했습니다"); });
+  }
+  else if(a==="saveNow"){
+    if(!fileHandle){ (dirSupported? fsConnectFolder():fsConnectNew()); return; }
+    fsWriteNow().then(function(ok){ if(ok) toast("저장했습니다"); });
+  }
+  else if(a==="grant"){
+    var h=dirHandle||fileHandle;
+    fsPerm(h,true).then(function(p){
+      if(p!=="granted"){ toast("권한이 없어 저장할 수 없습니다"); return; }
+      $("#fileBanner").style.display="none";
+      if(dirHandle){
+        dirHandle.getFileHandle(DATA_NAME,{create:true}).then(function(fh){
+          fileHandle=fh; fileLabel=fh.name; setFileStatus(); fsSync();
+        });
+      }else{ setFileStatus(); fsSync(); }
+    });
+  }
+});
+$("#saveState").addEventListener("click", function(){
+  if(!fileHandle){ switchView("settings"); return; }
+  fsWriteNow().then(function(ok){ if(ok) toast("저장했습니다"); });
+});
+window.addEventListener("pagehide", function(){
+  if(fileHandle){ clearTimeout(fileWriteT); fsWriteNow(); }
+});
+/* =========================================================
+   기록 검색
+   ========================================================= */
+function runSearch(){
+  var from=$("#sFrom").value, to=$("#sTo").value;
+  var stu=$("#sStudent").value, bk=$("#sBook").value, pd=$("#sPeriod").value;
+  var q=$("#sQuery").value.trim().toLowerCase();
+  var list=DB.records.filter(function(r){
+    if(from && r.date<from) return false;
+    if(to && r.date>to) return false;
+    if(stu && r.studentName!==stu) return false;
+    if(pd && (r.period||"미지정")!==pd) return false;
+    if(bk){
+      var hit=(r.progress||[]).some(function(p){return p.book===bk;}) || (r.homework||[]).some(function(h){return h.book===bk;});
+      if(!hit) return false;
+    }
+    if(q){
+      var blob=[r.studentName,r.reporting,r.next,r.prevComment,
+        (r.progress||[]).map(function(p){return p.book+" "+p.unit;}).join(" "),
+        (r.homework||[]).map(function(h){return h.book+" "+h.range;}).join(" ")
+      ].join(" ").toLowerCase();
+      if(blob.indexOf(q)<0) return false;
+    }
+    return true;
+  }).sort(function(a,b){
+    if(a.date!==b.date) return a.date<b.date?1:-1;
+    var d=periodRank(a.period)-periodRank(b.period);
+    if(d) return d;
+    return cmpByName(a.studentName,b.studentName);
+  });
+
+  var host=$("#searchResult");
+  if(!list.length){
+    host.innerHTML='<div class="empty"><b>조건에 맞는 기록이 없습니다</b>날짜 범위를 넓히거나 검색어를 지워보세요.</div>';
+    return;
+  }
+  var byDate={};
+  list.forEach(function(r){ (byDate[r.date]=byDate[r.date]||[]).push(r); });
+  var dates=Object.keys(byDate).sort().reverse();
+  var h='<div class="pad spread" style="border-bottom:1px solid var(--line)"><b>'+list.length+'건</b>'
+    +'<span class="small muted">'+dates.length+'일치 · 클릭하면 리포트가 열립니다</span></div>';
+  dates.forEach(function(dt){
+    h+='<div class="pad" style="background:var(--wash);border-bottom:1px solid var(--line);font-weight:650;font-size:13px">'+fmtKo(dt)+' <span class="muted small">· '+byDate[dt].length+'명</span></div>';
+    h+='<div class="reclist">';
+    byDate[dt].forEach(function(r){
+      var prog=(r.progress||[]).map(function(p){return p.book+(p.unit?" "+p.unit:"");}).join(" / ")||"진도 기록 없음";
+      h+='<div class="rec" data-id="'+r.id+'">';
+      var st=studentByName(r.studentName)||{};
+      h+='<div><b>'+esc(r.studentName)+'</b>'+(st.grade? ' <span class="tiny muted">'+esc(st.grade)+'</span>':'')+'</div>';
+      h+='<div><span class="chip '+(r.type==="특강"?"brand":"gray")+'">'+esc(r.type)+'</span> '
+        + (r.period&&r.period!=="미지정"? '<span class="chip">'+esc(r.period)+'</span> ':'')
+        + (r.attendance&&r.attendance!=="출석"? '<span class="chip low">'+esc(r.attendance)+'</span>':'')+'</div>';
+      h+='<div class="small" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(prog)+'</div>'
+        + (r.reporting? '<div class="tiny muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.reporting.replace(/\n/g," "))+'</div>':'')+'</div>';
+      h+='<div class="row" style="gap:6px;flex-wrap:nowrap">'
+        + (r.prevRate!=null? '<span class="chip '+rateClass(r.prevRate)+'">과제 '+r.prevRate+'%</span>':'')
+        + '<button class="btn sm" data-act="open">리포트</button>'
+        + '<button class="btn sm ghost" data-act="edit">불러오기</button></div>';
+      h+='</div>';
+    });
+    h+='</div>';
+  });
+  host.innerHTML=h;
+  host.__list = list;
+}
+$("#searchResult").addEventListener("click", function(e){
+  var row=e.target.closest(".rec"); if(!row) return;
+  var id=row.getAttribute("data-id");
+  var act=e.target.closest("[data-act]");
+  if(act && act.getAttribute("data-act")==="edit"){
+    var r=recById(id);
+    curDate=r.date; curType=r.type;
+    $("#dDate").value=curDate;
+  $("#dPeriod").innerHTML=periodOptions(curPeriod);
+    $$('#dType button').forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-v")===curType); });
+    loadDay(); switchView("today"); toast(fmtShort(r.date)+" 수업을 불러왔습니다");
+    return;
+  }
+  var q=(this.__list||[]).map(function(r){return r.id;});
+  openReport(id,q);
+});
+$("#btnSearch").addEventListener("click", runSearch);
+$("#sQuery").addEventListener("keydown", function(e){ if(e.key==="Enter") runSearch(); });
+$("#btnSearchReset").addEventListener("click", function(){
+  $("#sFrom").value=""; $("#sTo").value=""; $("#sStudent").value=""; $("#sBook").value=""; $("#sPeriod").value=""; $("#sQuery").value="";
+  runSearch();
+});
+$("#searchQuick").addEventListener("click", function(e){
+  var b=e.target.closest("[data-q]"); if(!b) return;
+  var q=b.getAttribute("data-q"), t=todayISO();
+  if(q==="today"){ $("#sFrom").value=t; $("#sTo").value=t; }
+  else if(q==="week"){ $("#sFrom").value=shiftISO(t,-6); $("#sTo").value=t; }
+  else if(q==="month"){ $("#sFrom").value=shiftISO(t,-29); $("#sTo").value=t; }
+  else { $("#sFrom").value=""; $("#sTo").value=""; }
+  runSearch();
+});
+
+/* =========================================================
+   학생 현황
+   ========================================================= */
+function renderStats(){
+  var days=+$("#statRange").value;
+  var from = days>=9999? "0000-00-00" : shiftISO(todayISO(), -days);
+  var host=$("#statsBody");
+  var names={};
+  DB.records.forEach(function(r){ if(r.date>=from) (names[r.studentName]=names[r.studentName]||[]).push(r); });
+  var keys=Object.keys(names).sort(cmpByName);
+  if(!keys.length){ host.innerHTML='<div class="card"><div class="empty"><b>표시할 기록이 없습니다</b>수업을 입력하고 저장하면 여기에 쌓입니다.</div></div>'; return; }
+  var h='';
+  keys.forEach(function(nm){
+    var rs=names[nm].sort(function(a,b){return a.date<b.date?-1:1;});
+    var rates=rs.filter(function(r){return r.prevRate!=null;}).map(function(r){return r.prevRate;});
+    var avg=rates.length? Math.round(rates.reduce(function(a,b){return a+b;},0)/rates.length):null;
+    var absent=rs.filter(function(r){return r.attendance==="결석";}).length;
+    var books={};
+    rs.forEach(function(r){ (r.progress||[]).forEach(function(p){ if(p.book && p.rate!=null) books[p.book]=Math.max(books[p.book]||0,p.rate); }); });
+    h+='<div class="card mb"><div class="pad">';
+    var st=studentByName(nm)||{};
+    h+='<div class="spread"><div class="row"><b style="font-size:16px">'+esc(nm)+'</b>'
+      + (st.grade? '<span class="chip gray">'+esc(st.grade)+'</span>':'')
+      + '<span class="chip gray">'+rs.length+'회</span>'
+      + (avg!=null? '<span class="chip '+rateClass(avg)+'">과제 평균 '+avg+'%</span>':'')
+      + (absent? '<span class="chip low">결석 '+absent+'회</span>':'')
+      + '</div>'
+      + '<button class="btn sm" data-stu="'+esc(nm)+'">기록 보기</button></div>';
+    var bk=Object.keys(books);
+    if(bk.length){
+      h+='<div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px">';
+      bk.forEach(function(b){
+        h+='<div><div class="small" style="display:flex;justify-content:space-between"><span>'+esc(b)+'</span><b>'+books[b]+'%</b></div>'
+          +'<div class="meter" style="margin-top:3px"><i style="width:'+books[b]+'%"></i></div></div>';
+      });
+      h+='</div>';
+    }
+    if(rates.length>1){
+      h+='<div style="margin-top:12px"><div class="tiny muted mb">과제 달성률 추이</div><div class="trend">';
+      rs.filter(function(r){return r.prevRate!=null;}).slice(-14).forEach(function(r){
+        h+='<div class="b" style="height:44px" title="'+fmtShort(r.date)+' '+r.prevRate+'%"><i style="height:'+Math.max(r.prevRate,3)+'%"></i></div>';
+      });
+      h+='</div></div>';
+    }
+    h+='</div></div>';
+  });
+  host.innerHTML=h;
+}
+$("#statsBody").addEventListener("click", function(e){
+  var b=e.target.closest("[data-stu]"); if(!b) return;
+  $("#sStudent").value=b.getAttribute("data-stu");
+  $("#sFrom").value=""; $("#sTo").value="";
+  switchView("search"); runSearch();
+});
+$("#statRange").addEventListener("change", renderStats);
+
+/* =========================================================
+   학생 관리
+   ========================================================= */
+function renderStudents(){
+  sortStudents();
+  var t=$("#stuTable");
+  var h='<thead><tr><th style="width:110px">이름</th><th style="width:70px">학년</th><th>학교</th><th>학부모</th><th>연락처</th><th>메모</th><th style="width:130px"></th></tr></thead><tbody>';
+  DB.students.forEach(function(s){
+    h+='<tr data-id="'+s.id+'"'+(s.active===false?' style="opacity:.5"':'')+'>';
+    h+='<td><input type="text" data-f="name" value="'+esc(s.name)+'"></td>';
+    h+='<td><input type="text" data-f="grade" value="'+esc(s.grade||"")+'"></td>';
+    h+='<td><input type="text" data-f="school" value="'+esc(s.school||"")+'"></td>';
+    h+='<td><input type="text" data-f="parent" value="'+esc(s.parent||"")+'" placeholder="어머니"></td>';
+    h+='<td><input type="tel" data-f="phone" value="'+esc(s.phone||"")+'" placeholder="010-0000-0000"></td>';
+    h+='<td><input type="text" data-f="memo" value="'+esc(s.memo||"")+'"></td>';
+    h+='<td><button class="btn sm" data-act="toggleActive">'+(s.active===false?"복귀":"휴원")+'</button> '
+      +'<button class="btn sm ghost" data-act="del">삭제</button></td>';
+    h+='</tr>';
+  });
+  h+='</tbody>';
+  t.innerHTML=h;
+}
+$("#stuTable").addEventListener("input", function(e){
+  var f=e.target.getAttribute("data-f"); if(!f) return;
+  var tr=e.target.closest("tr"), id=tr.getAttribute("data-id");
+  DB.students.forEach(function(s){ if(s.id===id) s[f]=e.target.value; });
+  save(); refreshPickers();
+});
+$("#stuTable").addEventListener("click", function(e){
+  var a=e.target.closest("[data-act]"); if(!a) return;
+  var tr=e.target.closest("tr"), id=tr.getAttribute("data-id");
+  var s=DB.students.filter(function(x){return x.id===id;})[0];
+  if(a.getAttribute("data-act")==="toggleActive"){ s.active = s.active===false; save(); renderStudents(); refreshPickers(); }
+  else{
+    if(!confirm(s.name+" 학생을 명단에서 지울까요? (지난 수업 기록은 그대로 남습니다)")) return;
+    DB.students=DB.students.filter(function(x){return x.id!==id;});
+    save(); renderStudents(); refreshPickers();
+  }
+});
+$("#btnStuAdd").addEventListener("click", function(){
+  var s={id:uid(),name:"새 학생",grade:"",school:"",parent:"",phone:"",memo:"",active:true};
+  DB.students.push(s);
+  save(); renderStudents(); refreshPickers();
+  var row=$('#stuTable tr[data-id="'+s.id+'"] input');
+  if(row){ row.focus(); row.select(); row.scrollIntoView({block:"center"}); }
+});
+$("#btnStuImport").addEventListener("click", function(){
+  openDialog("엑셀에서 이름 붙여넣기",
+    '<div class="small muted mb">엑셀의 이름 칸을 복사해 그대로 붙여넣으세요. 한 줄에 한 명씩 인식합니다. "이름 탭 학년" 형태도 됩니다.</div>'
+    +'<textarea id="impNames" style="min-height:180px" placeholder="장주하&#9;중3&#10;김도현&#9;고1"></textarea>',
+    [["추가하기","primary",function(){
+      var lines=$("#impNames").value.split(/\r?\n/);
+      var n=0;
+      lines.forEach(function(ln){
+        var parts=ln.split(/\t|,/).map(function(x){return x.trim();});
+        var nm=parts[0];
+        if(!nm) return;
+        if(studentByName(nm)) return;
+        DB.students.push({id:uid(),name:nm,grade:parts[1]||"",school:"",parent:"",phone:"",memo:"",active:true});
+        n++;
+      });
+      save(); renderStudents(); refreshPickers(); closeModals(); toast(n+"명 추가했습니다");
+    }],["취소","ghost",closeModals]]);
+});
+
+/* =========================================================
+   교재 · 단원
+   ========================================================= */
+function renderBooks(){
+  var lv=$("#bookLevelFilter").value, q=$("#bookSearch").value.trim().toLowerCase();
+  var list=DB.books.filter(function(b){
+    if(lv && b.level!==lv) return false;
+    if(q && b.name.toLowerCase().indexOf(q)<0) return false;
+    return true;
+  });
+  var host=$("#bookList");
+  if(!list.length){ host.innerHTML='<div class="card"><div class="empty"><b>교재가 없습니다</b>오른쪽 위 “교재 추가”로 만들어 주세요.</div></div>'; return; }
+  var lvName={"초":"초등","중":"중등","고":"고등","특":"특강·기타"};
+  var h='';
+  list.forEach(function(b){
+    var used = DB.records.filter(function(r){
+      return (r.progress||[]).some(function(p){return p.book===b.name;});
+    }).length;
+    h+='<div class="card mb" data-id="'+b.id+'"><div class="pad">';
+    h+='<div class="spread">';
+    h+='<div class="row"><span class="chip brand">'+lvName[b.level]+'</span>'
+      +'<input type="text" data-f="name" value="'+esc(b.name)+'" style="width:220px;font-weight:650">'
+      +'<span class="chip '+(b.units.length?"good":"gray")+'">단원 '+b.units.length+'개</span>'
+      +(used? '<span class="chip gray">사용 '+used+'회</span>':'')+'</div>';
+    h+='<div class="row"><button class="btn sm" data-act="editUnits">단원 편집</button>'
+      +'<button class="btn sm ghost" data-act="dupBook">복제</button>'
+      +'<button class="btn sm ghost" data-act="delBook">삭제</button></div>';
+    h+='</div>';
+    if(b.units.length){
+      h+='<div class="row" style="margin-top:10px;gap:5px">';
+      b.units.forEach(function(u,i){ h+='<span class="chip gray" title="'+(i+1)+'/'+b.units.length+' · '+Math.round((i+1)/b.units.length*100)+'%">'+esc(u)+'</span>'; });
+      h+='</div>';
+    }else{
+      h+='<div class="small muted" style="margin-top:8px">단원을 등록하면 진도 달성률이 자동으로 계산됩니다.</div>';
+    }
+    h+='</div></div>';
+  });
+  host.innerHTML=h;
+}
+$("#bookList").addEventListener("input", function(e){
+  if(e.target.getAttribute("data-f")!=="name") return;
+  var id=e.target.closest("[data-id]").getAttribute("data-id");
+  DB.books.forEach(function(b){ if(b.id===id) b.name=e.target.value; });
+  save(); refreshPickers();
+});
+$("#bookList").addEventListener("click", function(e){
+  var a=e.target.closest("[data-act]"); if(!a) return;
+  var id=e.target.closest("[data-id]").getAttribute("data-id");
+  var b=DB.books.filter(function(x){return x.id===id;})[0];
+  var act=a.getAttribute("data-act");
+  if(act==="delBook"){
+    if(!confirm(b.name+" 교재를 지울까요?")) return;
+    DB.books=DB.books.filter(function(x){return x.id!==id;}); save(); renderBooks(); refreshPickers(); return;
+  }
+  if(act==="dupBook"){
+    DB.books.push({id:uid(),level:b.level,name:b.name+" (복사)",units:b.units.slice()});
+    save(); renderBooks(); refreshPickers(); return;
+  }
+  if(act==="editUnits"){
+    openDialog(b.name+" · 단원 편집",
+      '<div class="small muted mb">한 줄에 단원 하나씩 순서대로 적어주세요. 진도에서 어떤 단원을 골랐는지에 따라 달성률이 계산됩니다.</div>'
+      +'<textarea id="unitsTA" style="min-height:260px">'+esc(b.units.join("\n"))+'</textarea>',
+      [["저장","primary",function(){
+        b.units=$("#unitsTA").value.split(/\r?\n/).map(function(x){return x.trim();}).filter(Boolean);
+        b.edited=true;                       // 직접 고친 단원은 이후 업데이트에서 보호합니다
+        save(); renderBooks(); closeModals(); toast("단원 "+b.units.length+"개 저장");
+      }],["취소","ghost",closeModals]]);
+  }
+});
+$("#btnBookAdd").addEventListener("click", function(){
+  openDialog("교재 추가",
+    '<label class="f">과정</label><select id="nbLevel"><option value="고">고등</option><option value="중">중등</option><option value="초">초등</option><option value="특">특강·기타</option></select>'
+    +'<div class="mt"><label class="f">교재 이름</label><input type="text" id="nbName" placeholder="예: 개념쎈 3-2"></div>'
+    +'<div class="mt"><label class="f">단원 (한 줄에 하나)</label><textarea id="nbUnits" style="min-height:150px" placeholder="1.삼각비&#10;2.삼각비의 활용"></textarea></div>',
+    [["추가","primary",function(){
+      var nm=$("#nbName").value.trim();
+      if(!nm){ toast("교재 이름을 넣어주세요"); return; }
+      DB.books.push({id:uid(),level:$("#nbLevel").value,name:nm,
+        units:$("#nbUnits").value.split(/\r?\n/).map(function(x){return x.trim();}).filter(Boolean)});
+      save(); renderBooks(); refreshPickers(); closeModals(); toast("교재를 추가했습니다");
+    }],["취소","ghost",closeModals]]);
+});
+$("#bookLevelFilter").addEventListener("change", renderBooks);
+$("#bookSearch").addEventListener("input", renderBooks);
+
+/* =========================================================
+   설정 · 백업
+   ========================================================= */
+function renderSettings(){
+  $("#setTeacher").value=DB.meta.teacher||"";
+  $("#setAcademy").value=DB.meta.academy||"";
+  $("#setPhone").value=DB.meta.phone||"";
+  $("#setClosing").value=DB.meta.closing||"";
+  var ap=$("#appStat");
+  if(ap){
+    if(isStandalone()) ap.textContent="지금 홈 화면 앱으로 실행 중입니다.";
+    else if(location.protocol==="file:") ap.textContent="지금은 컴퓨터에 저장된 파일로 열려 있습니다. 휴대폰에서 쓰려면 인터넷 주소로 올려야 합니다.";
+    else ap.textContent="이 주소를 홈 화면에 추가하면 앱처럼 쓸 수 있습니다 · "+location.host;
+  }
+  var dates=DB.records.map(function(r){return r.date;}).sort();
+  var fs=$("#fsStatus");
+  if(fs){
+    if(fileHandle){
+      var where = dirHandle? ("폴더 <b>"+esc(dirLabel)+"</b> 안의 <b>"+esc(fileLabel)+"</b>")
+                           : ("파일 <b>"+esc(fileLabel)+"</b>");
+      fs.className="banner ok";
+      fs.innerHTML='<span>✓</span><div>'+where+' 에 자동 저장 중입니다.'
+        +(DB.meta.lastFileWrite? ' 마지막 기록 '+new Date(DB.meta.lastFileWrite).toLocaleString("ko-KR"):'')
+        +'<div class="tiny" id="snapInfo" style="margin-top:3px"></div>'
+        +'<div class="tiny muted" style="margin-top:3px">창을 새로 열면 브라우저가 한 번 권한을 물어볼 수 있습니다. 화면 위쪽 안내에서 “연결 확인”만 눌러주세요.</div></div>';
+      if(dirHandle){
+        countSnaps().then(function(n){
+          var el=$("#snapInfo"); if(!el) return;
+          el.innerHTML = (n? "날짜별 백업본 "+n+"개가 ‘"+esc(dirLabel)+" › "+esc(BACKUP_DIR)+"’ 에 있습니다."
+                            : "날짜별 백업본은 첫 저장 때 만들어집니다.")
+            + (looksCloud(dirLabel)? "" : " 이 폴더가 클라우드 동기화 폴더인지 한 번 확인해 주세요.");
+        });
+      }
+    }else if(!fsSupported){
+      fs.className="banner warn";
+      fs.innerHTML='<span>⚠</span><div>이 브라우저(사파리·파이어폭스·휴대폰)는 폴더·파일 자동 저장을 지원하지 않습니다. 아래 <b>백업 파일 내려받기</b>를 주기적으로 이용하시고, 컴퓨터에서는 크롬이나 엣지로 열어주세요.</div>';
+    }else{
+      fs.className="banner warn";
+      fs.innerHTML='<span>⚠</span><div>아직 저장할 폴더가 연결되지 않았습니다. 지금은 브라우저 저장소에만 기록이 남아, 캐시를 지우면 사라집니다.</div>';
+    }
+  }
+  $("#dbStat").textContent="학생 "+DB.students.length+"명 · 교재 "+DB.books.length+"종 · 수업 기록 "+DB.records.length+"건"
+    + (dates.length? " ("+dates[0]+" ~ "+dates[dates.length-1]+")" : "");
+}
+$("#btnSaveSettings").addEventListener("click", function(){
+  DB.meta.teacher=$("#setTeacher").value.trim();
+  DB.meta.academy=$("#setAcademy").value.trim();
+  DB.meta.phone=$("#setPhone").value.trim();
+  DB.meta.closing=$("#setClosing").value;
+  save(); $("#teacherName").textContent=DB.meta.teacher||"강사";
+  $("#brandSub").textContent=DB.meta.academy||"수학 학습보고";
+  toast("저장했습니다");
+});
+$("#teacherBtn").addEventListener("click", function(){ switchView("settings"); $("#setTeacher").focus(); });
+$("#btnExport").addEventListener("click", function(){
+  DB.meta.lastBackup=new Date().toISOString();
+  var name="데일리리포트_백업_"+todayISO()+".json";
+  var text=JSON.stringify(DB,null,1);
+  var blob=new Blob([text],{type:"application/json"});
+  save(); renderSettings();
+  try{
+    var f=new File([blob],name,{type:"application/json"});
+    if(navigator.canShare && navigator.canShare({files:[f]})){
+      navigator.share({files:[f], title:name}).then(function(){ toast("기록을 내보냈습니다"); },
+        function(e){ if(e && e.name!=="AbortError"){ downloadBlob(blob,name); } });
+      return;
+    }
+  }catch(e){}
+  downloadBlob(blob,name);
+  toast("백업 파일을 저장했습니다");
+});
+$("#btnImport").addEventListener("click", function(){ $("#fileImport").click(); });
+var bi2=$("#btnImport2");
+if(bi2) bi2.addEventListener("click", function(){ $("#fileImport").click(); });
+$("#fileImport").addEventListener("change", function(){
+  var f=this.files[0]; if(!f) return;
+  var fr=new FileReader();
+  fr.onload=function(){
+    try{
+      var obj=JSON.parse(fr.result);
+      if(!obj.records||!obj.students) throw new Error("형식 오류");
+      if(!confirm("현재 데이터를 덮어씁니다. 계속할까요?")) return;
+      DB=obj; save(); boot(); toast("백업을 불러왔습니다");
+    }catch(e){ alert("불러올 수 없는 파일입니다."); }
+  };
+  fr.readAsText(f); this.value="";
+});
+$("#btnCsv").addEventListener("click", function(){
+  var rows=[["날짜","요일","구분","교시","학생","학년","출결","지난과제달성률","진도교재","진도단원","교재달성률","과제교재","과제범위","테스트","리포팅"]];
+  DB.records.slice().sort(function(a,b){
+    if(a.date!==b.date) return a.date<b.date?-1:1;
+    var d=periodRank(a.period)-periodRank(b.period);
+    return d? d : cmpByName(a.studentName,b.studentName);
+  }).forEach(function(r){
+    var n=Math.max(1,(r.progress||[]).length,(r.homework||[]).length);
+    for(var i=0;i<n;i++){
+      var p=(r.progress||[])[i]||{}, h=(r.homework||[])[i]||{};
+      var stu=studentByName(r.studentName)||{};
+      rows.push([
+        i?"":r.date, i?"":DOW[parseISO(r.date).getDay()], i?"":r.type, i?"":(r.period||""),
+        i?"":r.studentName, i?"":(stu.grade||""), i?"":(r.attendance||""),
+        i?"":(r.prevRate==null?"":r.prevRate+"%"),
+        p.book||"", p.unit||"", (p.rate==null?"":p.rate+"%"),
+        h.book||"", h.range||"",
+        i?"":(r.test&&r.test.score!==""?((r.test.name||"")+" "+r.test.score+(r.test.total?"/"+r.test.total:"")):""),
+        i?"":(r.reporting||"").replace(/\n/g," / ")
+      ]);
+    }
+  });
+  var csv="\ufeff"+rows.map(function(r){
+    return r.map(function(c){ return '"'+String(c==null?"":c).replace(/"/g,'""')+'"'; }).join(",");
+  }).join("\r\n");
+  downloadBlob(new Blob([csv],{type:"text/csv;charset=utf-8"}),"수업기록_"+todayISO()+".csv");
+  toast("CSV로 내보냈습니다");
+});
+$("#btnResetRecords").addEventListener("click", function(){
+  if(!confirm("수업 기록을 모두 지웁니다. 되돌릴 수 없습니다. 계속할까요?")) return;
+  DB.records=[]; save(); boot(); toast("수업 기록을 지웠습니다");
+});
+$("#btnResetAll").addEventListener("click", function(){
+  if(!confirm("학생·교재·기록을 모두 지우고 처음 상태로 되돌립니다. 계속할까요?")) return;
+  DB=freshDB(); save(); boot(); toast("초기화했습니다");
+});
+
+/* =========================================================
+   공용 다이얼로그
+   ========================================================= */
+function openDialog(title, bodyHTML, buttons){
+  $("#dlgTitle").textContent=title;
+  $("#dlgBody").innerHTML=bodyHTML;
+  var foot=$("#dlgFoot"); foot.innerHTML="";
+  (buttons||[]).forEach(function(b){
+    var el=document.createElement("button");
+    el.className="btn "+(b[1]||""); el.textContent=b[0];
+    el.addEventListener("click", b[2]);
+    foot.appendChild(el);
+  });
+  $("#dlg").classList.add("on");
+  document.body.style.overflow="hidden";
+}
+
+/* =========================================================
+   뷰 전환 · 초기화
+   ========================================================= */
+function switchView(v){
+  $$("nav.tabs button").forEach(function(b){ b.setAttribute("aria-selected", b.getAttribute("data-view")===v); });
+  $$(".view").forEach(function(s){ s.classList.toggle("on", s.id==="view-"+v); });
+  if(v==="students") renderStudents();
+  if(v==="books") renderBooks();
+  if(v==="stats") renderStats();
+  if(v==="settings") renderSettings();
+  if(v==="search" && !$("#searchResult").innerHTML) runSearch();
+  $("#stickybar").style.display = (v==="today" && drafts.length)? "flex":"none";
+  window.scrollTo(0,0);
+}
+$$("nav.tabs button").forEach(function(b){
+  b.addEventListener("click", function(){ switchView(b.getAttribute("data-view")); });
+});
+document.addEventListener("click", function(e){
+  var g=e.target.closest("[data-goto]");
+  if(g){ e.preventDefault(); switchView(g.getAttribute("data-goto")); }
+});
+
+function refreshPickers(){
+  var sorted=DB.students.slice().sort(cmpStudent);
+  $("#sStudent").innerHTML='<option value="">전체 학생</option>'+sorted.map(function(s){
+    return '<option value="'+esc(s.name)+'">'+esc(s.name)+(s.grade?" ("+esc(s.grade)+")":"")+'</option>';
+  }).join("");
+  $("#sPeriod").innerHTML='<option value="">전체 교시</option>'+PERIODS.map(function(p){
+    return '<option value="'+p+'">'+p+'</option>';
+  }).join("");
+  $("#sBook").innerHTML='<option value="">전체 교재</option>'+DB.books.map(function(b){
+    return '<option value="'+esc(b.name)+'">'+esc(b.name)+'</option>';
+  }).join("");
+}
+
+/* ---------- 학생 다중 선택 ---------- */
+function studentPickerHTML(){
+  var list=DB.students.filter(function(s){return s.active!==false;}).sort(cmpStudent);
+  var already={};
+  drafts.forEach(function(d){ already[d.studentId]=d.period; });
+  var h='<div class="row mb">'
+    +'<div style="flex:1;min-width:118px"><label class="f">추가할 교시</label><select id="pickPeriod">'+periodOptions(curPeriod)+'</select></div>'
+    +'<div style="flex:2;min-width:150px"><label class="f">이름 · 학년 검색</label><input type="text" id="pickSearch" placeholder="예: 고1, 장주하"></div>'
+    +'</div>';
+  h+='<div class="row mb"><button class="btn sm" data-pick="all">전체 선택</button>'
+    +'<button class="btn sm" data-pick="none">선택 해제</button>'
+    +'<span style="flex:1"></span><span class="small muted" id="pickCount">0명 선택</span></div>';
+  if(!list.length){
+    return h+'<div class="empty"><b>등록된 학생이 없습니다</b>학생 관리에서 먼저 명단을 만들어 주세요.</div>';
+  }
+  h+='<div class="card" id="pickList" style="max-height:44vh;overflow:auto">';
+  var lastG=null;
+  list.forEach(function(s){
+    var g=s.grade||"학년 미입력";
+    if(g!==lastG){ h+='<div class="pickgrp">'+esc(g)+'</div>'; lastG=g; }
+    var added=already[s.id];
+    h+='<label class="pickrow'+(added?" on":"")+'" data-q="'+esc((s.name+" "+(s.grade||"")+" "+(s.school||"")).toLowerCase())+'">'
+      +'<input type="checkbox" value="'+esc(s.id)+'"'+(added?" disabled":"")+'>'
+      +'<b>'+esc(s.name)+'</b>'
+      +(added? '<span class="chip good">'+esc(added)+' 추가됨</span>':'')
+      +'</label>';
+  });
+  h+='</div>';
+  return h;
+}
+function pickCount(){
+  var n=$$('#pickList input:checked').length;
+  var el=$("#pickCount"); if(el) el.textContent=n+"명 선택";
+}
+function openStudentPicker(){
+  openDialog("학생 불러오기", studentPickerHTML(), [
+    ["추가하기","primary",function(){
+      var period=$("#pickPeriod").value;
+      var ids=$$('#pickList input:checked').map(function(c){ return c.value; });
+      if(!ids.length){ toast("추가할 학생을 골라주세요"); return; }
+      var n=0;
+      ids.forEach(function(id){
+        var stu=DB.students.filter(function(s){return s.id===id;})[0];
+        if(!stu) return;
+        if(drafts.some(function(d){return d.studentId===stu.id;})) return;
+        drafts.push(newDraft(stu, period));
+        n++;
+      });
+      curPeriod=period; $("#dPeriod").value=period;
+      closeModals(); renderEntries();
+      toast(n+"명을 "+period+"에 추가했습니다");
+    }],
+    ["취소","ghost",closeModals]
+  ]);
+  var body=$("#dlgBody");
+  body.addEventListener("input", function(e){
+    if(e.target.id==="pickSearch"){
+      var q=e.target.value.trim().toLowerCase();
+      $$(".pickrow",body).forEach(function(r){
+        r.style.display = (!q || r.getAttribute("data-q").indexOf(q)>=0)? "":"none";
+      });
+      $$(".pickgrp",body).forEach(function(g){
+        var vis=false, n=g.nextElementSibling;
+        while(n && n.classList.contains("pickrow")){ if(n.style.display!=="none") vis=true; n=n.nextElementSibling; }
+        g.style.display = vis? "":"none";
+      });
+    }
+    if(e.target.type==="checkbox") pickCount();
+  });
+  body.addEventListener("click", function(e){
+    var b=e.target.closest("[data-pick]"); if(!b) return;
+    var on=b.getAttribute("data-pick")==="all";
+    $$('#pickList input:not([disabled])',body).forEach(function(c){
+      if(c.closest(".pickrow").style.display!=="none") c.checked=on;
+    });
+    pickCount();
+  });
+  var s=$("#pickSearch"); if(s) setTimeout(function(){ s.focus(); },80);
+}
+$("#btnPick").addEventListener("click", openStudentPicker);
+$("#dPeriod").addEventListener("change", function(){ curPeriod=this.value; });
+$("#btnAddAll").addEventListener("click", function(){
+  var dow=parseISO(curDate).getDay();
+  // 같은 요일에 수업한 이력이 있는 학생을 자동으로 모읍니다.
+  var seen={};
+  DB.records.forEach(function(r){
+    if(r.type!==curType) return;
+    if(parseISO(r.date).getDay()!==dow) return;
+    seen[r.studentName]=(seen[r.studentName]||0)+1;
+  });
+  var names=Object.keys(seen).sort(function(a,b){return seen[b]-seen[a];});
+  if(!names.length){ toast("이 요일 수업 이력이 아직 없습니다. 학생을 직접 골라주세요."); return; }
+  var added=0;
+  names.forEach(function(nm){
+    var stu=studentByName(nm); if(!stu || stu.active===false) return;
+    if(drafts.some(function(d){return d.studentId===stu.id;})) return;
+    drafts.push(newDraft(stu, curPeriod)); added++;
+  });
+  renderEntries();
+  toast(added? added+"명 추가했습니다":"추가할 학생이 없습니다");
+});
+$("#btnCarry").addEventListener("click", function(){
+  var n=0;
+  drafts.forEach(function(d){
+    var p=prevRecord(d.studentName, curDate, d.id);
+    if(!p) return;
+    if(p.progress&&p.progress.length){
+      d.progress=p.progress.map(function(x){return {book:x.book,unit:"",unitIdx:x.unitIdx,rate:x.rate,auto:true};});
+    }
+    if(!d.prev.length && p.homework && p.homework.length){
+      d.prevDate=p.date;
+      d.prev=p.homework.map(function(h){return {book:h.book,range:h.range,rate:null};});
+    }
+    n++;
+  });
+  renderEntries();
+  toast(n? n+"명의 지난 진도를 불러왔습니다":"불러올 지난 기록이 없습니다");
+});
+$("#dDate").addEventListener("change", function(){ curDate=this.value||todayISO(); loadDay(); });
+$("#dType").addEventListener("click", function(e){
+  var b=e.target.closest("button[data-v]"); if(!b) return;
+  curType=b.getAttribute("data-v");
+  $$("button",this).forEach(function(x){ x.setAttribute("aria-pressed", x===b); });
+  loadDay();
+});
+
+function boot(){
+  if(!storeOK) showStoreWarn();
+  $("#teacherName").textContent=DB.meta.teacher||"강사";
+  $("#brandSub").textContent=DB.meta.academy||"수학 학습보고";
+  $("#dDate").value=curDate;
+  $("#dPeriod").innerHTML=periodOptions(curPeriod);
+  $("#saveState").textContent="자동 저장 켜짐";
+  refreshPickers();
+  loadDay();
+  renderSettings();
+  initFileStore();
+  if(window.__bookUpdate){
+    var u=window.__bookUpdate; window.__bookUpdate=null;
+    setTimeout(function(){
+      toast("교재 목록을 2022 개정 기준으로 정리했습니다 (추가 "+u.added+" · 단원 갱신 "+u.updated+" · 정리 "+u.removed+")");
+    },900);
+  }
+}
+
+load();
+boot();
+window.addEventListener("beforeunload", function(e){
+  if(drafts.some(function(d){return !d.saved;})){
+    e.preventDefault(); e.returnValue="";
+  }
+});
+
+})();
+
+</script>
+</body>
+</html>
