@@ -70,6 +70,8 @@ a{color:var(--brand)}
 }
 .savestate{font-size:12px;color:#9fb2c6;white-space:nowrap;background:none;border:0;padding:4px 6px;border-radius:7px}
 .savestate:hover{background:rgba(255,255,255,.12);color:#fff}
+#syncState{color:#9fb2c6}
+#syncState.on{color:#7fd6a8}
 .savestate.on{color:#7fd6a8}
 
 nav.tabs{
@@ -266,7 +268,8 @@ textarea.mini{height:auto;min-height:50px;padding:6px 8px;font-size:12.5px;line-
   .topbar .mark b{font-size:15px;white-space:nowrap}
   .topbar .mark span{display:none}
   .topbar .teacher{padding:5px 10px;font-size:11.5px;white-space:nowrap}
-  .savestate{font-size:11px;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .savestate{font-size:11px;max-width:82px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #saveState{display:none}
   nav.tabs{top:40px}
   nav.tabs button{padding:11px 11px 9px;font-size:13px}
   main{padding:12px 12px calc(112px + env(safe-area-inset-bottom))}
@@ -456,6 +459,7 @@ table.tbl tr:hover td{background:#fafbfc}
   <div class="grow"></div>
   <button class="teacher" id="btnInstall" data-fs="install" style="display:none">앱으로 설치</button>
   <button class="teacher" id="teacherBtn">담당 · <span id="teacherName">홍재화</span>T</button>
+  <button class="savestate" id="syncState" data-sy="now" title="눌러서 지금 기기 간 기록 맞추기" style="display:none"></button>
   <button class="savestate" id="saveState" title="눌러서 지금 파일에 저장">불러오는 중</button>
 </div>
 
@@ -2566,7 +2570,10 @@ var syncCfg   = {repo:"", path:"데일리리포트_데이터.json", auto:true};
 var syncSha   = null;
 var syncBusy  = false;
 var syncT     = null;
+var syncPoll  = null;
 var syncMsg   = "";
+var syncDirty = false;          // 올릴 내용이 남아 있는지
+var SYNC_POLL_MS = 45000;       // 열어둔 채로도 45초마다 확인
 
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
 function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
@@ -2683,60 +2690,130 @@ function mergeDB(local, remote){
   return out;
 }
 
+/* 기기마다 기본 명단이 따로 만들어져 같은 이름이 겹칠 수 있어 정리합니다 */
+function dedupeDB(db){
+  var used={};
+  (db.records||[]).forEach(function(r){
+    if(r.studentId) used[r.studentId]=(used[r.studentId]||0)+1;
+  });
+  function score(x, kind){
+    var s=0;
+    if(kind==="student"){
+      if(used[x.id]) s+=100+used[x.id];
+      ["grade","school","parent","phone","memo"].forEach(function(k){ if(x[k]) s+=1; });
+    }else{
+      s+=(x.units||[]).length;
+      if(x.edited) s+=50;
+    }
+    return s;
+  }
+  function pick(arr, kind){
+    var byName={};
+    (arr||[]).forEach(function(x){
+      if(!x || !x.name) return;
+      var k=String(x.name).replace(/\s/g,"");
+      var ex=byName[k];
+      if(!ex){ byName[k]=x; return; }
+      byName[k] = score(x,kind) > score(ex,kind) ? x : ex;
+    });
+    return Object.keys(byName).map(function(k){ return byName[k]; });
+  }
+  var before=(db.students||[]).length;
+  db.students=pick(db.students,"student");
+  db.books=pick(db.books,"book");
+  // 사라진 학생을 가리키는 기록은 남은 같은 이름 학생에 이어 붙입니다
+  var idByName={};
+  db.students.forEach(function(s){ idByName[String(s.name).replace(/\s/g,"")]=s.id; });
+  (db.records||[]).forEach(function(r){
+    var id=idByName[String(r.studentName||"").replace(/\s/g,"")];
+    if(id) r.studentId=id;
+  });
+  return before-(db.students||[]).length;
+}
+
 /* ---------- 동기화 ---------- */
 function setSyncMsg(m){ syncMsg=m; if($("#view-settings").classList.contains("on")) renderSyncBox(); }
 
-function syncNow(silent){
+function syncNow(silent, force){
   if(!syncOn()) return Promise.resolve(false);
   if(syncBusy) return Promise.resolve(false);
-  syncBusy=true; setSyncMsg("맞추는 중…");
-  var before=null;
+  if(!navigator.onLine){ setSyncMsg("인터넷에 연결되면 자동으로 맞춥니다"); return Promise.resolve(false); }
+  syncBusy=true; setSyncStatus("맞추는 중…");
+
+  var prevSha=syncSha, pulled=false, before=null;
   return ghRead().then(function(remote){
-    if(remote && remote.records && remote.students){
+    var remoteChanged = (prevSha===null) || (syncSha!==prevSha);
+    if(remote && remote.records && remote.students && remoteChanged){
       before=JSON.stringify({r:DB.records,s:DB.students,b:DB.books});
-      DB=mergeDB(DB, remote);
+      var firstTime = !lsGet(BASE_KEY);
+      if(firstTime && !DB.records.length){
+        DB=remote;                       // 갓 설치한 기기: 보관함 내용을 그대로 씁니다
+      }else{
+        DB=mergeDB(DB, remote);
+      }
+      dedupeDB(DB);
       rawSet(JSON.stringify(DB));
+      pulled = before!==JSON.stringify({r:DB.records,s:DB.students,b:DB.books});
     }
+    if(!syncDirty && !pulled && !force){ return "skip"; }   // 올릴 것도 받을 것도 없음
     DB.meta.updatedAt=new Date().toISOString();
     return ghWrite(DB).then(function(r){
       if(r==="conflict"){                    // 그 사이 다른 기기가 올렸을 때
         return ghRead().then(function(again){
-          if(again) { DB=mergeDB(DB, again); rawSet(JSON.stringify(DB)); }
+          if(again){ DB=mergeDB(DB, again); dedupeDB(DB); rawSet(JSON.stringify(DB)); pulled=true; }
           return ghWrite(DB);
         });
       }
       return r;
     });
-  }).then(function(){
-    saveBase(DB);
-    DB.meta.syncedAt=new Date().toISOString();
-    rawSet(JSON.stringify(DB));
-    scheduleFileWrite();
+  }).then(function(res){
     syncBusy=false;
-    setSyncMsg("");
-    var changed = before!==null && before!==JSON.stringify({r:DB.records,s:DB.students,b:DB.books});
-    var unsaved = (typeof drafts!=="undefined") && drafts.some(function(d){ return !d.saved; });
-    if(changed && !unsaved){
-      boot();                                  // 화면을 새 기록으로 다시 그립니다
-      if(silent) toast("다른 기기의 기록을 가져왔습니다");
-    }else{
-      refreshPickers(); renderSettings();      // 입력 중이면 화면은 건드리지 않습니다
-      if(changed && silent) toast("다른 기기의 기록을 가져왔습니다. 저장 후 화면을 새로 고쳐 주세요");
+    if(res!=="skip"){
+      syncDirty=false;
+      saveBase(DB);
+      DB.meta.syncedAt=new Date().toISOString();
+      rawSet(JSON.stringify(DB));
+      scheduleFileWrite();
     }
-    if(!silent) toast("기기 간 기록을 맞췄습니다");
+    setSyncMsg("");
+    if(pulled){
+      var unsaved=(typeof drafts!=="undefined") && drafts.some(function(d){ return !d.saved; });
+      if(!unsaved){ boot(); toast("다른 기기의 기록을 가져왔습니다"); }
+      else { refreshPickers(); renderSettings(); toast("다른 기기의 기록이 도착했습니다. 저장 후 새로 고쳐 주세요"); }
+    }else{
+      setSyncStatus("");
+      if(!silent) toast(res==="skip"? "이미 최신입니다" : "기기 간 기록을 맞췄습니다");
+    }
     return true;
   }).catch(function(e){
     syncBusy=false;
     console.warn(e);
     setSyncMsg(e.message||"동기화하지 못했습니다");
+    setSyncStatus("연결 확인 필요");
     if(!silent) toast(e.message||"동기화하지 못했습니다");
     return false;
   });
 }
 function scheduleSync(){
+  syncDirty=true;
   if(!syncOn() || !syncCfg.auto) return;
+  setSyncStatus("보낼 내용 있음");
   clearTimeout(syncT);
-  syncT=setTimeout(function(){ syncNow(true); }, 4000);
+  syncT=setTimeout(function(){ syncNow(true); }, 3000);
+}
+function flushSync(){
+  if(syncOn() && syncDirty){ clearTimeout(syncT); syncNow(true); }
+}
+
+/* 화면 위쪽 동기화 표시 */
+function setSyncStatus(msg){
+  var el=$("#syncState"); if(!el) return;
+  if(!syncOn()){ el.style.display="none"; return; }
+  el.style.display="";
+  if(msg){ el.textContent="⟳ "+msg; el.classList.remove("on"); return; }
+  var t=DB.meta && DB.meta.syncedAt? new Date(DB.meta.syncedAt) : null;
+  el.textContent = "⟳ " + (t? t.toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"})+" 맞춤" : "연결됨");
+  el.classList.add("on");
 }
 
 var syncInited=false;
@@ -2744,12 +2821,27 @@ function initSync(){
   if(syncInited) return;
   syncInited=true;
   loadSyncCfg();
-  if(!syncOn()) return;
-  syncNow(true);
+
   document.addEventListener("visibilitychange", function(){
-    if(!document.hidden && syncCfg.auto) syncNow(true);
+    if(document.hidden){ flushSync(); return; }      // 화면을 벗어날 때 남은 것 올리기
+    if(syncCfg.auto) syncNow(true);                  // 돌아오면 곧바로 확인
   });
+  window.addEventListener("pagehide", flushSync);
   window.addEventListener("online", function(){ if(syncCfg.auto) syncNow(true); });
+  window.addEventListener("focus", function(){ if(syncCfg.auto) syncNow(true); });
+
+  clearInterval(syncPoll);
+  syncPoll=setInterval(function(){                   // 열어둔 채로도 주기적으로 확인
+    if(document.hidden || !syncCfg.auto || !syncOn()) return;
+    syncNow(true);
+  }, SYNC_POLL_MS);
+
+  setSyncStatus("");
+  if(syncOn()) syncNow(true);
+}
+function startSyncAfterConnect(){                    // 연결 직후에도 감시가 돌도록
+  setSyncStatus("");
+  if(!syncPoll) initSync();
 }
 
 /* ---------- 설정 화면 ---------- */
@@ -2780,6 +2872,7 @@ function renderSyncBox(){
     +'<button class="btn" data-sy="now"'+(on?"":" disabled")+'>지금 맞추기</button>'
     +'<label class="row small" style="gap:6px;margin-left:6px"><input type="checkbox" id="syncAuto"'+(syncCfg.auto?" checked":"")+' style="width:16px;height:16px;accent-color:var(--brand)"> 자동으로 맞추기</label>'
     +'<span style="flex:1"></span>'
+    +'<button class="btn ghost" data-sy="dedupe">겹친 학생 · 교재 정리</button>'
     +'<button class="btn ghost danger" data-sy="off"'+(on?"":" disabled")+'>연결 끊기</button>'
     +'</div>';
   box.innerHTML=h;
@@ -2797,15 +2890,21 @@ document.addEventListener("click", function(e){
     if(!syncToken()){ toast("접근 토큰을 넣어주세요"); return; }
     syncCfg.repo=repo; saveSyncCfg(); syncSha=null;
     setSyncMsg("연결을 확인하는 중…");
-    syncNow().then(function(ok){ if(ok) renderSyncBox(); });
+    syncNow(false,true).then(function(ok){ startSyncAfterConnect(); if(ok) renderSyncBox(); });
     return;
   }
-  if(a==="now"){ syncNow(); return; }
+  if(a==="now"){ syncNow(false,true); return; }
+  if(a==="dedupe"){
+    var n=dedupeDB(DB);
+    save(); boot();
+    toast(n>0? "겹친 학생 "+n+"명을 정리했습니다" : "겹친 항목이 없습니다");
+    return;
+  }
   if(a==="off"){
     if(!confirm("연결을 끊습니다. 이 기기의 기록은 그대로 남습니다. 계속할까요?")) return;
     lsDel(TOKEN_KEY); lsDel(BASE_KEY);
     syncCfg.repo=""; saveSyncCfg(); syncSha=null; setSyncMsg("");
-    renderSyncBox(); toast("연결을 끊었습니다");
+    renderSyncBox(); setSyncStatus(""); toast("연결을 끊었습니다");
     return;
   }
 });
