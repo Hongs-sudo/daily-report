@@ -523,6 +523,7 @@ table.tbl tr:hover td{background:#fafbfc}
         <div style="flex:1;min-width:130px"><label class="f">종료일</label><input type="date" id="sTo"></div>
         <div style="flex:1;min-width:130px"><label class="f">학생</label><select id="sStudent"><option value="">전체</option></select></div>
         <div style="flex:1;min-width:110px"><label class="f">교시</label><select id="sPeriod"><option value="">전체</option></select></div>
+        <div style="flex:1;min-width:110px"><label class="f">날짜 순서</label><select id="sOrder"><option value="desc">최근 날짜부터</option><option value="asc">오래된 날짜부터</option></select></div>
         <div style="flex:1;min-width:130px"><label class="f">교재</label><select id="sBook"><option value="">전체</option></select></div>
         <div style="flex:1.4;min-width:150px"><label class="f">검색어 (단원·과제·리포팅)</label><input type="text" id="sQuery" placeholder="예: 이차방정식, 보강"></div>
         <div style="padding-top:18px"><button class="btn primary" id="btnSearch">검색</button></div>
@@ -953,7 +954,7 @@ function freshDB(){
     }),
     books:SEED_BOOKS.map(function(b){
       return {id:uid(), level:b[0], name:b[1], units:b[2].slice()};
-    }),
+    }).sort(cmpBook),
     records:[]
   };
 }
@@ -1015,6 +1016,7 @@ function updateBookCatalog(){
   var removed=before-DB.books.length;
 
   DB.meta.bookCatalog=BOOK_CATALOG;
+  sortBooks();
   rawSet(JSON.stringify(DB));
   return {added:added, updated:updated, removed:removed};
 }
@@ -1042,6 +1044,19 @@ function periodOptions(sel){
   }).join("");
 }
 
+/* ---------- 오름차순 정렬 기준 ---------- */
+/* 한글·숫자를 사람이 보는 순서대로 (개념쎈 2-1 < 개념쎈 10-1, 9강 < 10강) */
+function koCmp(a,b){
+  return String(a==null?"":a).localeCompare(String(b==null?"":b), "ko", {numeric:true, sensitivity:"base"});
+}
+var LEVEL_ORDER={"초":1,"중":2,"고":3,"특":4};
+function cmpBook(a,b){
+  var d=(LEVEL_ORDER[a&&a.level]||9)-(LEVEL_ORDER[b&&b.level]||9);
+  if(d) return d;
+  return koCmp(a&&a.name, b&&b.name);
+}
+function sortBooks(){ DB.books.sort(cmpBook); }
+
 /* ---------- 학년 → 이름 오름차순 ---------- */
 function gradeRank(g){
   g=String(g==null?"":g).replace(/\s/g,"");
@@ -1056,8 +1071,8 @@ function cmpStudent(a,b){
   var d=gradeRank(a&&a.grade)-gradeRank(b&&b.grade);
   if(d) return d;
   var ga=String((a&&a.grade)||""), gb=String((b&&b.grade)||"");
-  if(ga!==gb) return ga.localeCompare(gb,"ko");
-  return String((a&&a.name)||"").replace(/\s/g,"").localeCompare(String((b&&b.name)||"").replace(/\s/g,""),"ko");
+  if(ga!==gb) return koCmp(ga,gb);
+  return koCmp(String((a&&a.name)||"").replace(/\s/g,""), String((b&&b.name)||"").replace(/\s/g,""));
 }
 function cmpByName(n1,n2){
   return cmpStudent(studentByName(n1)||{name:n1}, studentByName(n2)||{name:n2});
@@ -1091,10 +1106,10 @@ var curType = "정규";
 var curPeriod = "1교시";
 
 function bookOptions(sel){
-  var levels={"고":"고등","중":"중등","초":"초등","특":"특강·기타"};
+  var levels={"초":"초등","중":"중등","고":"고등","특":"특강·기타"};
   var out='<option value="">교재 선택…</option>';
-  ["고","중","초","특"].forEach(function(lv){
-    var list=DB.books.filter(function(b){return b.level===lv;});
+  ["초","중","고","특"].forEach(function(lv){
+    var list=DB.books.filter(function(b){return b.level===lv;}).sort(cmpBook);
     if(!list.length) return;
     out+='<optgroup label="'+levels[lv]+'">';
     list.forEach(function(b){
@@ -3003,11 +3018,14 @@ function runSearch(){
       if(blob.indexOf(q)<0) return false;
     }
     return true;
-  }).sort(function(a,b){
-    if(a.date!==b.date) return a.date<b.date?1:-1;
-    var d=periodRank(a.period)-periodRank(b.period);
+  });
+
+  var asc = $("#sOrder") && $("#sOrder").value==="asc";
+  list=list.sort(function(a,b){
+    if(a.date!==b.date) return (a.date<b.date? -1 : 1) * (asc? 1 : -1);
+    var d=periodRank(a.period)-periodRank(b.period);   // 교시는 언제나 오름차순
     if(d) return d;
-    return cmpByName(a.studentName,b.studentName);
+    return cmpByName(a.studentName,b.studentName);     // 학년 → 이름 오름차순
   });
 
   var host=$("#searchResult");
@@ -3017,7 +3035,8 @@ function runSearch(){
   }
   var byDate={};
   list.forEach(function(r){ (byDate[r.date]=byDate[r.date]||[]).push(r); });
-  var dates=Object.keys(byDate).sort().reverse();
+  var dates=Object.keys(byDate).sort();
+  if(!asc) dates.reverse();
   var h='<div class="pad spread" style="border-bottom:1px solid var(--line)"><b>'+list.length+'건</b>'
     +'<span class="small muted">'+dates.length+'일치 · 클릭하면 리포트가 열립니다</span></div>';
   dates.forEach(function(dt){
@@ -3061,9 +3080,10 @@ $("#searchResult").addEventListener("click", function(e){
   openReport(id,q);
 });
 $("#btnSearch").addEventListener("click", runSearch);
+$("#sOrder").addEventListener("change", runSearch);
 $("#sQuery").addEventListener("keydown", function(e){ if(e.key==="Enter") runSearch(); });
 $("#btnSearchReset").addEventListener("click", function(){
-  $("#sFrom").value=""; $("#sTo").value=""; $("#sStudent").value=""; $("#sBook").value=""; $("#sPeriod").value=""; $("#sQuery").value="";
+  $("#sFrom").value=""; $("#sTo").value=""; $("#sStudent").value=""; $("#sBook").value=""; $("#sPeriod").value=""; $("#sOrder").value="desc"; $("#sQuery").value="";
   runSearch();
 });
 $("#searchQuick").addEventListener("click", function(e){
@@ -3104,7 +3124,7 @@ function renderStats(){
       + (absent? '<span class="chip low">결석 '+absent+'회</span>':'')
       + '</div>'
       + '<button class="btn sm" data-stu="'+esc(nm)+'">기록 보기</button></div>';
-    var bk=Object.keys(books);
+    var bk=Object.keys(books).sort(koCmp);
     if(bk.length){
       h+='<div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px">';
       bk.forEach(function(b){
@@ -3193,7 +3213,7 @@ $("#btnStuImport").addEventListener("click", function(){
         DB.students.push({id:uid(),name:nm,grade:parts[1]||"",school:"",parent:"",phone:"",memo:"",active:true});
         n++;
       });
-      save(); renderStudents(); refreshPickers(); closeModals(); toast(n+"명 추가했습니다");
+      sortStudents(); save(); renderStudents(); refreshPickers(); closeModals(); toast(n+"명 추가했습니다");
     }],["취소","ghost",closeModals]]);
 });
 
@@ -3201,6 +3221,7 @@ $("#btnStuImport").addEventListener("click", function(){
    교재 · 단원
    ========================================================= */
 function renderBooks(){
+  sortBooks();
   var lv=$("#bookLevelFilter").value, q=$("#bookSearch").value.trim().toLowerCase();
   var list=DB.books.filter(function(b){
     if(lv && b.level!==lv) return false;
@@ -3253,7 +3274,7 @@ $("#bookList").addEventListener("click", function(e){
   }
   if(act==="dupBook"){
     DB.books.push({id:uid(),level:b.level,name:b.name+" (복사)",units:b.units.slice()});
-    save(); renderBooks(); refreshPickers(); return;
+    sortBooks(); save(); renderBooks(); refreshPickers(); return;
   }
   if(act==="editUnits"){
     openDialog(b.name+" · 단원 편집",
@@ -3268,7 +3289,7 @@ $("#bookList").addEventListener("click", function(e){
 });
 $("#btnBookAdd").addEventListener("click", function(){
   openDialog("교재 추가",
-    '<label class="f">과정</label><select id="nbLevel"><option value="고">고등</option><option value="중">중등</option><option value="초">초등</option><option value="특">특강·기타</option></select>'
+    '<label class="f">과정</label><select id="nbLevel"><option value="초">초등</option><option value="중">중등</option><option value="고" selected>고등</option><option value="특">특강·기타</option></select>'
     +'<div class="mt"><label class="f">교재 이름</label><input type="text" id="nbName" placeholder="예: 개념쎈 3-2"></div>'
     +'<div class="mt"><label class="f">단원 (한 줄에 하나)</label><textarea id="nbUnits" style="min-height:150px" placeholder="1.삼각비&#10;2.삼각비의 활용"></textarea></div>',
     [["추가","primary",function(){
@@ -3276,7 +3297,7 @@ $("#btnBookAdd").addEventListener("click", function(){
       if(!nm){ toast("교재 이름을 넣어주세요"); return; }
       DB.books.push({id:uid(),level:$("#nbLevel").value,name:nm,
         units:$("#nbUnits").value.split(/\r?\n/).map(function(x){return x.trim();}).filter(Boolean)});
-      save(); renderBooks(); refreshPickers(); closeModals(); toast("교재를 추가했습니다");
+      sortBooks(); save(); renderBooks(); refreshPickers(); closeModals(); toast("교재를 추가했습니다");
     }],["취소","ghost",closeModals]]);
 });
 $("#bookLevelFilter").addEventListener("change", renderBooks);
@@ -3461,9 +3482,10 @@ function refreshPickers(){
   $("#sPeriod").innerHTML='<option value="">전체 교시</option>'+PERIODS.map(function(p){
     return '<option value="'+p+'">'+p+'</option>';
   }).join("");
-  $("#sBook").innerHTML='<option value="">전체 교재</option>'+DB.books.map(function(b){
-    return '<option value="'+esc(b.name)+'">'+esc(b.name)+'</option>';
-  }).join("");
+  $("#sBook").innerHTML='<option value="">전체 교재</option>'
+    +DB.books.slice().sort(cmpBook).map(function(b){
+      return '<option value="'+esc(b.name)+'">'+esc(b.name)+'</option>';
+    }).join("");
 }
 
 /* ---------- 학생 다중 선택 ---------- */
