@@ -2629,8 +2629,14 @@ function ghRead(){
       });
     });
 }
+/* 커밋 제목에 쓸 시각 — 표준시가 아니라 이 기기의 시각(한국이면 한국 시각) */
+function localStamp(){
+  var d=new Date(), p=function(n){ return (n<10?"0":"")+n; };
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())
+    +" "+p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds());
+}
 function ghWrite(obj){
-  var body={ message:"데일리리포트 "+new Date().toISOString().slice(0,19).replace("T"," "),
+  var body={ message:"데일리리포트 "+localStamp(),
              content:b64encode(JSON.stringify(obj,null,1)) };
   if(syncSha) body.sha=syncSha;
   return fetch(ghUrl(), {method:"PUT", headers:ghHeaders(), body:JSON.stringify(body)})
