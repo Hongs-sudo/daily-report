@@ -355,50 +355,57 @@ textarea.mini{height:auto;min-height:50px;padding:6px 8px;font-size:12.5px;line-
 .reportwrap{overflow:auto;padding:2px}
 #sheetFit{margin:0 auto;overflow:hidden}
 .sheet{
-  width:720px;margin:0 auto;background:#fff;color:var(--ink);
-  border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  width:360px;margin:0 auto;background:#fff;color:var(--ink);
+  border:1px solid var(--line);border-radius:10px;overflow:hidden;
+  font-size:11px;line-height:1.45;
 }
-.sheet .hd{background:var(--ink);color:#fff;padding:16px 22px}
-.sheet .hd .k{font-size:11.5px;color:#9fb2c6;letter-spacing:.02em}
-.sheet .hd .t{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-top:2px}
-.sheet .hd .sub{font-size:12.5px;color:#b9c8d8;margin-top:3px}
-.sheet .nm{display:flex;align-items:baseline;gap:10px;padding:14px 22px;border-bottom:2px solid var(--ink)}
-.sheet .nm b{font-size:22px;font-weight:750;letter-spacing:-.03em}
-.sheet .blk{padding:16px 22px;border-bottom:1px solid var(--line-2)}
+.sheet .hd{background:var(--ink);color:#fff;padding:8px 13px}
+.sheet .hd .k{font-size:9px;color:#9fb2c6;letter-spacing:.02em}
+.sheet .hd .t{font-size:13.5px;font-weight:700;letter-spacing:-.02em;margin-top:1px}
+.sheet .hd .sub{font-size:10px;color:#b9c8d8;margin-top:2px}
+.sheet .nm{display:flex;align-items:baseline;gap:6px;padding:6px 13px;border-bottom:1.5px solid var(--ink)}
+.sheet .nm b{font-size:15px;font-weight:750;letter-spacing:-.03em}
+.sheet .nm .small{font-size:9.5px}
+.sheet .nm .chip{font-size:9px;padding:1px 6px}
+.sheet .blk{padding:7px 13px;border-bottom:1px solid var(--line-2)}
 .sheet .blk:last-child{border-bottom:0}
 .sheet .blk > .lab{
-  font-size:12px;font-weight:700;color:var(--brand);
-  display:flex;align-items:center;gap:7px;margin-bottom:10px;
+  font-size:9.5px;font-weight:700;color:var(--brand);
+  display:flex;align-items:center;gap:5px;margin-bottom:5px;
 }
 .sheet .blk > .lab:after{content:"";flex:1;height:1px;background:var(--line)}
-.sheet .line{display:grid;grid-template-columns:126px 1fr;gap:12px;padding:7px 0;border-top:1px solid var(--line-2);align-items:start}
+.sheet .line{display:grid;grid-template-columns:82px 1fr;gap:7px;padding:3px 0;border-top:1px solid var(--line-2);align-items:start}
 .sheet .line:first-of-type{border-top:0}
-.sheet .line .bk{font-weight:650;font-size:13px;color:var(--ink-2)}
-.sheet .line .vl{font-size:13.5px;white-space:pre-wrap}
-.sheet .pgrow{margin-top:7px}
-.sheet .pgrow .top{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3);margin-bottom:4px}
-.sheet .note{background:var(--wash);border-left:3px solid var(--brand-2);padding:11px 13px;border-radius:0 8px 8px 0;white-space:pre-wrap;font-size:13px}
-.sheet .ft{background:var(--wash);padding:12px 22px;font-size:11.5px;color:var(--ink-3);display:flex;justify-content:space-between;gap:10px}
+.sheet .line .bk{font-weight:650;font-size:10.5px;color:var(--ink-2);word-break:keep-all}
+.sheet .line .vl{font-size:11px;white-space:pre-wrap;word-break:keep-all}
+.sheet .small{font-size:9.5px}
+.sheet .tiny{font-size:8.5px}
+.sheet .pgrow{margin-top:4px}
+.sheet .pgrow .top{display:flex;justify-content:space-between;font-size:8.5px;color:var(--ink-3);margin-bottom:3px}
+.sheet .note{background:var(--wash);border-left:2px solid var(--brand-2);padding:6px 8px;border-radius:0 6px 6px 0;white-space:pre-wrap;font-size:10.5px}
+.sheet .ft{background:var(--wash);padding:6px 13px;font-size:9px;color:var(--ink-3);display:flex;justify-content:space-between;gap:8px}
+.sheet .meter{height:5px}
+.sheet .segbar{height:7px;gap:1.5px}
 
-.donutwrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
-.donut{position:relative;width:104px;height:104px;flex:none}
+.donutwrap{display:flex;gap:11px;align-items:center;flex-wrap:nowrap}
+.donut{position:relative;width:66px;height:66px;flex:none}
 .donut .val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.donut .val b{font-size:22px;font-weight:750;letter-spacing:-.03em;line-height:1}
-.donut .val span{font-size:10.5px;color:var(--ink-3);margin-top:2px}
-.hwlist{flex:1;min-width:240px}
-.hwlist .it{padding:6px 0;border-top:1px solid var(--line-2)}
+.donut .val b{font-size:14px;font-weight:750;letter-spacing:-.03em;line-height:1}
+.donut .val span{font-size:8px;color:var(--ink-3);margin-top:1px}
+.hwlist{flex:1;min-width:0}
+.hwlist .it{padding:4px 0;border-top:1px solid var(--line-2)}
 .hwlist .it:first-child{border-top:0}
-.hwlist .it .r1{display:flex;justify-content:space-between;gap:10px;font-size:12.5px}
+.hwlist .it .r1{display:flex;justify-content:space-between;gap:6px;font-size:10px}
 .hwlist .it .r1 b{font-weight:650}
 
-.trend{display:flex;align-items:flex-end;gap:5px;height:44px}
-.trend .b{flex:1;min-width:8px;background:var(--brand-wash);border-radius:3px 3px 0 0;position:relative}
-.trend .b > i{display:block;width:100%;background:var(--brand-2);border-radius:3px 3px 0 0;position:absolute;bottom:0}
+.trend{display:flex;align-items:flex-end;gap:3px;height:28px}
+.trend .b{flex:1;min-width:5px;background:var(--brand-wash);border-radius:2px 2px 0 0;position:relative}
+.trend .b > i{display:block;width:100%;background:var(--brand-2);border-radius:2px 2px 0 0;position:absolute;bottom:0}
 
-.kv{display:flex;gap:8px;flex-wrap:wrap}
-.kv .b{border:1px solid var(--line);border-radius:9px;padding:8px 12px;min-width:104px}
-.kv .b .k{font-size:11px;color:var(--ink-3)}
-.kv .b .v{font-size:15px;font-weight:700;letter-spacing:-.02em;margin-top:1px}
+.kv{display:flex;gap:5px;flex-wrap:wrap}
+.kv .b{border:1px solid var(--line);border-radius:6px;padding:5px 8px;min-width:72px}
+.kv .b .k{font-size:8.5px;color:var(--ink-3)}
+.kv .b .v{font-size:11.5px;font-weight:700;letter-spacing:-.02em;margin-top:1px}
 
 /* ---------- modal ---------- */
 .modal{position:fixed;inset:0;z-index:200;display:none}
@@ -1215,7 +1222,7 @@ function draftFromRecord(r){
   return {
     key:uid(), id:r.id, studentId:r.studentId, studentName:r.studentName,
     period:r.period||"미지정",
-    attendance:r.attendance||"출석",
+    attendance:r.attendance||"출석", arriveAt:r.arriveAt||"",
     prev:(r.prev||[]).map(function(p){return {book:p.book,range:p.range,rate:p.rate};}),
     prevComment:r.prevComment||"",
     progress:(r.progress&&r.progress.length?r.progress.map(function(p){
@@ -1240,7 +1247,7 @@ function newDraft(stu, period){
   var d={
     key:uid(), id:null, studentId:stu.id, studentName:stu.name,
     period:period||curPeriod,
-    attendance:"출석", prev:[], prevComment:"",
+    attendance:"출석", arriveAt:"", prev:[], prevComment:"",
     progress:[newProg()], homework:[newHw()],
     attitude:0, focus:0, test:{name:"",score:"",total:""},
     reporting:"", next:"", more:false, saved:false, collapsed:false
@@ -1337,6 +1344,10 @@ function entryHTML(d){
     h+='<button type="button" data-v="'+a+'" aria-pressed="'+(d.attendance===a)+'">'+a+'</button>';
   });
   h+='</div>';
+  if(d.attendance==="지각"){
+    h+='<span class="tiny muted">도착</span>';
+    h+='<input type="time" class="mini" data-field="arriveAt" value="'+esc(d.arriveAt||"")+'" title="도착 시각" style="width:auto;flex:none">';
+  }
   h+='<span class="chip '+(pr==null?"gray":rateClass(pr))+'" data-out="prevHead">'+(pr==null?"과제 미확인":"과제 "+pr+"%")+'</span>';
   h+='<span class="chip'+(d.saved?" good":"")+'" data-out="stateChip">'+(d.saved?"저장됨":"작성 중")+'</span>';
   h+='<span class="grow"></span>';
@@ -1531,9 +1542,22 @@ $("#entries").addEventListener("click", function(e){
   var segBtn = e.target.closest('.seg[data-field] button');
   if(segBtn){
     var seg=segBtn.parentNode, ent=segBtn.closest(".entry"), dd=findDraft(ent.getAttribute("data-k"));
-    dd[seg.getAttribute("data-field")] = segBtn.getAttribute("data-v");
+    var f=seg.getAttribute("data-field"), was=dd[f];
+    dd[f] = segBtn.getAttribute("data-v");
+    markDirty(dd);
+    if(f==="attendance" && (was==="지각" || dd[f]==="지각")){
+      rerenderEntry(dd);                       // 도착 시각 칸을 넣거나 뺍니다
+      if(dd[f]==="지각"){
+        var el=$('input[data-field="arriveAt"]', entryEl(dd.key));
+        if(el){ if(!dd.arriveAt){ var n=new Date();
+            dd.arriveAt=(n.getHours()<10?"0":"")+n.getHours()+":"+(n.getMinutes()<10?"0":"")+n.getMinutes();
+            el.value=dd.arriveAt; }
+          el.focus(); }
+      }
+      return;
+    }
     $$("button",seg).forEach(function(b){ b.setAttribute("aria-pressed", b===segBtn); });
-    markDirty(dd); return;
+    return;
   }
   var act = e.target.closest("[data-act]");
   if(!act) return;
@@ -1583,6 +1607,7 @@ $("#entries").addEventListener("input", function(e){
     refreshPrevRow(d,i,true);
   }
   else if(f==="prevComment"){ d.prevComment=el.value; }
+  else if(f==="arriveAt"){ d.arriveAt=el.value; }
   else if(f==="prog.note"){ d.progress[i].note=el.value; }
   else if(f==="prog.rate"){ d.progress[i].rate = el.value===""?null:clamp(el.value,0,100); }
   else if(f==="hw.note"){ d.homework[i].note=el.value; }
@@ -1658,6 +1683,7 @@ function draftToRecord(d){
     date: curDate, type: curType, period: d.period||"미지정",
     studentId: d.studentId, studentName: d.studentName,
     attendance: d.attendance,
+    arriveAt: d.attendance==="지각"? (d.arriveAt||"") : "",
     prev: d.prev.filter(function(p){return p.book||p.range;}),
     prevComment: d.prevComment,
     prevRate: avgPrev(d),
@@ -1730,16 +1756,23 @@ function hwTrend(name, date, n){
   return list.slice(-n).map(function(r){ return {d:r.date, v:r.prevRate}; });
 }
 
+var SHEET_W = 360;              // 리포트 기준 너비
 function donutSVG(pct){
   var p = pct==null?0:pct;
-  var r=42, c=2*Math.PI*r;
+  var r=27, c=2*Math.PI*r;
   var col = p>=85? "#2b8f63" : p>=60? "#c98a12" : "#c0453f";
-  return '<svg width="104" height="104" viewBox="0 0 104 104">'
-    +'<circle cx="52" cy="52" r="'+r+'" fill="none" stroke="#eef2f6" stroke-width="11"/>'
-    +'<circle cx="52" cy="52" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="11" stroke-linecap="round"'
-    +' stroke-dasharray="'+(c*p/100).toFixed(1)+' '+c.toFixed(1)+'" transform="rotate(-90 52 52)"/></svg>';
+  return '<svg width="66" height="66" viewBox="0 0 66 66">'
+    +'<circle cx="33" cy="33" r="'+r+'" fill="none" stroke="#eef2f6" stroke-width="7"/>'
+    +'<circle cx="33" cy="33" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="7" stroke-linecap="round"'
+    +' stroke-dasharray="'+(c*p/100).toFixed(1)+' '+c.toFixed(1)+'" transform="rotate(-90 33 33)"/></svg>';
 }
 
+/* 출결 표시 — 지각이면 도착 시각을 덧붙입니다 */
+function attendText(rec){
+  var a=rec.attendance||"출석";
+  if(a==="지각" && rec.arriveAt) return a+" ("+rec.arriveAt+" 도착)";
+  return a;
+}
 function sheetHTML(rec){
   var stu = studentByName(rec.studentName) || {};
   var m = DB.meta||{};
@@ -1749,7 +1782,7 @@ function sheetHTML(rec){
   h+='<div class="t">'+fmtKo(rec.date)+' 학습 리포트</div>';
   h+='<div class="sub">'+esc(rec.type==="특강"?"방학특강":"정규수업")
     +(rec.period && rec.period!=="미지정"? ' · '+esc(rec.period):'')
-    +' · '+esc(rec.attendance||"출석")+'</div>';
+    +' · '+esc(attendText(rec))+'</div>';
   h+='</div>';
 
   h+='<div class="nm"><span class="small muted">이름</span><b>'+esc(rec.studentName)+'</b>'
@@ -1865,7 +1898,7 @@ function reportText(rec){
   var m=DB.meta||{};
   L.push("["+(m.academy||"학습 리포트")+"] "+fmtKo(rec.date));
   L.push(rec.studentName+" 학생 · "+(rec.type==="특강"?"방학특강":"정규수업")
-    +(rec.period && rec.period!=="미지정"? " · "+rec.period:"")+" · "+(rec.attendance||"출석"));
+    +(rec.period && rec.period!=="미지정"? " · "+rec.period:"")+" · "+attendText(rec));
   L.push("");
   if(rec.prev&&rec.prev.length){
     L.push("◈ 지난 과제 달성률 : "+(rec.prevRate==null?"확인 중":rec.prevRate+"% ("+rateWord(rec.prevRate)+")"));
@@ -1915,10 +1948,10 @@ function fitSheet(reset){
   }
   var avail=wrap.clientWidth-4;
   if(avail<=40) return 1;                 // 모달이 아직 화면에 없으면 건너뜁니다
-  var k=Math.min(1,avail/720);
+  var k=Math.min(1,avail/SHEET_W);
   sc.style.transformOrigin="left top";
   sc.style.transform = k<1? "scale("+k.toFixed(4)+")" : "";
-  fit.style.width  = k<1? Math.round(720*k)+"px" : "";
+  fit.style.width  = k<1? Math.round(SHEET_W*k)+"px" : "";
   fit.style.height = k<1? Math.round(sh.offsetHeight*k)+"px" : "";
   return k;
 }
@@ -1927,7 +1960,7 @@ window.addEventListener("resize", function(){ if($("#reportModal").classList.con
 function paintReport(){
   var rec = recById(reportQueue[reportPos]);
   if(!rec) return;
-  $("#sheetHost").innerHTML = '<div id="sheetFit"><div id="sheetScale" style="width:720px">'+sheetHTML(rec)+'</div></div>';
+  $("#sheetHost").innerHTML = '<div id="sheetFit"><div id="sheetScale" style="width:'+SHEET_W+'px">'+sheetHTML(rec)+'</div></div>';
   fitSheet();
   $("#rmTitle").textContent = rec.studentName+" · "+fmtShort(rec.date);
   $("#btnPrevStu").disabled = reportPos<=0;
@@ -1973,7 +2006,7 @@ function sheetToCanvas(){
   return loadH2C().then(function(h2c){
     fitSheet(true);                      // 캡처 중에는 원래 크기로 되돌립니다
     var node=$("#sheet");
-    return h2c(node,{scale:2,backgroundColor:"#ffffff",useCORS:true,logging:false,
+    return h2c(node,{scale:3,backgroundColor:"#ffffff",useCORS:true,logging:false,
       windowWidth:node.scrollWidth, width:node.offsetWidth, height:node.offsetHeight});
   }).then(function(cv){ fitSheet(); return cv; },
           function(err){ fitSheet(); throw err; });
@@ -3095,7 +3128,7 @@ function runSearch(){
       h+='<div><b>'+esc(r.studentName)+'</b>'+(st.grade? ' <span class="tiny muted">'+esc(st.grade)+'</span>':'')+'</div>';
       h+='<div><span class="chip '+(r.type==="특강"?"brand":"gray")+'">'+esc(r.type)+'</span> '
         + (r.period&&r.period!=="미지정"? '<span class="chip">'+esc(r.period)+'</span> ':'')
-        + (r.attendance&&r.attendance!=="출석"? '<span class="chip low">'+esc(r.attendance)+'</span>':'')+'</div>';
+        + (r.attendance&&r.attendance!=="출석"? '<span class="chip low">'+esc(attendText(r))+'</span>':'')+'</div>';
       h+='<div class="small" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(prog)+'</div>'
         + (r.reporting? '<div class="tiny muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.reporting.replace(/\n/g," "))+'</div>':'')+'</div>';
       h+='<div class="row" style="gap:6px;flex-wrap:nowrap">'
@@ -3450,7 +3483,7 @@ $("#btnCsv").addEventListener("click", function(){
       var stu=studentByName(r.studentName)||{};
       rows.push([
         i?"":r.date, i?"":DOW[parseISO(r.date).getDay()], i?"":r.type, i?"":(r.period||""),
-        i?"":r.studentName, i?"":(stu.grade||""), i?"":(r.attendance||""),
+        i?"":r.studentName, i?"":(stu.grade||""), i?"":attendText(r),
         i?"":(r.prevRate==null?"":r.prevRate+"%"),
         p.book||"", p.unit||"", (p.rate==null?"":p.rate+"%"),
         h.book||"", h.range||"",

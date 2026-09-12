@@ -1,7 +1,7 @@
 /* 데일리 리포트 · 오프라인 캐시
    앱 파일을 저장해 두어 인터넷이 없어도 실행됩니다.
    내용을 고쳐 다시 올릴 때는 아래 CACHE 이름의 숫자를 올려주세요. */
-var CACHE = "daily-report-v7";
+var CACHE = "daily-report-v8";
 var EXTRA_HOSTS = ["cdnjs.cloudflare.com", "cdn.jsdelivr.net"];
 var ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
