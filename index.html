@@ -710,10 +710,11 @@ table.tbl tr:hover td{background:#fafbfc}
       <div class="reportwrap"><div id="sheetHost"></div></div>
     </div>
     <div class="pft">
-      <button class="btn primary" id="btnCapture">이미지로 저장</button>
+      <button class="btn primary" id="btnCopyImg">이미지 복사</button>
       <button class="btn" id="btnShare">카톡·문자로 보내기</button>
-      <button class="btn" id="btnSms">문자 앱 열기</button>
-      <button class="btn" id="btnCopyText">글로 복사</button>
+      <button class="btn" id="btnCapture">이미지로 저장</button>
+      <button class="btn ghost" id="btnSms">문자 앱 열기</button>
+      <button class="btn ghost" id="btnCopyText">글로 복사</button>
       <button class="btn ghost" id="btnPrint">인쇄</button>
       <div style="flex:1"></div>
       <button class="btn ghost" id="btnPrevStu">◀ 이전</button>
@@ -1933,6 +1934,12 @@ function paintReport(){
   $("#btnNextStu").disabled = reportPos>=reportQueue.length-1;
   $("#btnPrevStu").style.display = reportQueue.length>1?"":"none";
   $("#btnNextStu").style.display = reportQueue.length>1?"":"none";
+  var ci=$("#btnCopyImg");
+  if(ci){
+    ci.style.display = canCopyImage()? "":"none";
+    var sh=$("#btnShare");
+    if(sh) sh.className = canCopyImage()? "btn":"btn primary";
+  }
 }
 function closeModals(){
   $$(".modal").forEach(function(m){m.classList.remove("on");});
@@ -1995,6 +2002,45 @@ $("#btnCapture").addEventListener("click", function(){
     toast("이미지를 저장했습니다");
   }).catch(captureFail).then(function(){ btn.disabled=false; btn.textContent="이미지로 저장"; });
 });
+/* 리포트를 그림 그대로 클립보드에 담습니다 → 카톡·문자에 붙여넣기 */
+function canCopyImage(){
+  return !!(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write);
+}
+$("#btnCopyImg").addEventListener("click", function(){
+  var btn=this;
+  if(!canCopyImage()){
+    toast("이 브라우저는 이미지 복사를 지원하지 않습니다. ‘카톡·문자로 보내기’를 이용해 주세요");
+    return;
+  }
+  btn.disabled=true; btn.textContent="복사하는 중…";
+  var done=function(ok,msg){
+    btn.disabled=false; btn.textContent="이미지 복사";
+    if(ok) toast("복사했습니다. 카톡이나 문자에서 붙여넣기 하세요");
+    else if(msg) toast(msg);
+  };
+  /* 사파리는 버튼을 누른 흐름이 끊기면 막으므로, 그림 만드는 약속을 그대로 넘깁니다 */
+  try{
+    var pngP=sheetToCanvas().then(canvasToBlob);
+    pngP.catch(function(){});            // 처리되지 않은 오류 경고를 막습니다
+    var item=new ClipboardItem({"image/png": pngP});
+    navigator.clipboard.write([item]).then(function(){ done(true); },
+      function(e){ console.warn(e); fallbackCopyImage(done); });
+  }catch(e){
+    console.warn(e); fallbackCopyImage(done);
+  }
+});
+function fallbackCopyImage(done){
+  sheetToCanvas().then(canvasToBlob).then(function(b){
+    return navigator.clipboard.write([new ClipboardItem({"image/png":b})]);
+  }).then(function(){ done(true); })
+   .catch(function(e){
+      console.warn(e);
+      done(false, navigator.onLine
+        ? "복사하지 못했습니다. ‘이미지로 저장’이나 ‘인쇄’를 이용해 주세요"
+        : "인터넷이 끊겨 그림을 만들지 못했습니다. 연결 후 다시 눌러 주세요");
+   });
+}
+
 $("#btnShare").addEventListener("click", function(){
   var rec=recById(reportQueue[reportPos]);
   var btn=this; btn.disabled=true; btn.textContent="준비 중…";

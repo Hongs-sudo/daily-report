@@ -1,7 +1,8 @@
 /* 데일리 리포트 · 오프라인 캐시
    앱 파일을 저장해 두어 인터넷이 없어도 실행됩니다.
    내용을 고쳐 다시 올릴 때는 아래 CACHE 이름의 숫자를 올려주세요. */
-var CACHE = "daily-report-v6";
+var CACHE = "daily-report-v7";
+var EXTRA_HOSTS = ["cdnjs.cloudflare.com", "cdn.jsdelivr.net"];
 var ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icon-180.png", "./icon-192.png", "./icon-512.png", "./icon-maskable.png"
@@ -30,7 +31,21 @@ self.addEventListener("fetch", function(e){
   var req = e.request;
   if(req.method !== "GET") return;
   var url = new URL(req.url);
-  if(url.origin !== location.origin) return;
+
+  /* 바깥에서 가져오는 캡처 도구와 글꼴도 저장해 둡니다 (한 번 받으면 인터넷 없이도 동작) */
+  if(url.origin !== location.origin){
+    if(EXTRA_HOSTS.indexOf(url.hostname) < 0) return;
+    e.respondWith(
+      caches.match(req).then(function(r){
+        return r || fetch(req).then(function(res){
+          var copy=res.clone();
+          caches.open(CACHE).then(function(c){ c.put(req, copy); });
+          return res;
+        }).catch(function(){ return r; });
+      })
+    );
+    return;
+  }
 
   if(req.mode === "navigate" || (req.headers.get("accept")||"").indexOf("text/html") >= 0){
     e.respondWith(
