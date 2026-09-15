@@ -153,6 +153,41 @@ select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=
 .seg button{border:0;background:none;padding:8px 14px;font-size:13px;font-weight:550;color:var(--ink-3)}
 .seg button[aria-pressed="true"]{background:var(--brand);color:#fff}
 
+/* ---------- 한 줄에 2명 (2단 배치) ---------- */
+@media(min-width:1100px){
+  main.wide{max-width:1720px}
+  #entries.cols2{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+    column-gap:14px;align-items:start;
+  }
+  #entries.cols2 > .periodhead{grid-column:1 / -1}
+  #entries.cols2 .entry{margin-top:12px}
+  /* 머리줄이 한 줄에 들어가도록 조입니다 */
+  #entries.cols2 .entry > header{gap:4px 5px;padding:7px 10px}
+  #entries.cols2 .entry > header .name{font-size:14px}
+  #entries.cols2 .entry > header .chip{font-size:10px;padding:2px 6px}
+  #entries.cols2 .entry > header select.mini{padding:4px 19px 4px 6px;font-size:11.5px;background-position:right 4px center}
+  #entries.cols2 .entry > header .seg.mini button{padding:0 7px;font-size:11.5px;min-height:28px}
+  #entries.cols2 .entry > header .btn.sm{padding:4px 7px;font-size:11.5px}
+  #entries.cols2 .entry .body{padding:5px 10px 7px}
+  /* 칸이 좁아지므로 모바일과 같은 줄바꿈 배치를 씁니다 */
+  #entries.cols2 .pgrid{grid-template-columns:auto 1fr auto 1fr}
+  #entries.cols2 .pgrid > *:nth-child(1),
+  #entries.cols2 .pgrid > *:nth-child(2),
+  #entries.cols2 .pgrid > *:nth-child(7){grid-column:1 / -1}
+  #entries.cols2 .pgrid > *:nth-child(8){grid-column:1 / span 2;text-align:left}
+  #entries.cols2 .pghead{display:none}
+  #entries.cols2 .cline.nw{flex-wrap:wrap}
+  #entries.cols2 .cline .w-bk,#entries.cols2 .cline .w-un{width:calc(50% - 3px)}
+  #entries.cols2 .cline .w-tx,#entries.cols2 .cline .w-rg{flex-basis:100%}
+  #entries.cols2 .cline.rpt{flex-wrap:wrap}
+  #entries.cols2 .cline.rpt > textarea{flex:1 1 100%}
+  #entries.cols2 .tmplbar.g2{width:100%;grid-template-columns:repeat(4,1fr)}
+  #entries.cols2 .pvrow .rg{flex-basis:100%}
+}
+.colsbtn{white-space:nowrap}
+@media(max-width:1099px){ .colsbtn{display:none} }
+
 /* ---------- period group ---------- */
 .periodhead{
   display:flex;align-items:center;gap:9px;
@@ -228,15 +263,17 @@ select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=
 .cstack{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
 .cline{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
 .cline.nw{flex-wrap:nowrap}
+.cline.rpt{flex-wrap:nowrap;align-items:stretch}
+@media(max-width:900px){ .cline.rpt{flex-wrap:wrap} .cline.rpt > textarea{flex:1 1 100%} }
 .cline.nw > *{min-width:0}
 .mini{padding:5px 8px;font-size:12.5px;border-radius:7px;height:30px}
 select.mini{padding-right:22px;background-position:right 6px center;height:30px}
 textarea.mini{height:auto;min-height:50px;padding:6px 8px;font-size:12.5px;line-height:1.45;resize:vertical}
-.cline .w-bk{width:132px;flex:none}
-.cline .w-un{width:170px;flex:none}
-.cline .w-tx{flex:1 1 120px;width:auto;min-width:80px}
-.cline .w-rt{width:54px;flex:none;text-align:right;padding-left:6px;padding-right:6px}
-.cline .w-rg{flex:1 1 140px;width:auto;min-width:100px}
+.cline .w-bk,select.w-bk{width:132px;flex:none}
+.cline .w-un,select.w-un{width:170px;flex:none}
+.cline .w-tx,input.w-tx{flex:1 1 120px;width:auto;min-width:80px}
+.cline .w-rt,input.w-rt{width:54px;flex:none;text-align:right;padding-left:6px;padding-right:6px}
+.cline .w-rg,input.w-rg{flex:1 1 140px;width:auto;min-width:100px}
 .cline .w-un2{flex:1 1 150px;width:auto;min-width:110px}
 .pgrid{
   display:grid;
@@ -286,8 +323,8 @@ textarea.mini{height:auto;min-height:50px;padding:6px 8px;font-size:12.5px;line-
   .modal .pft{gap:6px}
   .modal .pft .btn{flex:1 1 auto}
 }
-.cline .pg{width:66px;flex:none;text-align:center;padding-left:5px;padding-right:5px}
-.cline .w-pct{width:62px;flex:none;text-align:right;padding-left:6px;padding-right:6px}
+.cline .pg,input.pg{width:66px;flex:none;text-align:center;padding-left:5px;padding-right:5px}
+.cline .w-pct,input.w-pct{width:62px;flex:none;text-align:right;padding-left:6px;padding-right:6px}
 .tilde{flex:none;font-size:11.5px;color:var(--ink-3)}
 .unitbtn{
   display:flex;align-items:center;gap:5px;height:30px;
@@ -509,6 +546,7 @@ table.tbl tr:hover td{background:#fafbfc}
         <button class="btn primary" id="btnPick">학생 불러오기</button>
         <button class="btn" id="btnAddAll">이 요일 학생 전체 추가</button>
         <button class="btn" id="btnCarry">지난 수업 진도 이어받기</button>
+        <button class="btn colsbtn" id="btnCols">1단으로 보기</button>
       </div>
     </div>
 
@@ -1222,6 +1260,7 @@ function draftFromRecord(r){
   return {
     key:uid(), id:r.id, studentId:r.studentId, studentName:r.studentName,
     period:r.period||"미지정",
+    prevFrom:r.prevFrom||"", prevDate:r.prevDate||"",
     attendance:r.attendance||"출석", arriveAt:r.arriveAt||"",
     prev:(r.prev||[]).map(function(p){return {book:p.book,range:p.range,rate:p.rate};}),
     prevComment:r.prevComment||"",
@@ -1243,20 +1282,46 @@ function draftFromRecord(r){
     more:false, saved:true, collapsed:false
   };
 }
+/* 이 학생의 지난 수업들 (최근 것부터) */
+function pastLessons(name, date, excludeId){
+  return DB.records.filter(function(r){
+    return r.studentName===name && r.date<date && r.id!==excludeId;
+  }).sort(function(a,b){ return a.date<b.date? 1 : a.date>b.date? -1 : 0; });
+}
+/* 요일마다 수업 내용이 다를 수 있으므로 같은 요일을 먼저 봅니다 */
+function pickSourceLesson(name, date, excludeId){
+  var list=pastLessons(name, date, excludeId);
+  if(!list.length) return null;
+  var dow=parseISO(date).getDay();
+  var sameDow=list.filter(function(r){ return parseISO(r.date).getDay()===dow; });
+  var withHw=function(arr){
+    for(var i=0;i<arr.length;i++){
+      if((arr[i].homework||[]).length) return arr[i];
+    }
+    return null;
+  };
+  return withHw(sameDow) || withHw(list) || list[0];
+}
+function applySource(d, rec){
+  d.prevFrom = rec? rec.id : "";
+  d.prevDate = rec? rec.date : "";
+  d.prev = rec? (rec.homework||[]).filter(function(h){ return h.book||h.range; })
+                 .map(function(h){ return {book:h.book, range:h.range, rate:null}; })
+             : [];
+}
 function newDraft(stu, period){
   var d={
     key:uid(), id:null, studentId:stu.id, studentName:stu.name,
-    period:period||curPeriod,
+    period:period||curPeriod, prevFrom:"", prevDate:"",
     attendance:"출석", arriveAt:"", prev:[], prevComment:"",
     progress:[newProg()], homework:[newHw()],
     attitude:0, focus:0, test:{name:"",score:"",total:""},
     reporting:"", next:"", more:false, saved:false, collapsed:false
   };
-  var p=prevRecord(stu.name, curDate, null);
+  var src=pickSourceLesson(stu.name, curDate, null);
+  applySource(d, src);
+  var p=src;                        // 진도도 같은 수업에서 이어받습니다
   if(p){
-    d.prevDate=p.date;
-    d.prev=(p.homework||[]).filter(function(h){return h.book||h.range;})
-      .map(function(h){ return {book:h.book, range:h.range, rate:null}; });
     // 직전 진도를 기본값으로 이어받기
     if(p.progress && p.progress.length){
       d.progress=p.progress.filter(function(x){return x.book;}).map(function(x){
@@ -1294,8 +1359,19 @@ function avgPrev(d){
   return Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length);
 }
 
+function colCount(){
+  var n=(DB.meta && DB.meta.cols) ? +DB.meta.cols : 2;
+  return (n===1)? 1 : 2;
+}
+function applyCols(){
+  var two = colCount()===2;
+  var host=$("#entries"); if(host) host.classList.toggle("cols2", two);
+  var m=document.querySelector("main"); if(m) m.classList.toggle("wide", two);
+  var b=$("#btnCols"); if(b) b.textContent = two? "1단으로 보기":"2단으로 보기";
+}
 function renderEntries(){
   sortDrafts();
+  applyCols();
   var host=$("#entries");
   var cnt={};
   drafts.forEach(function(d){ cnt[d.period]=(cnt[d.period]||0)+1; });
@@ -1360,10 +1436,12 @@ function entryHTML(d){
 
   /* ── 지난 과제 ── */
   h+='<div class="crow"><span class="clab">지난<br>과제</span><div class="cstack">';
-  if(!d.prev.length){
-    h+='<div class="cline"><span class="small muted">확인할 과제 없음</span>'
-      +'<button class="addbtn" data-act="addPrev">+ 항목</button></div>';
-  }
+  h+='<div class="cline">';
+  h+='<button class="addbtn" data-act="pickSrc" title="어느 수업의 과제를 확인할지 고릅니다">'
+    +(d.prevDate? esc(fmtShort(d.prevDate))+" 수업 ▾" : "수업 고르기 ▾")+'</button>';
+  if(!d.prev.length) h+='<span class="small muted">확인할 과제 없음</span>';
+  h+='<button class="addbtn" data-act="addPrev">+ 항목</button>';
+  h+='</div>';
   d.prev.forEach(function(p,i){
     var last=(i===d.prev.length-1);
     h+='<div class="pvrow">';
@@ -1373,10 +1451,7 @@ function entryHTML(d){
     h+='<input type="number" min="0" max="100" step="1" class="mini w-pct" data-field="prev.num" data-i="'+i+'" value="'+(p.rate==null?"":p.rate)+'" placeholder="달성률">';
     h+='<span class="tilde" data-out="prev'+i+'">%</span>';
     h+='<button class="xbtn" data-act="delPrev" data-i="'+i+'">×</button>';
-    if(last){
-      h+='<button class="addbtn" data-act="addPrev">+</button>';
-      h+='<button class="addbtn" data-act="allDone">모두 100%</button>';
-    }
+    if(last) h+='<button class="addbtn" data-act="allDone">모두 100%</button>';
     h+='</div>';
   });
   h+='</div></div>';
@@ -1427,7 +1502,7 @@ function entryHTML(d){
 
   /* ── 리포팅 : 오른쪽에 상용구 ── */
   h+='<div class="crow"><span class="clab">리포팅</span><div class="cstack">';
-  h+='<div class="cline" style="flex-wrap:nowrap;align-items:stretch">';
+  h+='<div class="cline rpt">';
   h+='<textarea class="mini" data-field="reporting" placeholder="특이사항 · 보강 일정 등 (비워두면 리포트에 나오지 않습니다)" style="flex:1;min-width:0">'+esc(d.reporting)+'</textarea>';
   h+='<div class="tmplbar g2">';
   [["보강 일정","※ 보강일정 안내입니다.\n → "],["교재 준비","※ 새과정 교재 준비 안내입니다.\n → "],
@@ -1458,6 +1533,48 @@ function entryHTML(d){
 
   h+='</div></div>';
   return h;
+}
+
+/* ---------- 지난 과제를 가져올 수업 고르기 ---------- */
+function openSourcePicker(d){
+  var list=pastLessons(d.studentName, curDate, d.id).slice(0,20);
+  var dow=parseISO(curDate).getDay();
+  if(!list.length){
+    toast(d.studentName+" 학생의 지난 수업 기록이 없습니다");
+    return;
+  }
+  var h='<div class="small muted mb">요일마다 수업 내용이 다를 수 있습니다. '
+    +'오늘 확인할 과제를 낸 수업을 골라주세요. <b>'+DOW[dow]+'요일</b> 수업을 먼저 보여드립니다.</div>';
+  h+='<div class="card unitpick" id="srcList">';
+  list.forEach(function(r){
+    var same=parseISO(r.date).getDay()===dow;
+    var hw=(r.homework||[]).map(function(x){
+      return (x.book||"")+(x.range? " "+x.range : "");
+    }).join(" / ") || "낸 과제 없음";
+    h+='<label><input type="radio" name="srcPick" value="'+esc(r.id)+'"'+(d.prevFrom===r.id?" checked":"")+'>'
+      +'<span style="flex:1;min-width:0">'
+      +'<b>'+esc(fmtShort(r.date))+'</b>'
+      +'<span class="tiny muted"> · '+esc(r.period||"")+'</span>'
+      +(same? ' <span class="chip brand">같은 요일</span>':'')
+      +'<div class="tiny muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(hw)+'</div>'
+      +'</span></label>';
+  });
+  h+='</div>';
+  openDialog(d.studentName+" · 지난 과제 불러오기", h, [
+    ["이 수업 과제 불러오기","primary",function(){
+      var sel=$('#srcList input:checked');
+      if(!sel){ toast("수업을 골라주세요"); return; }
+      var rec=recById(sel.value);
+      applySource(d, rec);
+      closeModals(); markDirty(d); rerenderEntry(d);
+      toast(fmtShort(rec.date)+" 수업의 과제를 불러왔습니다");
+    }],
+    ["과제 비우기","",function(){
+      applySource(d, null);
+      closeModals(); markDirty(d); rerenderEntry(d);
+    }],
+    ["취소","ghost",closeModals]
+  ]);
 }
 
 /* ---------- 단원 복수 선택 ---------- */
@@ -1572,6 +1689,7 @@ $("#entries").addEventListener("click", function(e){
     refreshPrevRow(d3,i); markDirty(d3); return;
   }
   if(a==="units"){ openUnitPicker(d3,i); return; }
+  if(a==="pickSrc"){ openSourcePicker(d3); return; }
   if(a==="save"){ saveDraft(d3); return; }
   if(a==="report"){ openReport(d3.id); return; }
   if(a==="remove"){
@@ -1685,6 +1803,7 @@ function draftToRecord(d){
     attendance: d.attendance,
     arriveAt: d.attendance==="지각"? (d.arriveAt||"") : "",
     prev: d.prev.filter(function(p){return p.book||p.range;}),
+    prevFrom: d.prevFrom||"", prevDate: d.prevDate||"",
     prevComment: d.prevComment,
     prevRate: avgPrev(d),
     progress: d.progress.filter(function(p){return p.book||p.unit||p.note;}).map(function(p){
@@ -1715,6 +1834,11 @@ function saveDraft(d, silent){
   if(!silent) toast(d.studentName+" 리포트 저장 완료");
 }
 
+$("#btnCols").addEventListener("click", function(){
+  DB.meta.cols = (colCount()===2)? 1 : 2;
+  save(); applyCols();
+  toast(colCount()===2? "한 줄에 2명씩 보입니다":"한 줄에 1명씩 보입니다");
+});
 $("#btnFoldAll").addEventListener("click", function(){
   var fold = drafts.some(function(d){ return !d.collapsed; });
   drafts.forEach(function(d){ d.collapsed=fold; });
@@ -3671,15 +3795,12 @@ $("#btnAddAll").addEventListener("click", function(){
 $("#btnCarry").addEventListener("click", function(){
   var n=0;
   drafts.forEach(function(d){
-    var p=prevRecord(d.studentName, curDate, d.id);
+    var p=pickSourceLesson(d.studentName, curDate, d.id);
     if(!p) return;
     if(p.progress&&p.progress.length){
       d.progress=p.progress.map(function(x){return {book:x.book,unit:"",unitIdx:x.unitIdx,rate:x.rate,auto:true};});
     }
-    if(!d.prev.length && p.homework && p.homework.length){
-      d.prevDate=p.date;
-      d.prev=p.homework.map(function(h){return {book:h.book,range:h.range,rate:null};});
-    }
+    if(!d.prev.length && p.homework && p.homework.length) applySource(d, p);
     n++;
   });
   renderEntries();
