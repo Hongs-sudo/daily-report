@@ -221,12 +221,45 @@ select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=
 .rptcolor{align-self:flex-start;margin:4px 4px 0 0;flex:none}
 .rptcolor .cpop{left:0;right:auto}
 
+/* ---------- 학생 카드 구획 (B-2) ---------- */
+body{background:#e9edf2}
+.entry{
+  margin-top:18px;
+  border:1px solid #ccd6e0;
+  border-left:6px solid #b9c6d3;
+  border-radius:12px;
+  box-shadow:0 1px 2px rgba(21,34,51,.06), 0 12px 26px -18px rgba(21,34,51,.45);
+}
+.entry.saved{border-left-color:#2b8f63}
+.entry > header{
+  background:#eef3f8;
+  border-bottom:2px solid #cfdae4;
+  border-radius:0 11px 0 0;
+}
+.entry > header .name{
+  font-size:15px;background:var(--ink);color:#fff;
+  padding:3px 10px;border-radius:7px;letter-spacing:-.02em;
+}
+.entry .body{padding:8px 9px 9px;background:#f2f6f9}
+.entry .crow{
+  border-top:0;background:#fff;border:1px solid #dbe3ec;border-radius:9px;
+  padding:6px 9px 7px;margin-bottom:6px;align-items:flex-start;
+}
+.entry .crow:last-child{margin-bottom:0}
+.entry .crow > .clab{
+  color:#41526a;background:#e7eef5;border:1px solid #d3dfe9;border-radius:6px;
+  width:auto;min-width:40px;text-align:center;padding:3px 8px;margin-top:1px;
+  font-weight:800;white-space:nowrap;letter-spacing:-.03em;
+}
+.entry .crow > .clab br{display:none}
+.moreblk{border-top:0;margin-top:0;padding-top:0}
+
 /* ---------- 한 줄에 2명 (2단 배치) ---------- */
 @media(min-width:1100px){
   main.wide{max-width:1720px}
   #entries.cols2{
     display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
-    column-gap:14px;align-items:start;
+    column-gap:18px;align-items:start;
   }
   #entries.cols2 > .periodhead{grid-column:1 / -1}
   #entries.cols2 .entry{margin-top:12px}
@@ -237,7 +270,7 @@ select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=
   #entries.cols2 .entry > header select.mini{padding:4px 19px 4px 6px;font-size:11.5px;background-position:right 4px center}
   #entries.cols2 .entry > header .seg.mini button{padding:0 7px;font-size:11.5px;min-height:28px}
   #entries.cols2 .entry > header .btn.sm{padding:4px 7px;font-size:11.5px}
-  #entries.cols2 .entry .body{padding:5px 10px 7px}
+  #entries.cols2 .entry .body{padding:7px 8px 8px}
   /* 칸이 좁으므로 두 칸씩 나눠 접습니다 */
   #entries.cols2 .pgrid,#entries.cols2 .hgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   #entries.cols2 .pghead{display:none}
@@ -376,6 +409,19 @@ select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=
 .trend{display:flex;align-items:flex-end;gap:3px;height:28px}
 .trend .b{flex:1;min-width:5px;background:var(--brand-wash);border-radius:2px 2px 0 0;position:relative}
 .trend .b > i{display:block;width:100%;background:var(--brand-2);border-radius:2px 2px 0 0;position:absolute;bottom:0}
+
+.trend2{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
+.trend2 .tr{display:grid;grid-template-columns:auto 1fr auto;gap:5px;align-items:center}
+.trend2 .d{font-size:8.5px;color:var(--ink-3);white-space:nowrap}
+.trend2 .bar{height:7px;border-radius:99px;background:var(--line-2);overflow:hidden}
+.trend2 .bar > i{display:block;height:100%;border-radius:99px;background:var(--brand-2)}
+.trend2 .bar > i.good{background:var(--good)}
+.trend2 .bar > i.mid{background:var(--mid)}
+.trend2 .bar > i.low{background:var(--low)}
+.trend2 b{font-size:9px;font-weight:700;white-space:nowrap}
+.trend2 b.good{color:var(--good)}
+.trend2 b.mid{color:var(--mid)}
+.trend2 b.low{color:var(--low)}
 
 .kv{display:flex;gap:5px;flex-wrap:wrap}
 .kv .b{border:1px solid var(--line);border-radius:6px;padding:5px 8px;min-width:72px}
@@ -2194,7 +2240,7 @@ function sheetHTML(rec){
   if(rec.attitude) kv.push(["수업 참여","★".repeat(rec.attitude)+"☆".repeat(5-rec.attitude)]);
   if(rec.focus) kv.push(["집중도","★".repeat(rec.focus)+"☆".repeat(5-rec.focus)]);
   if(rec.test && (rec.test.score!==""&&rec.test.score!=null)) kv.push([rec.test.name||"확인 테스트", rec.test.score+(rec.test.total?" / "+rec.test.total:"")]);
-  var trend = hwTrend(rec.studentName, rec.date, 8);
+  var trend = hwTrend(rec.studentName, rec.date, 4);   // 최근 4회
   if(kv.length || trend.length>1){
     h+='<div class="blk"><div class="lab">학습 태도와 과제 흐름</div>';
     if(kv.length){
@@ -2206,9 +2252,13 @@ function sheetHTML(rec){
       var avg=Math.round(trend.reduce(function(a,b){return a+b.v;},0)/trend.length);
       h+='<div style="margin-top:'+(kv.length?"13px":"0")+'">';
       h+='<div class="small muted" style="margin-bottom:5px">최근 '+trend.length+'회 과제 달성률 · 평균 '+avg+'%</div>';
-      h+='<div class="trend">';
-      trend.forEach(function(t){ h+='<div class="b" style="height:100%"><i style="height:'+Math.max(t.v,3)+'%"></i></div>'; });
-      h+='</div><div class="tiny muted" style="display:flex;justify-content:space-between;margin-top:3px"><span>'+fmtShort(trend[0].d)+'</span><span>'+fmtShort(trend[trend.length-1].d)+'</span></div>';
+      h+='<div class="trend2">';
+      trend.forEach(function(t){
+        h+='<div class="tr"><span class="d">'+esc(fmtShort(t.d))+'</span>'
+          +'<span class="bar"><i class="'+rateClass(t.v)+'" style="width:'+Math.max(t.v,2)+'%"></i></span>'
+          +'<b class="'+rateClass(t.v)+'">'+t.v+'%</b></div>';
+      });
+      h+='</div>';
       h+='</div>';
     }
     h+='</div>';
