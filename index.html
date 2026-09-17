@@ -1231,8 +1231,9 @@ function recalcProgress(d, p){
 
 function unitSummary(p){
   var b=bookByName(p.book);
-  if(!b || !b.units.length) return null;
   var n=(p.unitIdxs||[]).length;
+  if(!n && p.unit) return p.unit;          // 단원을 고르지 않고 글로만 적힌 예전 기록
+  if(!b || !b.units.length) return null;
   if(!n) return "";
   var names=p.unitIdxs.slice().sort(function(x,y){return x-y;}).map(function(i){return b.units[i];}).filter(Boolean);
   return names.join(", ");
@@ -1652,8 +1653,8 @@ function entryHTML(d){
     var us=unitSummary(p), n=(p.unitIdxs||[]).length;
     h+='<button type="button" class="unitbtn cel" data-act="units" data-i="'+i+'" title="단원 선택">';
     if(us===null) h+='<span class="txt ph">'+(p.book? "단원 미등록 교재":"교재를 먼저 선택")+'</span>';
-    else if(!n)   h+='<span class="txt ph">단원 선택…</span>';
-    else          h+='<span class="txt">'+esc(us)+'</span><span class="cnt">'+n+'</span>';
+    else if(!us)         h+='<span class="txt ph">단원 선택…</span>';
+    else                 h+='<span class="txt">'+esc(us)+'</span>'+(n? '<span class="cnt">'+n+'</span>':'');
     h+='</button>';
     h+='<span class="pgset cel"><span class="tilde">p.</span>'
       +'<input type="number" min="0" class="mini tac" data-field="prog.pFrom" data-i="'+i+'" value="'+esc(p.pFrom)+'" placeholder="시작">'
