@@ -280,7 +280,6 @@ body{background:#e9edf2}
   #entries.cols2 .cline.rpt{flex-wrap:wrap}
   #entries.cols2 .cline.rpt > .redit{flex:1 1 calc(100% - 36px)}
   #entries.cols2 .tmplbar.g2{width:100%;grid-template-columns:repeat(4,1fr)}
-  #entries.cols2 .pvrow .rg{flex-basis:100%}
 }
 .colsbtn{white-space:nowrap}
 @media(max-width:1099px){ .colsbtn{display:none} }
@@ -330,6 +329,11 @@ body{background:#e9edf2}
 }
 .addbtn:hover{border-color:var(--brand-2);color:var(--brand)}
 .pvrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pvrow select.pvbook{width:130px;flex:none}
+.pvrow input.pvrange{flex:1 1 140px;width:auto;min-width:110px}
+@media(max-width:1099px){
+  .pvrow input.pvrange{flex-basis:100%}
+}
 .pvrow .bk{font-size:12px;font-weight:650;color:var(--ink-2);white-space:nowrap}
 .pvrow .rg{font-size:11.5px;color:var(--ink-3);flex:1;min-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .moreblk{border-top:1px dashed var(--line);margin-top:6px;padding-top:8px}
@@ -442,6 +446,34 @@ body{background:#e9edf2}
 .modal .pbody{overflow:auto;padding:16px;background:var(--wash)}
 .modal .pft{display:flex;gap:8px;padding:11px 16px;border-top:1px solid var(--line);flex-wrap:wrap;background:var(--paper)}
 @media(max-width:860px){.modal .panel{margin:0;border-radius:0;max-height:100vh;height:100vh}}
+
+/* ---------- 교재 목록 (3단) ---------- */
+.bookgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media(max-width:1100px){ .bookgrid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media(max-width:700px){  .bookgrid{grid-template-columns:1fr} }
+.bcard{
+  background:var(--paper);border:1px solid var(--line);border-radius:10px;
+  padding:9px 11px;box-shadow:var(--shadow);
+}
+.bcard.picked{border-color:var(--brand-2);box-shadow:0 0 0 2px var(--brand-wash)}
+.bhead{display:flex;align-items:center;gap:7px}
+.bchk{width:16px;height:16px;flex:none;accent-color:var(--brand)}
+.bname{
+  flex:1;min-width:0;font-weight:650;font-size:13.5px;cursor:pointer;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.bact{display:flex;gap:1px;flex:none;opacity:.45;transition:opacity .12s}
+.bcard:hover .bact,.bcard.open .bact{opacity:1}
+.ibtn{
+  border:0;background:none;color:var(--ink-3);font-size:14px;line-height:1;
+  padding:3px 5px;border-radius:6px;
+}
+.ibtn:hover{background:var(--line-2);color:var(--ink)}
+.ibtn.del:hover{background:#fdf3f2;color:var(--low)}
+.bmeta{display:flex;align-items:center;gap:5px;margin-top:6px;cursor:pointer}
+.bmeta .chip{font-size:10.5px;padding:2px 7px}
+.bunits{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line-2)}
+.bunits .chip{font-size:10.5px;padding:2px 7px}
 
 /* ---------- tables ---------- */
 table.tbl{width:100%;border-collapse:collapse;font-size:13px}
@@ -1630,8 +1662,8 @@ function entryHTML(d){
   d.prev.forEach(function(p,i){
     var last=(i===d.prev.length-1);
     h+='<div class="pvrow">';
-    h+='<input type="text" class="mini" data-field="prev.book" data-i="'+i+'" value="'+esc(p.book)+'" placeholder="교재" style="width:112px;flex:none">';
-    h+='<input type="text" class="mini" data-field="prev.range" data-i="'+i+'" value="'+esc(p.range)+'" placeholder="범위" style="flex:1;min-width:100px">';
+    h+='<select class="mini pvbook" data-field="prev.book" data-i="'+i+'">'+bookOptions(p.book)+'</select>';
+    h+='<input type="text" class="mini pvrange" data-field="prev.range" data-i="'+i+'" value="'+esc(p.range)+'" placeholder="범위">';
     h+='<button type="button" class="btn sm" data-act="prevZero" data-i="'+i+'" aria-pressed="'+(Number(p.rate)===0)+'" style="flex:none">미이행</button>';
     h+='<input type="number" min="0" max="100" step="1" class="mini w-pct" data-field="prev.num" data-i="'+i+'" value="'+(p.rate==null?"":p.rate)+'" placeholder="달성률">';
     h+='<span class="tilde" data-out="prev'+i+'">%</span>';
@@ -1957,8 +1989,7 @@ $("#entries").addEventListener("input", function(e){
   var ent=el.closest(".entry"); if(!ent) return;
   var d=findDraft(ent.getAttribute("data-k")); if(!d) return;
   var i=+el.getAttribute("data-i");
-  if(f==="prev.book"){ d.prev[i].book=el.value; }
-  else if(f==="prev.range"){ d.prev[i].range=el.value; }
+  if(f==="prev.range"){ d.prev[i].range=el.value; }
   else if(f==="prev.num"){
     d.prev[i].rate = el.value===""? null : clamp(el.value,0,100);
     refreshPrevRow(d,i,true);
@@ -1999,6 +2030,7 @@ $("#entries").addEventListener("change", function(e){
   var ent=el.closest(".entry"); if(!ent) return;
   var d=findDraft(ent.getAttribute("data-k")); if(!d) return;
   var i=+el.getAttribute("data-i");
+  if(f==="prev.book"){ d.prev[i].book=el.value; markDirty(d); return; }
   if(f==="prog.book"){
     var pp=d.progress[i];
     pp.book=el.value; pp.unitIdx=null; pp.unitIdxs=[]; pp.doneIdxs=[]; pp.unit=""; pp.rate=null;
@@ -3702,49 +3734,131 @@ $("#btnStuImport").addEventListener("click", function(){
 /* =========================================================
    교재 · 단원
    ========================================================= */
-function renderBooks(){
-  sortBooks();
+var bookOpen = {};          // 단원을 펼쳐 둔 교재
+var bookSel  = {};          // 체크한 교재
+
+function bookUsage(name){
+  var n=0;
+  DB.records.forEach(function(r){
+    var hit=[].concat(r.progress||[], r.homework||[], r.prev||[])
+      .some(function(x){ return x && x.book===name; });
+    if(hit) n++;
+  });
+  return n;
+}
+function visibleBooks(){
   var lv=$("#bookLevelFilter").value, q=$("#bookSearch").value.trim().toLowerCase();
-  var list=DB.books.filter(function(b){
+  return DB.books.filter(function(b){
     if(lv && b.level!==lv) return false;
     if(q && b.name.toLowerCase().indexOf(q)<0) return false;
     return true;
   });
-  var host=$("#bookList");
-  if(!list.length){ host.innerHTML='<div class="card"><div class="empty"><b>교재가 없습니다</b>오른쪽 위 “교재 추가”로 만들어 주세요.</div></div>'; return; }
-  var lvName={"초":"초등","중":"중등","고":"고등","특":"특강·기타"};
-  var h='';
-  list.forEach(function(b){
-    var used = DB.records.filter(function(r){
-      return (r.progress||[]).some(function(p){return p.book===b.name;});
-    }).length;
-    h+='<div class="card mb" data-id="'+b.id+'"><div class="pad">';
-    h+='<div class="spread">';
-    h+='<div class="row"><span class="chip brand">'+lvName[b.level]+'</span>'
-      +'<input type="text" data-f="name" value="'+esc(b.name)+'" style="width:220px;font-weight:650">'
-      +'<span class="chip '+(b.units.length?"good":"gray")+'">단원 '+b.units.length+'개</span>'
-      +(used? '<span class="chip gray">사용 '+used+'회</span>':'')+'</div>';
-    h+='<div class="row"><button class="btn sm" data-act="editUnits">단원 편집</button>'
-      +'<button class="btn sm ghost" data-act="dupBook">복제</button>'
-      +'<button class="btn sm ghost" data-act="delBook">삭제</button></div>';
-    h+='</div>';
-    if(b.units.length){
-      h+='<div class="row" style="margin-top:10px;gap:5px">';
-      b.units.forEach(function(u,i){ h+='<span class="chip gray" title="'+(i+1)+'/'+b.units.length+' · '+Math.round((i+1)/b.units.length*100)+'%">'+esc(u)+'</span>'; });
-      h+='</div>';
-    }else{
-      h+='<div class="small muted" style="margin-top:8px">단원을 등록하면 진도 달성률이 자동으로 계산됩니다.</div>';
-    }
-    h+='</div></div>';
-  });
-  host.innerHTML=h;
 }
-$("#bookList").addEventListener("input", function(e){
-  if(e.target.getAttribute("data-f")!=="name") return;
-  var id=e.target.closest("[data-id]").getAttribute("data-id");
-  DB.books.forEach(function(b){ if(b.id===id) b.name=e.target.value; });
-  save(); refreshPickers();
+function renderBooks(){
+  sortBooks();
+  var list=visibleBooks();
+  var host=$("#bookList");
+  var lvName={"초":"초등","중":"중등","고":"고등","특":"특강·기타"};
+
+  var nsel=Object.keys(bookSel).filter(function(k){ return bookSel[k]; }).length;
+  var bar='<div class="card pad mb"><div class="row">'
+    +'<label class="row small" style="gap:6px;margin:0">'
+    +'<input type="checkbox" id="bkAll" style="width:16px;height:16px;accent-color:var(--brand)"> 보이는 '+list.length+'종 모두 선택</label>'
+    +'<span style="flex:1"></span>'
+    +'<span class="small muted">'+(nsel? nsel+'종 선택됨':'선택 없음')+'</span>'
+    +'<button class="btn sm danger" data-bk="delSel"'+(nsel?'':' disabled')+'>선택 삭제</button>'
+    +'</div></div>';
+
+  if(!list.length){
+    host.innerHTML=bar+'<div class="card"><div class="empty"><b>교재가 없습니다</b>오른쪽 위 “교재 추가”로 만들어 주세요.</div></div>';
+    return;
+  }
+  var h=bar+'<div class="bookgrid">';
+  list.forEach(function(b){
+    var used=bookUsage(b.name), open=!!bookOpen[b.id];
+    h+='<div class="bcard'+(open?' open':'')+(bookSel[b.id]?' picked':'')+'" data-id="'+b.id+'">';
+    h+='<div class="bhead">';
+    h+='<input type="checkbox" class="bchk" data-bk="pick"'+(bookSel[b.id]?' checked':'')+'>';
+    h+='<span class="bname" data-bk="toggle" title="'+esc(b.name)+'">'+esc(b.name)+'</span>';
+    h+='<span class="bact">'
+      +'<button class="ibtn" data-act="renameBook" title="이름 바꾸기 · 합치기">✎</button>'
+      +'<button class="ibtn" data-act="editUnits" title="단원 편집">≡</button>'
+      +'<button class="ibtn" data-act="dupBook" title="복제">⧉</button>'
+      +'<button class="ibtn del" data-act="delBook" title="삭제">×</button>'
+      +'</span></div>';
+    h+='<div class="bmeta" data-bk="toggle">'
+      +'<span class="chip brand">'+lvName[b.level]+'</span>'
+      +'<span class="chip '+(b.units.length?"good":"gray")+'">단원 '+b.units.length+'</span>'
+      +(used? '<span class="chip gray">사용 '+used+'</span>':'')
+      +'<span style="flex:1"></span>'
+      +'<span class="tiny muted">'+(b.units.length? (open?'접기 ▴':'단원 보기 ▾') : '')+'</span>'
+      +'</div>';
+    if(open){
+      h+='<div class="bunits">';
+      if(b.units.length){
+        b.units.forEach(function(u,i){
+          h+='<span class="chip gray" title="'+(i+1)+'/'+b.units.length+' · '+Math.round((i+1)/b.units.length*100)+'%">'+esc(u)+'</span>';
+        });
+      }else{
+        h+='<span class="tiny muted">단원을 등록하면 진도 달성률이 자동으로 계산됩니다.</span>';
+      }
+      h+='</div>';
+    }
+    h+='</div>';
+  });
+  host.innerHTML=h+'</div>';
+  var all=$("#bkAll");
+  if(all) all.checked = list.length>0 && list.every(function(b){ return bookSel[b.id]; });
+}
+
+/* 체크 · 펼치기 · 선택 삭제 */
+$("#bookList").addEventListener("change", function(e){
+  if(e.target.id==="bkAll"){
+    var on=e.target.checked;
+    visibleBooks().forEach(function(b){ bookSel[b.id]= on? 1 : 0; });
+    renderBooks(); return;
+  }
+  if(e.target.getAttribute("data-bk")==="pick"){
+    var card=e.target.closest("[data-id]");
+    bookSel[card.getAttribute("data-id")] = e.target.checked? 1 : 0;
+    renderBooks();
+  }
 });
+$("#bookList").addEventListener("click", function(e){
+  if(e.target.closest("[data-act]")) return;             // 아이콘은 아래에서 처리
+  var t=e.target.closest('[data-bk="toggle"]');
+  if(t){
+    var id=t.closest("[data-id]").getAttribute("data-id");
+    bookOpen[id]=!bookOpen[id];
+    renderBooks();
+    return;
+  }
+  var d=e.target.closest('[data-bk="delSel"]');
+  if(d) deleteSelectedBooks();
+});
+function deleteSelectedBooks(){
+  var ids=Object.keys(bookSel).filter(function(k){ return bookSel[k]; });
+  var targets=DB.books.filter(function(b){ return ids.indexOf(b.id)>=0; });
+  if(!targets.length){ toast("선택한 교재가 없습니다"); return; }
+  var used=targets.map(function(b){ return {b:b, n:bookUsage(b.name)}; }).filter(function(x){ return x.n>0; });
+  var h='<div class="small mb">교재 <b>'+targets.length+'종</b>을 지웁니다. 수업 기록 자체는 그대로 남습니다.</div>';
+  if(used.length){
+    h+='<div class="banner warn" style="display:flex"><span>⚠</span><div>이 중 <b>'+used.length+'종</b>은 수업 기록에 쓰이고 있습니다. '
+      +'지우면 그 기록의 진도 달성률이 더는 계산되지 않습니다.<div class="tiny" style="margin-top:4px">'
+      + used.map(function(x){ return esc(x.b.name)+' ('+x.n+'건)'; }).join(', ')+'</div></div></div>';
+  }
+  h+='<div class="card unitpick mt" style="max-height:34vh">'
+    + targets.map(function(b){ return '<label><span>'+esc(b.name)+'</span></label>'; }).join('')
+    + '</div>';
+  openDialog("선택한 교재 삭제", h, [
+    ["삭제","primary",function(){
+      DB.books=DB.books.filter(function(b){ return ids.indexOf(b.id)<0; });
+      bookSel={}; save(); renderBooks(); refreshPickers(); closeModals();
+      toast(targets.length+"종을 지웠습니다");
+    }],
+    ["취소","ghost",closeModals]
+  ]);
+}
 $("#bookList").addEventListener("click", function(e){
   var a=e.target.closest("[data-act]"); if(!a) return;
   var id=e.target.closest("[data-id]").getAttribute("data-id");
@@ -3758,6 +3872,7 @@ $("#bookList").addEventListener("click", function(e){
     DB.books.push({id:uid(),level:b.level,name:b.name+" (복사)",units:b.units.slice()});
     sortBooks(); save(); renderBooks(); refreshPickers(); return;
   }
+  if(act==="renameBook"){ openRenameBook(b); return; }
   if(act==="editUnits"){
     openDialog(b.name+" · 단원 편집",
       '<div class="small muted mb">한 줄에 단원 하나씩 순서대로 적어주세요. 진도에서 어떤 단원을 골랐는지에 따라 달성률이 계산됩니다.</div>'
@@ -3769,19 +3884,86 @@ $("#bookList").addEventListener("click", function(e){
       }],["취소","ghost",closeModals]]);
   }
 });
+function openRenameBook(b){
+  var used=bookUsage(b.name);
+  var others=DB.books.filter(function(x){ return x.id!==b.id; }).slice().sort(cmpBook);
+  var h='<div class="small muted mb">이름을 바꿉니다. 이미 있는 교재와 같은 이름으로 바꾸면 <b>두 교재가 하나로 합쳐집니다.</b></div>';
+  h+='<label class="f">새 이름</label><input type="text" id="rnName" value="'+esc(b.name)+'">';
+  h+='<div class="mt"><label class="f">이미 있는 교재로 합치기 (고르면 위 칸에 채워집니다)</label>'
+    +'<select id="rnPick"><option value="">고르지 않음</option>'
+    + others.map(function(x){ return '<option value="'+esc(x.name)+'">'+esc(x.name)+'</option>'; }).join('')
+    +'</select></div>';
+  h+='<label class="row small mt" style="gap:7px">'
+    +'<input type="checkbox" id="rnRecs" style="width:16px;height:16px;accent-color:var(--brand)">'
+    +'<span>수업 기록의 교재 이름도 함께 바꾸기'
+    +(used? ' <b>('+used+'건)</b>' : ' (해당 기록 없음)')
+    +'</span></label>';
+  h+='<div class="small muted mt">체크하지 않으면 지난 기록에는 <b>'+esc(b.name)+'</b> 이름이 그대로 남습니다.</div>';
+  openDialog(b.name+" · 이름 바꾸기", h, [
+    ["바꾸기","primary",function(){
+      var nm=$("#rnName").value.trim();
+      if(!nm){ toast("이름을 넣어주세요"); return; }
+      if(nm===b.name){ closeModals(); return; }
+      var withRecs=$("#rnRecs").checked;
+      var old=b.name;
+      var same=DB.books.filter(function(x){ return x.id!==b.id && x.name===nm; })[0];
+      if(withRecs){
+        DB.records.forEach(function(r){
+          [].concat(r.progress||[], r.homework||[], r.prev||[]).forEach(function(x){
+            if(x && x.book===old) x.book=nm;
+          });
+        });
+      }
+      if(same){                                   // 합치기
+        if(!same.units.length && b.units.length){ same.units=b.units.slice(); same.edited=b.edited; }
+        DB.books=DB.books.filter(function(x){ return x.id!==b.id; });
+      }else{
+        b.name=nm;
+      }
+      sortBooks(); save(); renderBooks(); refreshPickers(); closeModals();
+      toast(same? ("‘"+old+"’을(를) ‘"+nm+"’에 합쳤습니다") : ("이름을 ‘"+nm+"’으로 바꿨습니다"));
+    }],
+    ["취소","ghost",closeModals]
+  ]);
+  var sel=$("#rnPick");
+  if(sel) sel.addEventListener("change", function(){ if(this.value) $("#rnName").value=this.value; });
+}
+
 $("#btnBookAdd").addEventListener("click", function(){
   openDialog("교재 추가",
-    '<label class="f">과정</label><select id="nbLevel"><option value="초">초등</option><option value="중">중등</option><option value="고" selected>고등</option><option value="특">특강·기타</option></select>'
-    +'<div class="mt"><label class="f">교재 이름</label><input type="text" id="nbName" placeholder="예: 개념쎈 3-2"></div>'
-    +'<div class="mt"><label class="f">단원 (한 줄에 하나)</label><textarea id="nbUnits" style="min-height:150px" placeholder="1.삼각비&#10;2.삼각비의 활용"></textarea></div>',
+    '<div class="row"><div style="flex:1;min-width:130px"><label class="f">과정</label>'
+    +'<select id="nbLevel"><option value="auto" selected>이름 보고 자동</option>'
+    +'<option value="초">초등</option><option value="중">중등</option>'
+    +'<option value="고">고등</option><option value="특">특강·기타</option></select></div></div>'
+    +'<div class="mt"><label class="f">교재 이름 — 한 줄에 하나씩, 여러 개를 한꺼번에 넣을 수 있습니다</label>'
+    +'<textarea id="nbNames" style="min-height:160px" placeholder="개념쎈 공수1&#10;쎈 공수1&#10;라이트쎈 대수"></textarea></div>'
+    +'<div class="mt"><label class="f">단원 (한 줄에 하나) — 교재를 하나만 넣을 때만 쓰입니다</label>'
+    +'<textarea id="nbUnits" style="min-height:110px" placeholder="1.삼각비&#10;2.삼각비의 활용"></textarea></div>',
     [["추가","primary",function(){
-      var nm=$("#nbName").value.trim();
-      if(!nm){ toast("교재 이름을 넣어주세요"); return; }
-      DB.books.push({id:uid(),level:$("#nbLevel").value,name:nm,
-        units:$("#nbUnits").value.split(/\r?\n/).map(function(x){return x.trim();}).filter(Boolean)});
-      sortBooks(); save(); renderBooks(); refreshPickers(); closeModals(); toast("교재를 추가했습니다");
+      var names=$("#nbNames").value.split(/\r?\n/)
+        .map(function(x){ return x.replace(/\s+/g," ").trim(); }).filter(Boolean);
+      if(!names.length){ toast("교재 이름을 넣어주세요"); return; }
+      var lv=$("#nbLevel").value;
+      var units=$("#nbUnits").value.split(/\r?\n/).map(function(x){return x.trim();}).filter(Boolean);
+      var have={}; DB.books.forEach(function(b){ have[b.name]=1; });
+      var added=0, skipped=[];
+      names.forEach(function(nm){
+        if(have[nm]){ skipped.push(nm); return; }
+        DB.books.push({id:uid(), level:(lv==="auto"? level_of(nm) : lv), name:nm,
+                       units:(names.length===1? units.slice() : [])});
+        have[nm]=1; added++;
+      });
+      sortBooks(); save(); renderBooks(); refreshPickers(); closeModals();
+      toast(added+"종 추가"+(skipped.length? " · 이미 있어 건너뜀 "+skipped.length+"종":""));
     }],["취소","ghost",closeModals]]);
 });
+/* 이름만 보고 과정을 짐작합니다 */
+function level_of(name){
+  if(/공수|대수|미적|확통|기하|고등|고[123]/.test(name)) return "고";
+  if(/[1-3]-[12]|중등|중[123]/.test(name))               return "중";
+  if(/초등|디딤돌|최상위|최고수준|[4-6]-[12]/.test(name)) return "초";
+  return "특";
+}
 $("#bookLevelFilter").addEventListener("change", renderBooks);
 $("#bookSearch").addEventListener("input", renderBooks);
 
