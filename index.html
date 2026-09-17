@@ -153,6 +153,74 @@ select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=
 .seg button{border:0;background:none;padding:8px 14px;font-size:13px;font-weight:550;color:var(--ink-3)}
 .seg button[aria-pressed="true"]{background:var(--brand);color:#fff}
 
+/* ---------- 진도 · 과제 줄 (두 칸씩) ---------- */
+.pgrid{
+  display:grid;
+  grid-template-columns:minmax(0,1.05fr) minmax(0,1.35fr) auto minmax(0,1.25fr) auto auto;
+  gap:5px;align-items:center;
+}
+.hgrid{
+  display:grid;
+  grid-template-columns:minmax(0,1.05fr) auto minmax(0,2fr) auto;
+  gap:5px;align-items:center;
+}
+.pgrid > .cel,.hgrid > .cel{min-width:0}
+.pgset{display:flex;align-items:center;gap:4px;flex:none}
+.pgset input{width:58px;flex:none}
+.rateset{display:flex;align-items:center;gap:3px;flex:none}
+.rateset input{width:52px;flex:none}
+.acts{display:flex;align-items:center;gap:3px;flex:none}
+.pghead{font-size:10.5px;font-weight:700;color:var(--ink-3);padding:0 0 1px}
+.pghead > span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.tac{text-align:center}
+.tar{text-align:right;padding-left:6px;padding-right:6px}
+/* 숫자 칸의 증감 화살표를 숨겨 글자가 잘리지 않게 합니다 */
+.pgrid input[type=number],.hgrid input[type=number],.cline input[type=number]{-moz-appearance:textfield}
+.pgrid input[type=number]::-webkit-outer-spin-button,
+.pgrid input[type=number]::-webkit-inner-spin-button,
+.hgrid input[type=number]::-webkit-outer-spin-button,
+.hgrid input[type=number]::-webkit-inner-spin-button,
+.cline input[type=number]::-webkit-outer-spin-button,
+.cline input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+/* 좁을 때는 두 칸씩 나눠 접습니다 */
+@media(max-width:1099px){
+  .pgrid,.hgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .pghead{display:none}
+}
+
+/* ---------- 글자 색 ---------- */
+.pgrid[style*="--rc"] .cel,.pgrid[style*="--rc"] .cel .txt,
+.hgrid[style*="--rc"] .cel{color:var(--rc)}
+/* 서식이 들어가는 입력칸 */
+.redit{
+  border:1px solid var(--line);border-radius:7px;background:#fff;
+  padding:6px 8px;font-size:12.5px;line-height:1.45;color:var(--ink);
+  outline:none;overflow-wrap:anywhere;white-space:pre-wrap;
+  transition:border-color .12s, box-shadow .12s;
+}
+.redit:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px var(--brand-wash)}
+.redit.one{min-height:30px;max-height:30px;overflow:hidden;white-space:nowrap}
+.redit.rptbox{min-height:50px;flex:1 1 calc(100% - 36px);min-width:0}
+.redit:empty:before{content:attr(data-ph);color:var(--ink-3);pointer-events:none}
+.redit ::selection,.redit::selection{background:#bcd9ea}
+
+.cbtn{
+  width:18px;height:18px;flex:none;border-radius:50%;
+  border:2px solid #fff;box-shadow:0 0 0 1px var(--line);padding:0;cursor:pointer;
+}
+.cbtn:hover{box-shadow:0 0 0 2px var(--brand-2)}
+.acts,.rptcolor{position:relative}
+.cpop{
+  position:absolute;right:0;top:24px;z-index:80;
+  display:flex;gap:5px;padding:6px;background:#fff;
+  border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow);
+}
+.cpop button{width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);padding:0;cursor:pointer}
+.cpop button.on{box-shadow:0 0 0 2px var(--ink)}
+.rptcolor{align-self:flex-start;margin:4px 4px 0 0;flex:none}
+.rptcolor .cpop{left:0;right:auto}
+
 /* ---------- 한 줄에 2명 (2단 배치) ---------- */
 @media(min-width:1100px){
   main.wide{max-width:1720px}
@@ -170,159 +238,20 @@ select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=
   #entries.cols2 .entry > header .seg.mini button{padding:0 7px;font-size:11.5px;min-height:28px}
   #entries.cols2 .entry > header .btn.sm{padding:4px 7px;font-size:11.5px}
   #entries.cols2 .entry .body{padding:5px 10px 7px}
-  /* 칸이 좁아지므로 모바일과 같은 줄바꿈 배치를 씁니다 */
-  #entries.cols2 .pgrid{grid-template-columns:auto 1fr auto 1fr}
-  #entries.cols2 .pgrid > *:nth-child(1),
-  #entries.cols2 .pgrid > *:nth-child(2),
-  #entries.cols2 .pgrid > *:nth-child(7){grid-column:1 / -1}
-  #entries.cols2 .pgrid > *:nth-child(8){grid-column:1 / span 2;text-align:left}
+  /* 칸이 좁으므로 두 칸씩 나눠 접습니다 */
+  #entries.cols2 .pgrid,#entries.cols2 .hgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   #entries.cols2 .pghead{display:none}
   #entries.cols2 .cline.nw{flex-wrap:wrap}
   #entries.cols2 .cline .w-bk,#entries.cols2 .cline .w-un{width:calc(50% - 3px)}
   #entries.cols2 .cline .w-tx,#entries.cols2 .cline .w-rg{flex-basis:100%}
   #entries.cols2 .cline.rpt{flex-wrap:wrap}
-  #entries.cols2 .cline.rpt > textarea{flex:1 1 100%}
+  #entries.cols2 .cline.rpt > .redit{flex:1 1 calc(100% - 36px)}
   #entries.cols2 .tmplbar.g2{width:100%;grid-template-columns:repeat(4,1fr)}
   #entries.cols2 .pvrow .rg{flex-basis:100%}
 }
 .colsbtn{white-space:nowrap}
 @media(max-width:1099px){ .colsbtn{display:none} }
 
-/* ---------- period group ---------- */
-.periodhead{
-  display:flex;align-items:center;gap:9px;
-  margin:20px 0 2px;padding:0 2px;
-}
-.periodhead b{font-size:14px;font-weight:700;letter-spacing:-.02em;color:var(--brand)}
-.periodhead .ln{flex:1;height:1px;background:var(--line)}
-
-/* ---------- student picker ---------- */
-.pickgrp{
-  position:sticky;top:0;z-index:1;
-  background:var(--wash);border-bottom:1px solid var(--line);
-  padding:6px 12px;font-size:11.5px;font-weight:700;color:var(--ink-3);
-}
-.pickrow{
-  display:flex;align-items:center;gap:9px;
-  padding:9px 12px;border-bottom:1px solid var(--line-2);cursor:pointer;
-}
-.pickrow:hover{background:#fafbfc}
-.pickrow.on{opacity:.55;cursor:default}
-.pickrow input{width:16px;height:16px;accent-color:var(--brand);flex:none}
-.pickrow b{font-weight:600;font-size:13.5px}
-
-/* ---------- student entry cards ---------- */
-.entry{margin-top:14px;border:1px solid var(--line);border-radius:var(--r);background:var(--paper);box-shadow:var(--shadow);overflow:hidden}
-.entry.saved{border-color:#bfdcc9}
-.entry > header{
-  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  padding:11px 14px;border-bottom:1px solid var(--line-2);background:linear-gradient(180deg,#fff,#fbfcfd);
-}
-.entry > header .name{font-size:16px;font-weight:700;letter-spacing:-.02em}
-.entry > header .grow{flex:1}
-.entry .body{padding:16px}
-.entry.collapsed .body{display:none}
-
-.sect{border-top:1px dashed var(--line);padding-top:14px;margin-top:14px}
-.sect:first-child{border-top:0;padding-top:0;margin-top:0}
-.sect > h4{font-size:13px;color:var(--ink);margin-bottom:9px;display:flex;align-items:center;gap:8px}
-.sect > h4 .hint{font-weight:450;color:var(--ink-3);font-size:11.5px}
-
-.grid-prog{display:grid;grid-template-columns:minmax(140px,1.1fr) minmax(150px,1.3fr) minmax(150px,1.5fr) 92px 34px;gap:8px;align-items:center}
-.grid-hw{display:grid;grid-template-columns:minmax(140px,1fr) minmax(220px,2.4fr) 34px;gap:8px;align-items:center}
-.gridhead{font-size:11.5px;color:var(--ink-3);font-weight:600;margin-bottom:5px}
-@media(max-width:760px){
-  .grid-prog,.grid-hw{grid-template-columns:1fr 1fr;}
-  .grid-prog > *:nth-child(3){grid-column:1/-1}
-  .gridhead{display:none}
-}
-
-.prevhw{background:var(--wash);border:1px solid var(--line);border-radius:9px;padding:12px}
-.prevhw .item{display:grid;grid-template-columns:minmax(120px,1fr) minmax(160px,1.8fr) auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
-.prevhw .item:first-of-type{border-top:0}
-@media(max-width:700px){.prevhw .item{grid-template-columns:1fr}}
-.rates{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
-.rates button{border:1px solid var(--line);background:#fff;border-radius:7px;padding:4px 8px;font-size:11.5px;font-weight:600;color:var(--ink-3);min-width:40px}
-.rates button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
-.rates input[type=range]{width:104px;accent-color:var(--brand)}
-
-.stars{display:inline-flex;gap:2px}
-.stars button{border:0;background:none;padding:1px;font-size:19px;line-height:1;color:#d6dde6}
-.stars button.on{color:var(--gold)}
-
-/* ---------- compact entry ---------- */
-.entry > header{padding:8px 12px}
-.entry > header .name{font-size:15px}
-.entry .body{padding:6px 12px 8px}
-.crow{display:flex;align-items:flex-start;gap:6px;flex-wrap:wrap;padding:3px 0;border-top:1px solid var(--line-2)}
-.crow:first-child{border-top:0;padding-top:0}
-.crow > .clab{
-  flex:none;width:42px;font-size:11px;font-weight:700;color:var(--ink-3);
-  align-self:flex-start;padding-top:6px;letter-spacing:-.02em;
-}
-.cstack{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
-.cline{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
-.cline.nw{flex-wrap:nowrap}
-.cline.rpt{flex-wrap:nowrap;align-items:stretch}
-@media(max-width:900px){ .cline.rpt{flex-wrap:wrap} .cline.rpt > textarea{flex:1 1 100%} }
-.cline.nw > *{min-width:0}
-.mini{padding:5px 8px;font-size:12.5px;border-radius:7px;height:30px}
-select.mini{padding-right:22px;background-position:right 6px center;height:30px}
-textarea.mini{height:auto;min-height:50px;padding:6px 8px;font-size:12.5px;line-height:1.45;resize:vertical}
-.cline .w-bk,select.w-bk{width:132px;flex:none}
-.cline .w-un,select.w-un{width:170px;flex:none}
-.cline .w-tx,input.w-tx{flex:1 1 120px;width:auto;min-width:80px}
-.cline .w-rt,input.w-rt{width:54px;flex:none;text-align:right;padding-left:6px;padding-right:6px}
-.cline .w-rg,input.w-rg{flex:1 1 140px;width:auto;min-width:100px}
-.cline .w-un2{flex:1 1 150px;width:auto;min-width:110px}
-.pgrid{
-  display:grid;
-  grid-template-columns:132px minmax(96px,1fr) auto 66px auto 66px minmax(110px,1.15fr) 62px 24px auto;
-  gap:5px;align-items:center;
-}
-.pghead{font-size:10.5px;font-weight:700;color:var(--ink-3);padding:0 0 1px}
-.pghead > span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.tac{text-align:center}
-/* 숫자 칸의 증감 화살표를 숨겨 글자가 잘리지 않게 합니다 */
-.pgrid input[type=number],.cline input[type=number]{-moz-appearance:textfield}
-.pgrid input[type=number]::-webkit-outer-spin-button,
-.pgrid input[type=number]::-webkit-inner-spin-button,
-.cline input[type=number]::-webkit-outer-spin-button,
-.cline input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-.tar{text-align:right;padding-left:6px;padding-right:6px}
-@media(max-width:900px){
-  .pgrid{grid-template-columns:auto 1fr auto 1fr}
-  .pgrid > *:nth-child(1),
-  .pgrid > *:nth-child(2),
-  .pgrid > *:nth-child(7){grid-column:1 / -1}
-  .pgrid > *:nth-child(8){grid-column:1 / span 2;text-align:left}
-  .pghead{display:none}
-}
-
-/* ---------- 작은 화면 ---------- */
-@media(max-width:560px){
-  .topbar{padding:8px 12px;gap:8px}
-  .topbar .mark b{font-size:15px;white-space:nowrap}
-  .topbar .mark span{display:none}
-  .topbar .teacher{padding:5px 10px;font-size:11.5px;white-space:nowrap}
-  .savestate{font-size:11px;max-width:82px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #saveState{display:none}
-  nav.tabs{top:40px}
-  nav.tabs button{padding:11px 11px 9px;font-size:13px}
-  main{padding:12px 12px calc(112px + env(safe-area-inset-bottom))}
-  .daybar{padding:12px}
-  .daybar .fld{flex:1 1 46%;min-width:0}
-  .daybar .fld.wide{flex:1 1 100%}
-  .entry > header{gap:6px 7px}
-  .entry > header .seg.mini{order:9;flex:1 1 100%}
-  .entry > header .grow{display:none}
-  .crow > .clab{width:38px;font-size:10.5px}
-  .entry .body{padding:6px 10px 8px}
-  .tmplbar.g2{grid-template-columns:repeat(2,1fr);width:100%}
-  .cline.nw > .w-rg{order:9}
-  .modal .pft{gap:6px}
-  .modal .pft .btn{flex:1 1 auto}
-}
 .cline .pg,input.pg{width:66px;flex:none;text-align:center;padding-left:5px;padding-right:5px}
 .cline .w-pct,input.w-pct{width:62px;flex:none;text-align:right;padding-left:6px;padding-right:6px}
 .tilde{flex:none;font-size:11.5px;color:var(--ink-3)}
@@ -391,11 +320,20 @@ textarea.mini{height:auto;min-height:50px;padding:6px 8px;font-size:12.5px;line-
 /* ---------- report sheet ---------- */
 .reportwrap{overflow:auto;padding:2px}
 #sheetFit{margin:0 auto;overflow:hidden}
-.sheet{
-  width:360px;margin:0 auto;background:#fff;color:var(--ink);
+/* A4 비율(210:297)에 맞춘 고정 크기 — 어떤 리포트든 같은 크기로 나갑니다 */
+.sheetpage{
+  width:480px;height:679px;margin:0 auto;background:#fff;
   border:1px solid var(--line);border-radius:10px;overflow:hidden;
+  position:relative;
+}
+.sheet{
+  --s:1;
+  width:360px;transform-origin:left top;
+  background:#fff;color:var(--ink);
+  display:flex;flex-direction:column;
   font-size:11px;line-height:1.45;
 }
+.sheet .ft{margin-top:auto}
 .sheet .hd{background:var(--ink);color:#fff;padding:8px 13px}
 .sheet .hd .k{font-size:9px;color:#9fb2c6;letter-spacing:.02em}
 .sheet .hd .t{font-size:13.5px;font-weight:700;letter-spacing:-.02em;margin-top:1px}
@@ -488,11 +426,26 @@ table.tbl tr:hover td{background:#fafbfc}
 .stickybar .info{font-size:12.5px;color:var(--ink-3)}
 
 @media print{
-  .topbar,nav.tabs,.stickybar,.modal .phd,.modal .pft{display:none!important}
-  body{background:#fff}
-  .modal .panel{margin:0;max-height:none;box-shadow:none}
+  @page{size:A4 portrait;margin:8mm}
+  html,body{background:#fff}
+  .topbar,nav.tabs,.stickybar,.modal .phd,.modal .pft,.toast,#fileBanner{display:none!important}
+  .modal .scrim{display:none!important}
+  /* 리포트만 남기고 뒤쪽 화면은 인쇄하지 않습니다 */
+  body.printing > *{display:none!important}
+  body.printing > #reportModal{display:block!important;position:static}
+  body.printing #reportModal .panel{position:static;overflow:visible!important;display:block}
+  body.printing #reportModal .pbody{overflow:visible!important}
+  body.printing #sheetHost,body.printing .reportwrap{overflow:visible!important}
+  body.printing #sheetPage{overflow:hidden}
+  .modal .panel{margin:0;max-height:none;height:auto;box-shadow:none;border-radius:0}
   .modal .pbody{padding:0;background:#fff;overflow:visible}
-  .sheet{border:0;width:100%}
+  .reportwrap{overflow:visible!important;padding:0!important}
+  #sheetFit,#sheetScale{width:auto!important;height:auto!important;transform:none!important;overflow:visible!important;margin:0!important}
+  /* 480px 짜리 A4 상자를 종이 크기(194mm)에 맞춰 키웁니다 */
+  .sheetpage{
+    width:480px;height:679px;border:0;border-radius:0;box-shadow:none;margin:0;
+    transform:scale(1.527);transform-origin:top left;
+  }
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -1182,8 +1135,8 @@ function calcRate(bookName, idx){
   if(!b || !b.units.length || idx==null || idx<0) return null;
   return Math.round((idx+1)/b.units.length*100);
 }
-function newProg(){ return {book:"",unit:"",unitIdx:null,unitIdxs:[],doneIdxs:[],pFrom:"",pTo:"",note:"",rate:null}; }
-function newHw(){ return {book:"",pFrom:"",pTo:"",note:""}; }
+function newProg(){ return {book:"",unit:"",unitIdx:null,unitIdxs:[],doneIdxs:[],pFrom:"",pTo:"",note:"",color:"",rate:null}; }
+function newHw(){ return {book:"",pFrom:"",pTo:"",note:"",color:""}; }
 
 /* 선택한 단원들을 리포트 표기 문구로 만듭니다 */
 function composeUnits(bookName, idxs){
@@ -1242,7 +1195,14 @@ function unitSummary(p){
 function joinRange(h){
   var p="";
   if(h.pFrom||h.pTo) p="p."+(h.pFrom||"")+"~"+(h.pTo||"");
-  var n=String(h.note||"").trim();
+  var n=richToText(h.note||"").trim();
+  return (p&&n)? (p+" · "+n) : (p||n);
+}
+function joinRangeHtml(h){
+  var p="";
+  if(h.pFrom||h.pTo) p=esc("p."+(h.pFrom||"")+"~"+(h.pTo||""));
+  var n=sanitizeRich(h.note||"");
+  if(isRichEmpty(n)) n="";
   return (p&&n)? (p+" · "+n) : (p||n);
 }
 /* 예전 기록의 "p.18-21 오답" 같은 글을 페이지와 내용으로 나눕니다 */
@@ -1269,16 +1229,16 @@ function draftFromRecord(r){
         unitIdx:(p.unitIdx==null?null:p.unitIdx),
         unitIdxs:(p.unitIdxs&&p.unitIdxs.length? p.unitIdxs.slice() : (p.unitIdx!=null&&p.unitIdx>=0?[p.unitIdx]:[])),
         doneIdxs:(p.doneIdxs||[]).slice(),
-        pFrom:p.pFrom||"", pTo:p.pTo||"", note:p.note||"", rate:p.rate};
+        pFrom:p.pFrom||"", pTo:p.pTo||"", note:p.note||"", color:p.color||"", rate:p.rate};
     }):[newProg()]),
     homework:(r.homework&&r.homework.length?r.homework.map(function(h){
-      if(h.pFrom!=null || h.note!=null) return {book:h.book, pFrom:h.pFrom||"", pTo:h.pTo||"", note:h.note||""};
+      if(h.pFrom!=null || h.note!=null) return {book:h.book, pFrom:h.pFrom||"", pTo:h.pTo||"", note:h.note||"", color:h.color||""};
       var sp=splitRange(h.range);
-      return {book:h.book, pFrom:sp.pFrom, pTo:sp.pTo, note:sp.note};
+      return {book:h.book, pFrom:sp.pFrom, pTo:sp.pTo, note:sp.note, color:""};
     }):[newHw()]),
     attitude:r.attitude||0, focus:r.focus||0,
     test:r.test?{name:r.test.name,score:r.test.score,total:r.test.total}:{name:"",score:"",total:""},
-    reporting:r.reporting||"", next:r.next||"",
+    reporting:r.reporting||"", reportingColor:r.reportingColor||"", next:r.next||"",
     more:false, saved:true, collapsed:false
   };
 }
@@ -1316,7 +1276,7 @@ function newDraft(stu, period){
     attendance:"출석", arriveAt:"", prev:[], prevComment:"",
     progress:[newProg()], homework:[newHw()],
     attitude:0, focus:0, test:{name:"",score:"",total:""},
-    reporting:"", next:"", more:false, saved:false, collapsed:false
+    reporting:"", reportingColor:"", next:"", more:false, saved:false, collapsed:false
   };
   var src=pickSourceLesson(stu.name, curDate, null);
   applySource(d, src);
@@ -1328,11 +1288,11 @@ function newDraft(stu, period){
         return {book:x.book, unit:x.unit||"", unitIdx:(x.unitIdx==null?null:x.unitIdx),
           unitIdxs:(x.unitIdxs&&x.unitIdxs.length? x.unitIdxs.slice() : (x.unitIdx!=null&&x.unitIdx>=0?[x.unitIdx]:[])),
           doneIdxs:(x.doneIdxs||[]).slice(),
-          pFrom:"", pTo:"", note:"", rate:x.rate};
+          pFrom:"", pTo:"", note:"", color:x.color||"", rate:x.rate};
       });
       if(!d.progress.length) d.progress=[newProg()];
       d.homework=p.progress.filter(function(x){return x.book;}).map(function(x){
-        return {book:x.book, pFrom:"", pTo:"", note:""};
+        return {book:x.book, pFrom:"", pTo:"", note:"", color:""};
       });
       if(!d.homework.length) d.homework=[newHw()];
     }
@@ -1404,6 +1364,184 @@ function starHTML(k,field,val){
   return out;
 }
 
+/* ---------- 리포팅 상용구 ---------- */
+var TMPL_DEFAULT=[
+  {label:"보강 일정", text:"※ 보강일정 안내입니다.\n → "},
+  {label:"교재 준비", text:"※ 새과정 교재 준비 안내입니다.\n → "},
+  {label:"전체오답", text:"※ 다음 시간부터 전체오답 진행 시작"},
+  {label:"결석보강", text:"※ 결석보강 진행_"}
+];
+function tmplList(){
+  if(!DB.meta.tmpl || !DB.meta.tmpl.length) DB.meta.tmpl=TMPL_DEFAULT.map(function(t){ return {label:t.label,text:t.text}; });
+  return DB.meta.tmpl;
+}
+function openTmplEditor(){
+  var list=tmplList();
+  var h='<div class="small muted mb">자주 쓰는 안내 문구를 등록해 두면 버튼 한 번으로 넣을 수 있습니다. '
+    +'버튼에 보일 <b>이름</b>과 실제로 들어갈 <b>문구</b>를 적어주세요.</div>';
+  h+='<div id="tmplList">';
+  list.forEach(function(t,i){ h+=tmplRowHTML(t,i); });
+  h+='</div>';
+  h+='<div class="row mt"><button class="btn sm" data-tm="add">＋ 새 항목</button>'
+    +'<span style="flex:1"></span>'
+    +'<button class="btn sm ghost" data-tm="reset">기본 문구로 되돌리기</button></div>';
+  openDialog("리포팅 상용구 관리", h, [
+    ["저장","primary",function(){
+      var rows=$$("#tmplList .tmplrow");
+      var out=[];
+      rows.forEach(function(r){
+        var lb=$('input[data-tf="label"]',r).value.trim();
+        var tx=$('textarea[data-tf="text"]',r).value;
+        if(lb || tx.trim()) out.push({label:lb||"상용구", text:tx});
+      });
+      DB.meta.tmpl=out;
+      save(); closeModals(); renderEntries();
+      toast("상용구 "+out.length+"개를 저장했습니다");
+    }],
+    ["취소","ghost",closeModals]
+  ]);
+  var body=$("#dlgBody");
+  body.addEventListener("click", function(e){
+    var b=e.target.closest("[data-tm]"); if(!b) return;
+    var a=b.getAttribute("data-tm");
+    if(a==="add"){
+      $("#tmplList").insertAdjacentHTML("beforeend", tmplRowHTML({label:"",text:""}, Date.now()%100000));
+      var last=$$("#tmplList .tmplrow").pop();
+      if(last) $('input[data-tf="label"]',last).focus();
+    }else if(a==="del"){
+      var row=b.closest(".tmplrow"); if(row) row.remove();
+    }else if(a==="up" || a==="down"){
+      var r=b.closest(".tmplrow");
+      var sib = a==="up"? r.previousElementSibling : r.nextElementSibling;
+      if(sib) a==="up"? r.parentNode.insertBefore(r,sib) : r.parentNode.insertBefore(sib,r);
+    }else if(a==="reset"){
+      if(!confirm("기본 문구 4개로 되돌립니다. 계속할까요?")) return;
+      $("#tmplList").innerHTML=TMPL_DEFAULT.map(function(t,i){ return tmplRowHTML(t,i); }).join("");
+    }
+  });
+}
+function tmplRowHTML(t,i){
+  return '<div class="tmplrow card pad" style="padding:9px;margin-bottom:7px">'
+    +'<div class="row" style="gap:6px">'
+    +'<input type="text" class="mini" data-tf="label" value="'+esc(t.label)+'" placeholder="버튼 이름 (예: 보강 일정)" style="width:150px;flex:none">'
+    +'<textarea class="mini" data-tf="text" placeholder="넣을 문구" style="flex:1;min-width:140px;min-height:44px">'+esc(t.text)+'</textarea>'
+    +'<span class="acts">'
+    +'<button class="btn sm ghost" data-tm="up" title="위로">▲</button>'
+    +'<button class="btn sm ghost" data-tm="down" title="아래로">▼</button>'
+    +'<button class="btn sm ghost danger" data-tm="del" title="삭제">×</button>'
+    +'</span></div></div>';
+}
+
+/* ---------- 서식 있는 글자 (블록 선택 색칠) ---------- */
+/* 입력칸이 일반 텍스트 상자면 글자마다 색을 담을 수 없어, 서식이 들어가는 칸을 씁니다. */
+function rgbToHex(c){
+  c=String(c||"").trim();
+  if(/^#[0-9a-f]{6}$/i.test(c)) return c.toLowerCase();
+  var m=c.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/i);
+  if(!m) return "";
+  var h=function(n){ n=(+n).toString(16); return n.length<2? "0"+n : n; };
+  return ("#"+h(m[1])+h(m[2])+h(m[3])).toLowerCase();
+}
+function allowedColor(c){
+  var hex=rgbToHex(c);
+  for(var i=0;i<TEXT_COLORS.length;i++) if(TEXT_COLORS[i][1].toLowerCase()===hex) return TEXT_COLORS[i][1];
+  return "";
+}
+/* 허용한 것만 남깁니다 : 색 입힌 span 과 줄바꿈 */
+function sanitizeRich(html){
+  var box=document.createElement("div");
+  box.innerHTML=String(html==null?"":html);
+  (function walk(node){
+    Array.prototype.slice.call(node.childNodes).forEach(function(c){
+      if(c.nodeType===3) return;                       // 글자
+      if(c.nodeType!==1){ c.parentNode.removeChild(c); return; }
+      var tag=c.tagName.toLowerCase();
+      if(tag==="br") return;
+      walk(c);
+      if(tag==="span"){
+        var col=allowedColor(c.style && c.style.color);
+        if(col){
+          var keep=document.createElement("span");
+          keep.setAttribute("style","color:"+col);
+          while(c.firstChild) keep.appendChild(c.firstChild);
+          c.parentNode.replaceChild(keep,c);
+          return;
+        }
+      }
+      if(tag==="div"||tag==="p"){                      // 줄바꿈으로 바꿉니다
+        if(c.previousSibling) c.parentNode.insertBefore(document.createElement("br"), c);
+      }
+      while(c.firstChild) c.parentNode.insertBefore(c.firstChild, c);
+      c.parentNode.removeChild(c);
+    });
+  })(box);
+  return box.innerHTML.replace(/(<br>)+$/,"");
+}
+/* 저장값 → 편집칸에 넣을 HTML (예전 기록의 일반 글자도 그대로 보여줍니다) */
+function toRich(v){
+  v=String(v==null?"":v);
+  if(/<(span|br)\b/i.test(v)) return sanitizeRich(v);
+  return esc(v).replace(/\n/g,"<br>");
+}
+/* 서식 글 → 일반 글 (문자 보내기 · CSV · 검색용) */
+function richToText(v){
+  v=String(v==null?"":v);
+  if(!/<[a-z]/i.test(v)) return v;
+  var box=document.createElement("div");
+  box.innerHTML=v.replace(/<br\s*\/?>/gi,"\n");
+  return box.textContent||"";
+}
+function isRichEmpty(v){ return richToText(v).trim()===""; }
+
+/* 마지막으로 잡아둔 선택 영역 (버튼을 눌러도 잃지 않도록 기억합니다) */
+var lastSel=null;
+document.addEventListener("selectionchange", function(){
+  var s=window.getSelection();
+  if(!s || !s.rangeCount) return;
+  var n=s.anchorNode;
+  var host=n && (n.nodeType===1? n : n.parentNode);
+  host = host && host.closest? host.closest(".redit") : null;
+  if(host) lastSel={el:host, range:s.getRangeAt(0).cloneRange()};
+});
+function restoreSel(el){
+  if(!lastSel || lastSel.el!==el) return false;
+  var s=window.getSelection();
+  s.removeAllRanges(); s.addRange(lastSel.range);
+  return !s.isCollapsed;
+}
+/* 고른 부분만 색칠 */
+function paintSelection(el, color){
+  if(!el) return false;
+  el.focus();
+  if(!restoreSel(el)) return false;
+  try{ document.execCommand("styleWithCSS", false, true); }catch(e){}
+  var ok=false;
+  try{ ok=document.execCommand("foreColor", false, color); }catch(e){ ok=false; }
+  if(!ok) return false;
+  el.dispatchEvent(new Event("input",{bubbles:true}));
+  return true;
+}
+function richField(kind, key, val, ph, extra){
+  return '<div class="redit mini '+(extra||"")+'" contenteditable="true" spellcheck="false"'
+    +' data-rich="'+kind+'" data-i="'+key+'" data-ph="'+esc(ph)+'">'+toRich(val)+'</div>';
+}
+
+/* ---------- 글자 색 ---------- */
+var TEXT_COLORS=[["검정","#152233"],["파랑","#1565c0"],["빨강","#d32f2f"],["초록","#2e7d32"],["주황","#e07b00"]];
+function colorBtn(kind, i, cur){
+  var c=cur||TEXT_COLORS[0][1];
+  return '<button type="button" class="cbtn" data-act="color" data-ck="'+kind+'" data-i="'+i+'"'
+    +' title="글자 색" style="background:'+esc(c)+'"></button>';
+}
+function colorPopHTML(kind, i, cur){
+  var h='<div class="cpop">';
+  TEXT_COLORS.forEach(function(c){
+    h+='<button type="button" data-pick="'+esc(c[1])+'" title="'+esc(c[0])+'" style="background:'+esc(c[1])+'"'
+      +((cur||TEXT_COLORS[0][1])===c[1]? ' class="on"':'')+'></button>';
+  });
+  return h+'</div>';
+}
+
 function entryHTML(d){
   var pr=avgPrev(d);
   var stu=studentByName(d.studentName)||{};
@@ -1459,43 +1597,47 @@ function entryHTML(d){
   /* ── 진도 ── */
   h+='<div class="crow"><span class="clab">진도</span><div class="cstack">';
   h+='<div class="pgrid pghead">'
-    +'<span>교재</span><span>단원</span>'
-    +'<span style="grid-column:3 / span 4" class="tac">페이지</span>'
-    +'<span>특이사항</span><span class="tar">달성률</span>'
-    +'<span></span><span></span></div>';
+    +'<span>교재</span><span>단원</span><span class="tac">페이지</span>'
+    +'<span>특이사항</span><span class="tar">달성률</span><span></span></div>';
   d.progress.forEach(function(p,i){
-    h+='<div class="pgrid">';
-    h+='<select class="mini" data-field="prog.book" data-i="'+i+'">'+bookOptions(p.book)+'</select>';
+    var col=p.color||"";
+    h+='<div class="pgrid"'+(col?' style="--rc:'+esc(col)+'"':'')+'>';
+    h+='<select class="mini cel" data-field="prog.book" data-i="'+i+'">'+bookOptions(p.book)+'</select>';
     var us=unitSummary(p), n=(p.unitIdxs||[]).length;
-    h+='<button type="button" class="unitbtn" data-act="units" data-i="'+i+'" title="단원 선택">';
+    h+='<button type="button" class="unitbtn cel" data-act="units" data-i="'+i+'" title="단원 선택">';
     if(us===null) h+='<span class="txt ph">'+(p.book? "단원 미등록 교재":"교재를 먼저 선택")+'</span>';
     else if(!n)   h+='<span class="txt ph">단원 선택…</span>';
     else          h+='<span class="txt">'+esc(us)+'</span><span class="cnt">'+n+'</span>';
     h+='</button>';
-    h+='<span class="tilde">p.</span>';
-    h+='<input type="number" min="0" class="mini tac" data-field="prog.pFrom" data-i="'+i+'" value="'+esc(p.pFrom)+'" placeholder="시작">';
-    h+='<span class="tilde">~</span>';
-    h+='<input type="number" min="0" class="mini tac" data-field="prog.pTo" data-i="'+i+'" value="'+esc(p.pTo)+'" placeholder="끝">';
-    h+='<input type="text" class="mini" data-field="prog.note" data-i="'+i+'" value="'+esc(p.note||"")+'" placeholder="예: 전체오답, 심화 보충">';
-    h+='<input type="number" min="0" max="100" class="mini tar" data-field="prog.rate" data-i="'+i+'" value="'+(p.rate==null?"":p.rate)+'" placeholder="%" title="교재 전체 대비 진도 달성률">';
-    h+='<button class="xbtn" data-act="delProg" data-i="'+i+'">×</button>';
-    h+= (i===d.progress.length-1)? '<button class="addbtn" data-act="addProg">+ 교재</button>' : '<span></span>';
+    h+='<span class="pgset cel"><span class="tilde">p.</span>'
+      +'<input type="number" min="0" class="mini tac" data-field="prog.pFrom" data-i="'+i+'" value="'+esc(p.pFrom)+'" placeholder="시작">'
+      +'<span class="tilde">~</span>'
+      +'<input type="number" min="0" class="mini tac" data-field="prog.pTo" data-i="'+i+'" value="'+esc(p.pTo)+'" placeholder="끝"></span>';
+    h+=richField("prog", i, p.note||"", "예: 전체오답, 심화 보충", "cel one");
+    h+='<span class="rateset cel"><input type="number" min="0" max="100" class="mini tar" data-field="prog.rate" data-i="'+i+'" value="'+(p.rate==null?"":p.rate)+'" placeholder="%" title="교재 전체 대비 진도 달성률"><span class="tilde">%</span></span>';
+    h+='<span class="acts">'+colorBtn("prog",i,col)
+      +'<button class="xbtn" data-act="delProg" data-i="'+i+'">×</button>'
+      +((i===d.progress.length-1)? '<button class="addbtn" data-act="addProg">+ 교재</button>':'')+'</span>';
     h+='</div>';
   });
   h+='</div></div>';
 
   /* ── 과제 ── */
   h+='<div class="crow"><span class="clab">과제</span><div class="cstack">';
+  h+='<div class="hgrid pghead"><span>교재</span><span class="tac">페이지</span>'
+    +'<span>추가 내용</span><span></span></div>';
   d.homework.forEach(function(x,i){
-    h+='<div class="cline nw">';
-    h+='<select class="mini w-bk" data-field="hw.book" data-i="'+i+'">'+bookOptions(x.book)+'</select>';
-    h+='<span class="tilde">p.</span>';
-    h+='<input type="number" min="0" class="mini pg" data-field="hw.pFrom" data-i="'+i+'" value="'+esc(x.pFrom)+'" placeholder="시작">';
-    h+='<span class="tilde">~</span>';
-    h+='<input type="number" min="0" class="mini pg" data-field="hw.pTo" data-i="'+i+'" value="'+esc(x.pTo)+'" placeholder="끝">';
-    h+='<input type="text" class="mini w-rg" data-field="hw.note" data-i="'+i+'" value="'+esc(x.note)+'" placeholder="추가 내용 (예: 연습문제 제외, 오답 마무리)">';
-    h+='<button class="xbtn" data-act="delHw" data-i="'+i+'">×</button>';
-    if(i===d.homework.length-1) h+='<button class="addbtn" data-act="addHw">+ 교재</button>';
+    var hc=x.color||"";
+    h+='<div class="hgrid"'+(hc?' style="--rc:'+esc(hc)+'"':'')+'>';
+    h+='<select class="mini cel" data-field="hw.book" data-i="'+i+'">'+bookOptions(x.book)+'</select>';
+    h+='<span class="pgset cel"><span class="tilde">p.</span>'
+      +'<input type="number" min="0" class="mini tac" data-field="hw.pFrom" data-i="'+i+'" value="'+esc(x.pFrom)+'" placeholder="시작">'
+      +'<span class="tilde">~</span>'
+      +'<input type="number" min="0" class="mini tac" data-field="hw.pTo" data-i="'+i+'" value="'+esc(x.pTo)+'" placeholder="끝"></span>';
+    h+=richField("hw", i, x.note||"", "추가 내용 (예: 연습문제 제외, 오답 마무리)", "cel one");
+    h+='<span class="acts">'+colorBtn("hw",i,hc)
+      +'<button class="xbtn" data-act="delHw" data-i="'+i+'">×</button>'
+      +((i===d.homework.length-1)? '<button class="addbtn" data-act="addHw">+ 교재</button>':'')+'</span>';
     h+='</div>';
   });
   h+='</div></div>';
@@ -1503,12 +1645,13 @@ function entryHTML(d){
   /* ── 리포팅 : 오른쪽에 상용구 ── */
   h+='<div class="crow"><span class="clab">리포팅</span><div class="cstack">';
   h+='<div class="cline rpt">';
-  h+='<textarea class="mini" data-field="reporting" placeholder="특이사항 · 보강 일정 등 (비워두면 리포트에 나오지 않습니다)" style="flex:1;min-width:0">'+esc(d.reporting)+'</textarea>';
+  h+='<span class="rptcolor">'+colorBtn("rpt",0,d.reportingColor)+'</span>';
+  h+=richField("rpt", 0, d.reporting, "특이사항 · 보강 일정 등 (비워두면 리포트에 나오지 않습니다)", "rptbox");
   h+='<div class="tmplbar g2">';
-  [["보강 일정","※ 보강일정 안내입니다.\n → "],["교재 준비","※ 새과정 교재 준비 안내입니다.\n → "],
-   ["전체오답","※ 다음 시간부터 전체오답 진행 시작"],["결석보강","※ 결석보강 진행_"]].forEach(function(t){
-    h+='<button data-act="tmpl" data-t="'+esc(t[1])+'">'+esc(t[0])+'</button>';
+  tmplList().forEach(function(t){
+    h+='<button data-act="tmpl" data-t="'+esc(t.text)+'" title="'+esc(t.text.replace(/\n/g," "))+'">'+esc(t.label)+'</button>';
   });
+  h+='<button data-act="tmplEdit" title="상용구 추가 · 편집">＋ 항목</button>';
   h+='</div></div></div>';
   h+='</div>';
 
@@ -1690,6 +1833,35 @@ $("#entries").addEventListener("click", function(e){
   }
   if(a==="units"){ openUnitPicker(d3,i); return; }
   if(a==="pickSrc"){ openSourcePicker(d3); return; }
+  if(a==="tmplEdit"){ openTmplEditor(); return; }
+  if(a==="color"){
+    var kind=act.getAttribute("data-ck");
+    var cur = kind==="prog"? (d3.progress[i].color||"")
+            : kind==="hw"?   (d3.homework[i].color||"")
+            :                (d3.reportingColor||"");
+    $$(".cpop").forEach(function(x){ x.remove(); });
+    var wrap=act.parentNode;
+    wrap.insertAdjacentHTML("beforeend", colorPopHTML(kind,i,cur));
+    var pop=$(".cpop",wrap);
+    var row=act.closest(".pgrid, .hgrid, .cline");
+    var fld=row? row.querySelector('[data-rich]') : null;
+    pop.addEventListener("pointerdown", function(ev){ ev.preventDefault(); });
+    pop.addEventListener("click", function(ev){
+      var sw=ev.target.closest("[data-pick]"); if(!sw) return;
+      var c=sw.getAttribute("data-pick");
+      pop.remove();
+      if(fld && paintSelection(fld, c)){        // 블록으로 고른 부분만 칠합니다
+        markDirty(d3);
+        toast("고른 부분의 글자 색을 바꿨습니다");
+        return;
+      }
+      if(kind==="prog") d3.progress[i].color=c; // 고른 부분이 없으면 줄 전체
+      else if(kind==="hw") d3.homework[i].color=c;
+      else d3.reportingColor=c;
+      markDirty(d3); rerenderEntry(d3);
+    });
+    return;
+  }
   if(a==="save"){ saveDraft(d3); return; }
   if(a==="report"){ openReport(d3.id); return; }
   if(a==="remove"){
@@ -1705,15 +1877,35 @@ $("#entries").addEventListener("click", function(e){
   if(a==="addHw"){ d3.homework.push(newHw()); rerenderEntry(d3); return; }
   if(a==="delHw"){ d3.homework.splice(i,1); if(!d3.homework.length)d3.homework=[newHw()]; rerenderEntry(d3); return; }
   if(a==="tmpl"){
-    var ta=$('textarea[data-field="reporting"]', ent2);
+    var ta=$('[data-rich="rpt"]', ent2);
     var t=act.getAttribute("data-t");
-    ta.value = ta.value ? (ta.value.replace(/\s+$/,"")+"\n"+t) : t;
-    d3.reporting=ta.value; ta.focus(); markDirty(d3); return;
+    if(ta){
+      var add=esc(t).replace(/\n/g,"<br>");
+      ta.innerHTML = isRichEmpty(ta.innerHTML)? add : (sanitizeRich(ta.innerHTML)+"<br>"+add);
+      d3.reporting=ta.innerHTML;
+      ta.focus();
+      var r=document.createRange(); r.selectNodeContents(ta); r.collapse(false);
+      var s=window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    }
+    markDirty(d3); return;
   }
 });
 
 $("#entries").addEventListener("input", function(e){
-  var el=e.target, f=el.getAttribute("data-field");
+  var el=e.target;
+  var rk=el.getAttribute && el.getAttribute("data-rich");
+  if(rk){
+    var ent0=el.closest(".entry"); if(!ent0) return;
+    var d0=findDraft(ent0.getAttribute("data-k")); if(!d0) return;
+    var idx=+el.getAttribute("data-i");
+    var html=el.innerHTML;
+    if(rk==="prog") d0.progress[idx].note=html;
+    else if(rk==="hw") d0.homework[idx].note=html;
+    else d0.reporting=html;
+    markDirty(d0);
+    return;
+  }
+  var f=el.getAttribute("data-field");
   if(!f) return;
   var ent=el.closest(".entry"); if(!ent) return;
   var d=findDraft(ent.getAttribute("data-k")); if(!d) return;
@@ -1726,19 +1918,32 @@ $("#entries").addEventListener("input", function(e){
   }
   else if(f==="prevComment"){ d.prevComment=el.value; }
   else if(f==="arriveAt"){ d.arriveAt=el.value; }
-  else if(f==="prog.note"){ d.progress[i].note=el.value; }
+
   else if(f==="prog.rate"){ d.progress[i].rate = el.value===""?null:clamp(el.value,0,100); }
-  else if(f==="hw.note"){ d.homework[i].note=el.value; }
   else if(f==="hw.pFrom"){ d.homework[i].pFrom=el.value; }
   else if(f==="hw.pTo"){ d.homework[i].pTo=el.value; }
   else if(f==="prog.pFrom"){ d.progress[i].pFrom=el.value; }
   else if(f==="prog.pTo"){ d.progress[i].pTo=el.value; }
-  else if(f==="reporting"){ d.reporting=el.value; }
   else if(f==="next"){ d.next=el.value; }
   else if(f==="test.name"){ d.test.name=el.value; }
   else if(f==="test.score"){ d.test.score=el.value; }
   else if(f==="test.total"){ d.test.total=el.value; }
   markDirty(d);
+});
+
+$("#entries").addEventListener("keydown", function(e){
+  var el=e.target;
+  if(el && el.getAttribute && el.getAttribute("data-rich") && el.classList.contains("one") && e.key==="Enter"){
+    e.preventDefault();
+  }
+});
+/* 붙여넣기는 글자만 받습니다 */
+$("#entries").addEventListener("paste", function(e){
+  var el=e.target;
+  if(!el || !el.getAttribute || !el.getAttribute("data-rich")) return;
+  e.preventDefault();
+  var t=(e.clipboardData||window.clipboardData).getData("text")||"";
+  document.execCommand("insertText", false, el.classList.contains("one")? t.replace(/\s*\n\s*/g," ") : t);
 });
 
 $("#entries").addEventListener("change", function(e){
@@ -1806,20 +2011,22 @@ function draftToRecord(d){
     prevFrom: d.prevFrom||"", prevDate: d.prevDate||"",
     prevComment: d.prevComment,
     prevRate: avgPrev(d),
-    progress: d.progress.filter(function(p){return p.book||p.unit||p.note;}).map(function(p){
+    progress: d.progress.filter(function(p){return p.book||p.unit||!isRichEmpty(p.note);}).map(function(p){
       var idxs=(p.unitIdxs||[]).slice();
       return {book:p.book,
               unit: idxs.length? composeUnits(p.book, idxs) : (p.unit||""),
               unitIdx:p.unitIdx, unitIdxs:idxs,
               doneIdxs:(p.doneIdxs||[]).slice(),
-              pFrom:p.pFrom||"", pTo:p.pTo||"", note:p.note||"", rate:p.rate};
+              pFrom:p.pFrom||"", pTo:p.pTo||"", note:sanitizeRich(p.note||""), color:p.color||"", rate:p.rate};
     }),
     homework: d.homework.filter(function(h){ return h.book && joinRange(h)!==""; }).map(function(h){
-      return {book:h.book, pFrom:h.pFrom||"", pTo:h.pTo||"", note:h.note||"", range:joinRange(h)};
+      return {book:h.book, pFrom:h.pFrom||"", pTo:h.pTo||"",
+              note:sanitizeRich(h.note||""), color:h.color||"",
+              range:joinRange(h), rangeHtml:joinRangeHtml(h)};
     }),
     attitude: d.attitude, focus: d.focus,
     test: (d.test.name||d.test.score!=="")? {name:d.test.name,score:d.test.score,total:d.test.total}:null,
-    reporting: d.reporting, next: d.next,
+    reporting: sanitizeRich(d.reporting||""), reportingColor: d.reportingColor||"", next: d.next,
     savedAt: new Date().toISOString()
   };
 }
@@ -1880,7 +2087,9 @@ function hwTrend(name, date, n){
   return list.slice(-n).map(function(r){ return {d:r.date, v:r.prevRate}; });
 }
 
-var SHEET_W = 360;              // 리포트 기준 너비
+var SHEET_W = 480;              // A4 페이지 상자 너비
+var SHEET_H = 679;              // A4 비율 높이 (480 x 1.4142)
+var BASE_W  = 360;              // 리포트 내용이 설계된 너비
 function donutSVG(pct){
   var p = pct==null?0:pct;
   var r=27, c=2*Math.PI*r;
@@ -1936,11 +2145,12 @@ function sheetHTML(rec){
   if(rec.progress && rec.progress.length){
     h+='<div class="blk"><div class="lab">오늘 진도</div>';
     rec.progress.forEach(function(p){
-      h+='<div class="line"><div class="bk">'+esc(p.book)+'</div><div>';
+      h+='<div class="line"><div class="bk"'+(p.color? ' style="color:'+esc(p.color)+'"':'')+'>'+esc(p.book)+'</div><div>';
       var pages = (p.pFrom||p.pTo)? ("p."+(p.pFrom||"")+"~"+(p.pTo||"")) : "";
-      h+='<div class="vl">'+esc(p.unit||"—")+'</div>';
-      if(pages) h+='<div class="small" style="margin-top:2px;color:var(--ink-2)"><b>'+esc(pages)+'</b></div>';
-      if(p.note) h+='<div class="small" style="margin-top:3px;color:var(--brand)">· '+esc(p.note)+'</div>';
+      var pc = p.color? ';color:'+esc(p.color) : '';
+      h+='<div class="vl"'+(p.color? ' style="color:'+esc(p.color)+'"':'')+'>'+esc(p.unit||"—")+'</div>';
+      if(pages) h+='<div class="small" style="margin-top:2px;color:var(--ink-2)'+pc+'"><b>'+esc(pages)+'</b></div>';
+      if(p.note && !isRichEmpty(p.note)) h+='<div class="small" style="margin-top:3px;color:'+(p.color? esc(p.color):'var(--brand)')+'">· '+sanitizeRich(p.note)+'</div>';
       var b=bookByName(p.book);
       if(b && b.units.length && p.unitIdx!=null && p.unitIdx>=0){
         var tot=b.units.length, cur=p.unitIdx;
@@ -1972,7 +2182,9 @@ function sheetHTML(rec){
   if(rec.homework && rec.homework.length){
     h+='<div class="blk"><div class="lab">다음 시간까지 과제</div>';
     rec.homework.forEach(function(x){
-      h+='<div class="line"><div class="bk">'+esc(x.book)+'</div><div class="vl">'+esc(x.range||"—")+'</div></div>';
+      var hc = x.color? ' style="color:'+esc(x.color)+'"' : '';
+      var rng=(x.rangeHtml!=null && x.rangeHtml!=="")? sanitizeRich(x.rangeHtml) : esc(x.range||"—");
+      h+='<div class="line"><div class="bk"'+hc+'>'+esc(x.book)+'</div><div class="vl"'+hc+'>'+rng+'</div></div>';
     });
     h+='</div>';
   }
@@ -2006,7 +2218,7 @@ function sheetHTML(rec){
   var closing = (DB.meta&&DB.meta.closing)||"";
   if(rec.reporting || rec.next || closing){
     h+='<div class="blk"><div class="lab">선생님 알림</div>';
-    if(rec.reporting) h+='<div class="note">'+nl2br(rec.reporting)+'</div>';
+    if(rec.reporting && !isRichEmpty(rec.reporting)) h+='<div class="note"'+(rec.reportingColor? ' style="color:'+esc(rec.reportingColor)+'"':'')+'>'+sanitizeRich(rec.reporting)+'</div>';
     if(rec.next) h+='<div class="small" style="margin-top:9px"><b>다음 수업</b> · '+esc(rec.next)+'</div>';
     if(closing) h+='<div class="small muted" style="margin-top:9px">'+nl2br(closing)+'</div>';
     h+='</div>';
@@ -2045,7 +2257,7 @@ function reportText(rec){
     L.push("");
   }
   if(rec.test&&rec.test.score!=="" && rec.test.score!=null) L.push("◈ "+(rec.test.name||"테스트")+" : "+rec.test.score+(rec.test.total?"/"+rec.test.total:""));
-  if(rec.reporting){ L.push("◈ 알림"); L.push(rec.reporting); L.push(""); }
+  if(rec.reporting && !isRichEmpty(rec.reporting)){ L.push("◈ 알림"); L.push(richToText(rec.reporting)); L.push(""); }
   if(rec.next) L.push("◈ 다음 수업 : "+rec.next);
   if(m.closing) L.push(m.closing);
   if(m.teacher) L.push("- 담당 "+m.teacher+"T"+(m.phone?" ("+m.phone+")":""));
@@ -2062,6 +2274,16 @@ function openReport(id, queue){
   $("#reportModal").classList.add("on");
   document.body.style.overflow="hidden";
   paintReport();
+}
+/* 내용을 A4 상자에 맞춰 키우거나 줄입니다 (짧으면 아래를 채워 항상 같은 크기) */
+function fitPage(){
+  var sh=$("#sheet"); if(!sh) return;
+  sh.style.transform=""; sh.style.minHeight="";
+  var need=sh.offsetHeight || 1;
+  var k=Math.min(SHEET_W/BASE_W, (SHEET_H-4)/need);   // 아래 4px은 여유로 둡니다
+  sh.style.transform="scale("+k.toFixed(4)+")";
+  sh.style.minHeight=Math.floor(SHEET_H/k)+"px";
+  sh.style.width=Math.floor(SHEET_W/k)+"px";
 }
 function fitSheet(reset){
   var wrap=$(".reportwrap"), fit=$("#sheetFit"), sc=$("#sheetScale"), sh=$("#sheet");
@@ -2084,7 +2306,9 @@ window.addEventListener("resize", function(){ if($("#reportModal").classList.con
 function paintReport(){
   var rec = recById(reportQueue[reportPos]);
   if(!rec) return;
-  $("#sheetHost").innerHTML = '<div id="sheetFit"><div id="sheetScale" style="width:'+SHEET_W+'px">'+sheetHTML(rec)+'</div></div>';
+  $("#sheetHost").innerHTML = '<div id="sheetFit"><div id="sheetScale" style="width:'+SHEET_W+'px">'
+    + '<div class="sheetpage" id="sheetPage">'+sheetHTML(rec)+'</div></div></div>';
+  fitPage();
   fitSheet();
   $("#rmTitle").textContent = rec.studentName+" · "+fmtShort(rec.date);
   $("#btnPrevStu").disabled = reportPos<=0;
@@ -2129,7 +2353,7 @@ function loadH2C(){
 function sheetToCanvas(){
   return loadH2C().then(function(h2c){
     fitSheet(true);                      // 캡처 중에는 원래 크기로 되돌립니다
-    var node=$("#sheet");
+    var node=$("#sheetPage");
     return h2c(node,{scale:3,backgroundColor:"#ffffff",useCORS:true,logging:false,
       windowWidth:node.scrollWidth, width:node.offsetWidth, height:node.offsetHeight});
   }).then(function(cv){ fitSheet(); return cv; },
@@ -2237,7 +2461,11 @@ function fallbackCopy(t){
   try{ document.execCommand("copy"); toast("복사했습니다"); }catch(e){ toast("복사에 실패했습니다"); }
   ta.remove();
 }
-$("#btnPrint").addEventListener("click", function(){ window.print(); });
+$("#btnPrint").addEventListener("click", function(){
+  document.body.classList.add("printing");
+  setTimeout(function(){ window.print(); }, 40);
+});
+window.addEventListener("afterprint", function(){ document.body.classList.remove("printing"); });
 /* =========================================================
    데이터 보관 — 클라우드 동기화 폴더 / 데이터 파일에 직접 저장
    브라우저 캐시를 지워도 폴더와 파일에는 그대로 남습니다.
@@ -3214,8 +3442,8 @@ function runSearch(){
       if(!hit) return false;
     }
     if(q){
-      var blob=[r.studentName,r.reporting,r.next,r.prevComment,
-        (r.progress||[]).map(function(p){return p.book+" "+p.unit;}).join(" "),
+      var blob=[r.studentName,richToText(r.reporting),r.next,r.prevComment,
+        (r.progress||[]).map(function(p){return p.book+" "+p.unit+" "+richToText(p.note||"");}).join(" "),
         (r.homework||[]).map(function(h){return h.book+" "+h.range;}).join(" ")
       ].join(" ").toLowerCase();
       if(blob.indexOf(q)<0) return false;
@@ -3254,7 +3482,7 @@ function runSearch(){
         + (r.period&&r.period!=="미지정"? '<span class="chip">'+esc(r.period)+'</span> ':'')
         + (r.attendance&&r.attendance!=="출석"? '<span class="chip low">'+esc(attendText(r))+'</span>':'')+'</div>';
       h+='<div class="small" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(prog)+'</div>'
-        + (r.reporting? '<div class="tiny muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.reporting.replace(/\n/g," "))+'</div>':'')+'</div>';
+        + (r.reporting? '<div class="tiny muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(richToText(r.reporting).replace(/\n/g," "))+'</div>':'')+'</div>';
       h+='<div class="row" style="gap:6px;flex-wrap:nowrap">'
         + (r.prevRate!=null? '<span class="chip '+rateClass(r.prevRate)+'">과제 '+r.prevRate+'%</span>':'')
         + '<button class="btn sm" data-act="open">리포트</button>'
@@ -3612,7 +3840,7 @@ $("#btnCsv").addEventListener("click", function(){
         p.book||"", p.unit||"", (p.rate==null?"":p.rate+"%"),
         h.book||"", h.range||"",
         i?"":(r.test&&r.test.score!==""?((r.test.name||"")+" "+r.test.score+(r.test.total?"/"+r.test.total:"")):""),
-        i?"":(r.reporting||"").replace(/\n/g," / ")
+        i?"":richToText(r.reporting||"").replace(/\n/g," / ")
       ]);
     }
   });
