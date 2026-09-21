@@ -647,6 +647,7 @@ body.att-phone .toast{z-index:500}
       </div>
       <div class="row">
         <button class="btn primary" id="btnPick">학생 불러오기</button>
+        <button class="btn" id="btnFromAtt">출석부 명단 불러오기</button>
         <button class="btn" id="btnAddAll">이 요일 학생 전체 추가</button>
         <button class="btn" id="btnCarry">지난 수업 진도 이어받기</button>
         <button class="btn colsbtn" id="btnCols">1단으로 보기</button>
@@ -1372,7 +1373,8 @@ function draftFromRecord(r){
     key:uid(), id:r.id, studentId:r.studentId, studentName:r.studentName,
     period:r.period||"미지정",
     prevFrom:r.prevFrom||"", prevDate:r.prevDate||"",
-    attendance:r.attendance||"출석", arriveAt:r.arriveAt||"",
+    attendance:(r.attendance==null? "출석" : r.attendance), arriveAt:r.arriveAt||"",
+    attFrom:r.att||null, attMemo:r.attMemo||"",
     prev:(r.prev||[]).map(function(p){return {book:p.book,range:p.range,rate:p.rate};}),
     prevComment:r.prevComment||"",
     progress:(r.progress&&r.progress.length?r.progress.map(function(p){
@@ -1431,6 +1433,7 @@ function newDraft(stu, period){
   };
   var src=pickSourceLesson(stu.name, curDate, null);
   applySource(d, src);
+  prefillFromAtt(d);
   var p=src;                        // 진도도 같은 수업에서 이어받습니다
   if(p){
     // 직전 진도를 기본값으로 이어받기
@@ -1448,6 +1451,7 @@ function newDraft(stu, period){
       if(!d.homework.length) d.homework=[newHw()];
     }
   }
+  prefillFromAtt(d, true);                // 지난 과제가 채워진 뒤 달성률을 한 번 더 맞춥니다
   return d;
 }
 
@@ -1713,6 +1717,7 @@ function entryHTML(d){
     h+='<span class="tiny muted">도착</span>';
     h+='<input type="time" class="mini" data-field="arriveAt" value="'+esc(d.arriveAt||"")+'" title="도착 시각" style="width:auto;flex:none">';
   }
+  if(d.attMemo) h+='<span class="chip gray" title="출석부 메모 (리포트에는 나가지 않습니다)">📋 '+esc(d.attMemo)+'</span>';
   h+='<span class="chip '+(pr==null?"gray":rateClass(pr))+'" data-out="prevHead">'+(pr==null?"과제 미확인":"과제 "+pr+"%")+'</span>';
   h+='<span class="chip'+(d.saved?" good":"")+'" data-out="stateChip">'+(d.saved?"저장됨":"작성 중")+'</span>';
   h+='<span class="grow"></span>';
@@ -2158,6 +2163,7 @@ function draftToRecord(d){
     studentId: d.studentId, studentName: d.studentName,
     attendance: d.attendance,
     arriveAt: d.attendance==="지각"? (d.arriveAt||"") : "",
+    att: d.attFrom||undefined, attMemo: d.attMemo||"",
     prev: d.prev.filter(function(p){return p.book||p.range;}),
     prevFrom: d.prevFrom||"", prevDate: d.prevDate||"",
     prevComment: d.prevComment,
@@ -2188,6 +2194,7 @@ function saveDraft(d, silent){
   if(idx>=0) DB.records[idx]=rec; else DB.records.push(rec);
   d.id = rec.id; d.saved = true;
   save();
+  linkSoon();
   rerenderEntry(d); updateSticky();
   if(!silent) toast(d.studentName+" 리포트 저장 완료");
 }
@@ -2253,7 +2260,8 @@ function donutSVG(pct){
 
 /* 출결 표시 — 지각이면 도착 시각을 덧붙입니다 */
 function attendText(rec){
-  var a=rec.attendance||"출석";
+  var a=(rec.attendance==null? "출석" : rec.attendance);
+  if(!a) return "";
   if(a==="지각" && rec.arriveAt) return a+" ("+rec.arriveAt+" 도착)";
   return a;
 }
@@ -2266,7 +2274,7 @@ function sheetHTML(rec){
   h+='<div class="t">'+fmtKo(rec.date)+' 학습 리포트</div>';
   h+='<div class="sub">'+esc(rec.type==="특강"?"방학특강":"정규수업")
     +(rec.period && rec.period!=="미지정"? ' · '+esc(rec.period):'')
-    +' · '+esc(attendText(rec))+'</div>';
+    +(attendText(rec)? ' · '+esc(attendText(rec)) : '')+'</div>';
   h+='</div>';
 
   h+='<div class="nm"><span class="small muted">이름</span><b>'+esc(rec.studentName)+'</b>'
@@ -2389,7 +2397,7 @@ function reportText(rec){
   var m=DB.meta||{};
   L.push("["+(m.academy||"학습 리포트")+"] "+fmtKo(rec.date));
   L.push(rec.studentName+" 학생 · "+(rec.type==="특강"?"방학특강":"정규수업")
-    +(rec.period && rec.period!=="미지정"? " · "+rec.period:"")+" · "+attendText(rec));
+    +(rec.period && rec.period!=="미지정"? " · "+rec.period:"")+(attendText(rec)? " · "+attendText(rec) : ""));
   L.push("");
   if(rec.prev&&rec.prev.length){
     L.push("◈ 지난 과제 달성률 : "+(rec.prevRate==null?"확인 중":rec.prevRate+"% ("+rateWord(rec.prevRate)+")"));
@@ -3436,6 +3444,7 @@ function syncNow(silent, force){
     if(res==="halt") return false;
     syncBusy=false;
     if(JSON.stringify(DB.att||null)!==attBefore) attRefreshFrame();   // 다른 기기의 출석부를 반영
+    linkSoon();
     if(res!=="skip"){
       syncDirty=false;
       saveBase(DB);
@@ -4510,14 +4519,14 @@ function mergeAtt(L,R,B){
   if(!L || (!L.meta && !Object.keys(L.weeks||{}).length)) return jcopy(R)||null;
   if(!R || (!R.meta && !Object.keys(R.weeks||{}).length)) return jcopy(L);
   B=B||{meta:null,weeks:{}};
-  var out={meta:mergeMeta(B.meta, L.meta, R.meta, (L.mt||0)>=(R.mt||0)),
+  var out={meta:jcopy(mergeMeta(B.meta, L.meta, R.meta, (L.mt||0)>=(R.mt||0))),
            mt:Math.max(L.mt||0, R.mt||0), weeks:{}};
   var ks={};
   Object.keys(L.weeks||{}).concat(Object.keys(R.weeks||{})).forEach(function(k){ ks[k]=1; });
   Object.keys(ks).forEach(function(k){
     var lw=(L.weeks||{})[k], rw=(R.weeks||{})[k], bw=(B.weeks||{})[k];
     if(lw && rw){
-      out.weeks[k]={ w:mergeWeek(bw&&bw.w, lw.w, rw.w, (lw.t||0)>=(rw.t||0)), t:Math.max(lw.t||0, rw.t||0) };
+      out.weeks[k]={ w:jcopy(mergeWeek(bw&&bw.w, lw.w, rw.w, (lw.t||0)>=(rw.t||0))), t:Math.max(lw.t||0, rw.t||0) };
     } else out.weeks[k]=jcopy(lw||rw);
   });
   return out;
@@ -4556,31 +4565,60 @@ function attCapture(stamp){
   var l=attLocal(), now=(stamp==null? Date.now() : stamp), changed=false, reload=false;
   if(!DB.att) DB.att={meta:null, mt:0, weeks:{}};
   if(l.meta && !jeq(l.meta, DB.att.meta)){
-    var mm=DB.att.meta? mergeMeta(attSeen.meta, l.meta, DB.att.meta, true) : l.meta;
+    var mm=jcopy(DB.att.meta? mergeMeta(attSeen.meta, l.meta, DB.att.meta, true) : l.meta);
     if(!jeq(mm, DB.att.meta)){ DB.att.meta=mm; DB.att.mt=now; changed=true; }
     if(!jeq(mm, l.meta)) reload=true;
   }
   Object.keys(l.weeks).forEach(function(k){
     var cur=DB.att.weeks[k];
     if(cur && jeq(cur.w, l.weeks[k])) return;
-    var mw= cur? mergeWeek(attSeen.weeks[k], l.weeks[k], cur.w, true) : l.weeks[k];
+    var mw=jcopy(cur? mergeWeek(attSeen.weeks[k], l.weeks[k], cur.w, true) : l.weeks[k]);   // 따로 복사 (기준 사본과 섞이지 않게)
     if(!cur || !jeq(mw, cur.w)){ DB.att.weeks[k]={w:mw, t:now}; changed=true; }
     if(!jeq(mw, l.weeks[k])) reload=true;
   });
   attSeen=l;
-  if(reload){ attNeedReload=true; attRefreshFrame(); }
+  if(reload){ attNeedReload=true; attScheduleRefresh(); }
   return changed;
 }
+/* 출석부 화면을 새 내용으로 : 먼저 출석부가 들고 있는 입력을 저장시키고 합친 뒤 새로 고칩니다 */
+function attScheduleRefresh(ms){ clearTimeout(attRefreshFrame._t); attRefreshFrame._t=setTimeout(attRefreshFrame, ms||60); }
+function attBusy(cw){
+  try{
+    var ae=cw.document.activeElement;
+    return !!(ae && (ae.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)));
+  }catch(e){ return false; }
+}
 function attRefreshFrame(){
-  if(attWriteLocal()) attNeedReload=true;
-  if(!attNeedReload || !attFrame || !attLoaded) return;
-  if(Date.now()-attLastEdit < 4000){                 // 입력 중이면 잠시 뒤에
-    clearTimeout(attRefreshFrame._t);
-    attRefreshFrame._t=setTimeout(attRefreshFrame, 4000);
-    return;
+  clearTimeout(attRefreshFrame._t);
+  var cw=null;
+  try{ cw=(attFrame && attLoaded)? attFrame.contentWindow : null; }catch(e){ cw=null; }
+  if(!cw){ attWriteLocal(); return; }                     // 출석부가 아직 안 열렸으면 칸만 바꿔 둡니다
+  if(attBusy(cw) || Date.now()-attLastEdit < 2500){       // 입력 중이면 잠시 뒤에 (칸도 건드리지 않습니다)
+    attNeedReload=true; attScheduleRefresh(3000); return;
   }
-  attNeedReload=false;
-  try{ attFrame.contentWindow.location.reload(); }catch(e){}
+  var flush=null;
+  try{ flush = (typeof cw.saveAll==="function")? cw.saveAll() : null; }catch(e){ flush=null; }
+  Promise.resolve(flush).catch(function(){}).then(function(){
+    if(attCapT){ clearTimeout(attCapT); attCapT=null; }
+    if(attCapture()) save();                              // 방금 입력한 것까지 합칩니다
+    if(attWriteLocal()) attNeedReload=true;
+    if(attNeedReload){
+      attNeedReload=false;
+      if(attReloadInPlace(cw)) attSeen=attLocal();          // 보던 주차 · 요일 · 화면 그대로 내용만 바꿉니다
+      else { try{ cw.location.reload(); }catch(e){} }
+    }
+  });
+}
+function attReloadInPlace(cw){
+  try{
+    return cw.eval("(function(){"
+      + "var m=localStorage.getItem('att:meta'); if(m){ var nm=JSON.parse(m); nm.weeks=nm.weeks||[]; meta=nm; }"
+      + "if(week && week.key){ var w=localStorage.getItem('att:w:'+week.key); if(w) week=JSON.parse(w); }"
+      + "if(typeof renderWeekList==='function') renderWeekList();"
+      + "if(typeof render==='function') render();"
+      + "if(typeof renderMobile==='function') renderMobile();"
+      + "return true; })()") === true;
+  }catch(e){ console.warn('출석부 새로 그리기 실패', e); return false; }
 }
 function attFlush(){
   if(!attCapT) return;
@@ -4591,7 +4629,7 @@ window.addEventListener("storage", function(e){
   if(!e.key || e.key.indexOf("att:")!==0 || e.key==="att:seeded" || e.key==="att:clsblank") return;
   attLastEdit=Date.now();
   clearTimeout(attCapT);
-  attCapT=setTimeout(function(){ attCapT=null; if(attCapture()) save(); }, 700);
+  attCapT=setTimeout(function(){ attCapT=null; if(attCapture()) save(); linkSoon(); }, 700);
 });
 document.addEventListener("visibilitychange", function(){ if(document.hidden) attFlush(); });
 window.addEventListener("pagehide", attFlush);
@@ -4603,7 +4641,7 @@ function attInit(){
   var l=attLocal(), has=!!l.meta || Object.keys(l.weeks).length>0;
   var dbHas=DB.att && (DB.att.meta || Object.keys(DB.att.weeks||{}).length);
   if(has){
-    attSeen= dbHas? {meta:jcopy(DB.att.meta), weeks:(function(){ var w={}; Object.keys(DB.att.weeks).forEach(function(k){ w[k]=DB.att.weeks[k].w; }); return w; })()} : {meta:null,weeks:{}};
+    attSeen= dbHas? {meta:jcopy(DB.att.meta), weeks:(function(){ var w={}; Object.keys(DB.att.weeks).forEach(function(k){ w[k]=jcopy(DB.att.weeks[k].w); }); return w; })()} : {meta:null,weeks:{}};
     if(attCapture(dbHas? null : 0)) save();
   }
   attWriteLocal();
@@ -4633,9 +4671,225 @@ window.addEventListener("message", function(e){
   }
 });
 
+/* =========================================================
+   출석부 ↔ 데일리 리포트 연결
+   · 날짜 + 학생 이름으로 짝을 짓습니다.
+   · 출석부  ○ △ X 휴회 · 도착 시각 · 과제 달성률  ↔  리포트 출결 · 도착 · 지난 과제 %
+   · 각 기록에 마지막으로 맞춘 모습(rec.att)을 적어 두고, 바뀐 쪽을 따라갑니다.
+   ========================================================= */
+var MARK2ATT={"○":"출석","△":"지각","X":"결석","x":"결석","휴회":"휴회"};
+var ATT2MARK={"출석":"○","지각":"△","결석":"X","휴회":"휴회","보강":"○"};
+var CLOCK_RE=/^\d{1,2}[:.]\d{2}$/;
+var RATE_RE=/^\s*(\d{1,3}(?:\.\d+)?)\s*%?\s*$/;
+function p2(x){ return (x<10?"0":"")+x; }
+function ymdOf(dt){ return dt.getFullYear()+"-"+p2(dt.getMonth()+1)+"-"+p2(dt.getDate()); }
+function nameKey(v){ return String(v||"").replace(/\s+/g,""); }
+function linesOf(v){ return String(v||"").split("\n").map(function(x){ return x.trim(); }).filter(Boolean); }
+
+/* 출석부 칸 한 개를 읽습니다 */
+function cellInfo(a,h){
+  var mark="", time="", text=[], rate=null, memo=[];
+  linesOf(a).forEach(function(l){
+    if(MARK2ATT[l]) mark=l;
+    else if(CLOCK_RE.test(l)) time=l.replace(".",":");
+    else text.push(l);
+  });
+  linesOf(h).forEach(function(l){
+    var m=l.match(RATE_RE);
+    if(m && +m[1]<=100 && rate===null) rate=Math.round(+m[1]);
+    else memo.push(l);
+  });
+  return {mark:mark, time:time, text:text, rate:rate, memo:memo};
+}
+/* 출석부 시각(4:37) → 리포트 시각(16:37) : 교시와 요일을 보고 오후로 바꿉니다 */
+function to24(t,d,p){
+  var m=String(t||"").match(/^(\d{1,2}):(\d{2})$/); if(!m) return "";
+  var h=+m[1], mm=m[2];
+  if(h<13){
+    if(d===5 && p===0){ if(h<8) h+=12; }       // 토요일 1교시 10:00-1:00
+    else if(h<12) h+=12;                        // 평일 · 토요일 2교시는 오후
+  }
+  return p2(h)+":"+mm;
+}
+function to12(t){
+  var m=String(t||"").match(/^(\d{1,2}):(\d{2})$/); if(!m) return "";
+  var h=+m[1]; if(h>12) h-=12; if(h===0) h=12;
+  return h+":"+m[2];
+}
+/* 칸 → 리포트 값 (attendance 가 null 이면 '정보 없음') */
+function valsFromCell(ci,d,p){
+  return {
+    attendance: ci.mark? MARK2ATT[ci.mark] : (ci.text.length? "" : null),
+    arriveAt:   (ci.mark==="△" && ci.time)? to24(ci.time,d,p) : "",
+    rate:       ci.rate,
+    memo:       [ci.text.join(" "), ci.memo.join(" ")].filter(Boolean).join(" · ")   // 칸 안 줄바꿈은 띄어쓰기로
+  };
+}
+function recVals(r){
+  return {
+    attendance: (r.attendance==null? "출석" : r.attendance),
+    arriveAt:   r.attendance==="지각"? (r.arriveAt||"") : "",
+    rate:       (r.prevRate==null? null : r.prevRate)
+  };
+}
+function setRate(obj, v){               // obj : 기록 또는 카드
+  if(v===null){
+    (obj.prev||[]).forEach(function(x){ x.rate=null; });
+  }else if(obj.prev && obj.prev.length){
+    obj.prev.forEach(function(x){ x.rate=v; });
+  }else{
+    obj.prev=[{book:"", range:"지난 시간 과제", rate:v}];
+  }
+  if("prevRate" in obj || obj.id) obj.prevRate=v;
+}
+function applyToRec(r, cv){
+  if(cv.attendance!==null) r.attendance=cv.attendance;
+  r.arriveAt = r.attendance==="지각"? (cv.arriveAt || "") : "";
+  setRate(r, cv.rate);
+  r.attMemo = cv.memo;
+}
+function applyToCell(cell, r, d, p){
+  var ci=cellInfo(cell.a, cell.h);
+  var v=recVals(r);
+  var mark = v.attendance? (ATT2MARK[v.attendance]||"") : "";
+  var time = v.attendance==="지각"? (v.arriveAt? to12(v.arriveAt) : ci.time)
+           : (v.attendance==="출석" || v.attendance==="보강")? ci.time : "";   // 결석 · 휴회면 시각을 지웁니다
+  cell.a = [time].concat(ci.text).concat([mark]).filter(Boolean).join("\n");
+  cell.h = [v.rate===null? "" : v.rate+"%"].concat(ci.memo).filter(Boolean).join("\n");
+}
+
+/* 날짜 · 이름으로 출석부 칸 찾기 */
+function attWeekKey(date){ var dt=parseISO(date); var wd=(dt.getDay()+6)%7; dt.setDate(dt.getDate()-wd); return ymdOf(dt); }
+function attCellFor(date, name){
+  if(!DB.att || !DB.att.weeks) return null;
+  var dt=parseISO(date), d=(dt.getDay()+6)%7; if(d>5) return null;
+  var W=DB.att.weeks[attWeekKey(date)]; if(!W || !W.w || !W.w.days || !W.w.days[d]) return null;
+  var key=nameKey(name), day=W.w.days[d];
+  for(var p=0;p<(day.p||[]).length;p++){
+    var rows=day.p[p]||[];
+    for(var r=0;r<rows.length;r++) if(rows[r] && nameKey(rows[r].n)===key) return {W:W, cell:rows[r], d:d, p:p};
+  }
+  return null;
+}
+
+/* 새 카드 : 출석부 칸에서 채웁니다 */
+function prefillFromAtt(dr, rateOnly){
+  var f=attCellFor(curDate, dr.studentName); if(!f) return;
+  var cv=valsFromCell(cellInfo(f.cell.a, f.cell.h), f.d, f.p);
+  if(!rateOnly){
+    dr.period = f.p===0? "1교시" : f.p===1? "2교시" : dr.period;
+    if(cv.attendance!==null) dr.attendance=cv.attendance;
+    dr.arriveAt = dr.attendance==="지각"? cv.arriveAt : "";
+    dr.attMemo = cv.memo;
+  }
+  if(cv.rate!==null) setRate(dr, cv.rate);
+  var rate = (function(){ var vs=(dr.prev||[]).filter(function(x){ return x.rate!=null; }).map(function(x){ return +x.rate; });
+                          return vs.length? Math.round(vs.reduce(function(a,b){return a+b;},0)/vs.length) : null; })();
+  dr.attFrom = {a:f.cell.a||"", h:f.cell.h||"",
+                v:{attendance:dr.attendance, arriveAt:dr.attendance==="지각"? (dr.arriveAt||"") : "", rate:rate}};
+}
+
+/* 한 바퀴 맞추기 */
+function linkPass(){
+  var out={rec:false, att:false, dates:{}};
+  if(!DB.att || !DB.att.weeks) return out;
+  var idx={};
+  DB.records.forEach(function(r){
+    var k=r.date+"|"+nameKey(r.studentName);
+    if(!idx[k] || (idx[k].type!=="정규" && r.type==="정규")) idx[k]=r;
+  });
+  var now=Date.now(), nowIso=new Date(now).toISOString(), seen={};
+  Object.keys(DB.att.weeks).forEach(function(wk){
+    var W=DB.att.weeks[wk], w=W && W.w; if(!w || !w.days) return;
+    var mon=parseISO(wk), touched=false;
+    w.days.forEach(function(day, d){
+      if(!day || !day.p) return;
+      var dt=new Date(mon); dt.setDate(dt.getDate()+d);
+      var date=ymdOf(dt);
+      day.p.forEach(function(rows, p){
+        (rows||[]).forEach(function(cell){
+          if(!cell || !cell.n) return;
+          var sk=date+"|"+nameKey(cell.n);
+          if(seen[sk]) return; seen[sk]=1;            // 하루에 한 칸만 잇습니다
+          var r=idx[sk]; if(!r) return;
+          var ci=cellInfo(cell.a, cell.h), cv=valsFromCell(ci,d,p), rv=recVals(r);
+          var link=r.att, recCh=false, cellCh=false;
+          if(!link){
+            /* 처음 잇기 : 서로 비어 있는 것만 채웁니다 */
+            if(cv.attendance!==null && (rv.attendance==="출석"||rv.attendance==="") && cv.attendance!==rv.attendance){ r.attendance=cv.attendance; recCh=true; }
+            if(r.attendance==="지각" && !r.arriveAt && cv.arriveAt){ r.arriveAt=cv.arriveAt; recCh=true; }
+            if(cv.rate!==null && rv.rate===null){ setRate(r, cv.rate); recCh=true; }
+            if(cv.memo && r.attMemo!==cv.memo){ r.attMemo=cv.memo; recCh=true; }
+            var v2=recVals(r);
+            if(!ci.mark && !ci.text.length && v2.attendance){ applyToCell(cell, r, d, p); cellCh=true; }
+            else if(ci.rate===null && v2.rate!==null){ applyToCell(cell, r, d, p); cellCh=true; }
+            else if(ci.mark==="△" && !ci.time && v2.arriveAt){ applyToCell(cell, r, d, p); cellCh=true; }
+          }else{
+            var cellMoved = (link.a||"")!==(cell.a||"") || (link.h||"")!==(cell.h||"");
+            var recMoved  = JSON.stringify(link.v)!==JSON.stringify(rv);
+            if(cellMoved && recMoved){                 // 둘 다 바뀌었으면 나중 것
+              if((W.t||0) >= (Date.parse(r.savedAt||0)||0)) recMoved=false; else cellMoved=false;
+            }
+            if(cellMoved){ applyToRec(r, cv); recCh=true; }
+            else if(recMoved){ applyToCell(cell, r, d, p); cellCh=true; }
+            else return;
+          }
+          if(recCh){ r.savedAt=nowIso; out.rec=true; out.dates[date]=1; }
+          if(cellCh){ touched=true; out.att=true; }
+          r.att={a:cell.a||"", h:cell.h||"", v:recVals(r)};
+          out.rec=true;
+        });
+      });
+    });
+    if(touched) W.t=now;
+  });
+  return out;
+}
+var linkT=null, linkBusy=false;
+function linkSoon(){ clearTimeout(linkT); linkT=setTimeout(linkRun, 250); }
+function linkRun(){
+  if(linkBusy) return; linkBusy=true;
+  try{
+    var r=linkPass();
+    if(r.rec || r.att){
+      save();
+      if(r.att) attRefreshFrame();
+      if(r.dates[curDate]){
+        var unsaved=drafts.some(function(d){ return !d.saved; });
+        if(!unsaved) loadDay();                  // 입력 중인 카드가 없을 때만 다시 그립니다
+      }
+    }
+  }catch(e){ console.warn("연결 오류", e); }
+  linkBusy=false;
+}
+
+/* 출석부 명단 불러오기 : 그날 출석부에 있는 학생을 교시별로 카드로 */
+function addFromAtt(){
+  if(!DB.att || !DB.att.weeks){ toast("출석부 기록이 아직 없습니다"); return; }
+  var dt=parseISO(curDate), d=(dt.getDay()+6)%7;
+  var W=DB.att.weeks[attWeekKey(curDate)];
+  if(d>5 || !W || !W.w || !W.w.days || !W.w.days[d]){ toast("이 날짜의 출석부가 없습니다"); return; }
+  var have={}; drafts.forEach(function(x){ have[nameKey(x.studentName)]=1; });
+  var added=0, missing=[];
+  (W.w.days[d].p||[]).forEach(function(rows, p){
+    (rows||[]).forEach(function(c){
+      if(!c || !c.n) return;
+      var k=nameKey(c.n); if(have[k]) return;
+      var stu=DB.students.filter(function(s){ return nameKey(s.name)===k; })[0];
+      if(!stu){ missing.push(c.n); return; }
+      drafts.push(newDraft(stu, p===0? "1교시" : "2교시")); have[k]=1; added++;
+    });
+  });
+  renderEntries(); updateSticky();
+  toast(added? added+"명을 출석부에서 불러왔습니다"+(missing.length? " · 명단에 없는 학생 "+missing.join(", ") : "")
+             : (missing.length? "학생 관리에 없는 이름입니다: "+missing.join(", ") : "이미 모두 불러와 있습니다"));
+}
+document.addEventListener("click", function(e){ if(e.target && e.target.id==="btnFromAtt") addFromAtt(); });
+
 load();
 boot();
 attInit();
+linkRun();
 if(isPhone()) switchView("att");       // 휴대폰은 출석부 간편 화면으로 바로 엽니다
 window.addEventListener("beforeunload", function(e){
   if(drafts.some(function(d){return !d.saved;})){

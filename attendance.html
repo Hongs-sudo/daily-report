@@ -186,6 +186,10 @@
   .m-badge.rate.mid{background:#FFF6D6;color:#9A6B00}
   .m-badge.rate.low{background:#FFE7E7;color:#C0392B}
   .m-row .m-badge + .m-badge{margin-left:4px}
+  .m-time{font-size:26px!important;font-weight:800!important;color:#C46A00!important;letter-spacing:.02em;text-align:center}
+  .m-hint{margin-top:8px;font-size:13px;font-weight:700;color:#C46A00;text-align:center}
+  .m-hint.bad{color:#D40000}
+  .m-save:disabled{opacity:.45}
   .m-rate{font-size:20px!important;font-weight:800!important;color:#0A7A2F!important;flex:1}
   .m-pct{font-size:19px;font-weight:800;color:#0A7A2F;flex-shrink:0}
   #mobile{
@@ -1104,7 +1108,7 @@ padEl.addEventListener('mousedown', e => {
   else if (it.act === 'now') {
     const n = new Date();
     const keep = txt.split('\n').map(s => s.trim()).filter(s => marks.includes(s));
-    txt = [`${n.getHours()}:${pad2(n.getMinutes())}`].concat(keep).join('\n');
+    txt = [nowClock()].concat(keep).join('\n');
   } else if (f === 'a') {
     const rest = txt.split('\n').map(s => s.trim()).filter(Boolean).filter(s => !marks.includes(s));
     txt = (rest.length ? rest.join('\n') + '\n' : '') + it.t;
@@ -1619,7 +1623,7 @@ window.addEventListener('beforeunload', () => { if (dirty) saveAll(); });
 const MDAY = ['월','화','수','목','금','토'];
 const MARK3 = ['○','△','X'];
 const mobEl = document.getElementById('mobile');
-const mob = {day: null, screen: 'main', sheet: null};
+const mob = {day: null, screen: 'main', sheet: null, late: null};
 
 function mobDay(){
   if (mob.day === null) {
@@ -1645,6 +1649,29 @@ function joinHw(rate, memo){
 }
 function normHw(h){ const r = rateOf(h); return r === null ? String(h || '') : joinHw(r, memoOf(h)); }
 function hosted(){ try { return !!(window.parent && window.parent !== window && window.parent.__DR_HOST__); } catch(e){ return false; } }
+
+/* ---------- 도착 시각 ----------
+   숫자만 쳐도 정리합니다 : 437 → 4:37 · 1030 → 10:30 · 4:37 그대로
+   돌려주는 값 : 'H:MM' · 빈칸이면 '' · 시각으로 볼 수 없으면 null */
+const CLOCK_RE = /^\d{1,2}[:.]\d{2}$/;
+function parseClock(v){
+  const s = String(v || '').trim().replace(/\s+/g, '');
+  if (!s) return '';
+  let h, m, mt;
+  if ((mt = s.match(/^(\d{1,2})[:.](\d{1,2})$/))) { h = +mt[1]; m = +mt[2]; }
+  else if (/^\d{3,4}$/.test(s)) { h = +s.slice(0, s.length - 2); m = +s.slice(-2); }
+  else if (/^\d{1,2}$/.test(s)) { h = +s; m = 0; }
+  else return null;
+  if (h > 23 || m > 59) return null;
+  return h + ':' + pad2(m);
+}
+function nowClock(){ const n = new Date(); let h = n.getHours() % 12; if (h === 0) h = 12; return h + ':' + pad2(n.getMinutes()); }
+function clockOf(a){ return String(a || '').split('\n').map(x => x.trim()).find(l => CLOCK_RE.test(l)) || ''; }
+function textLinesOf(a){
+  const ms = markList();
+  return String(a || '').split('\n').map(x => x.trim()).filter(Boolean).filter(l => !ms.includes(l) && !CLOCK_RE.test(l));
+}
+function composeA(t, mark, texts){ return [t].concat(texts || []).concat([mark]).filter(Boolean).join('\n'); }
 
 function markList(){ return (meta.padA && meta.padA.length) ? meta.padA : DEFAULT_PAD_A; }
 function markOf(txt){
@@ -1838,7 +1865,7 @@ function mobSheet(){
 
   h += '<div class="m-field"><label class="m-label" for="mlate">도착 시각</label>'
      + '<div style="display:flex;gap:7px;align-items:center">'
-     + '<input id="mlate" class="m-in" type="text" value="' + esc(tm) + '" placeholder="예) 5:30" data-mi="time" style="color:#C46A00;font-weight:700;font-size:18px">'
+     + '<input id="mlate" class="m-in" type="text" value="' + esc(tm) + '" placeholder="숫자로 입력 (예: 530)" data-mi="time" inputmode="numeric" autocomplete="off" style="color:#C46A00;font-weight:700;font-size:18px">'
      + '<button class="m-chip" data-m="now" style="height:48px;flex-shrink:0;border-color:var(--amber-line);background:var(--amber);color:#7A6A3F;font-weight:700">지금</button>'
      + '</div></div>';
 
@@ -1857,6 +1884,32 @@ function mobSheet(){
 
   h += '<button class="m-save" data-m="close">저장하고 닫기</button></div>';
   return h;
+}
+
+/* ---------- 지각 : 도착 시각 입력 창 ---------- */
+function mobLate(){
+  const c = mobCell(mob.late.p, mob.late.r);
+  const val = clockOf(c.a) || nowClock();
+  return '<div class="m-sheet-bg" data-m="lateclose"></div><div class="m-sheet m-late">'
+    + '<div class="m-grab"></div>'
+    + '<div class="m-sh-h"><div style="min-width:0"><div class="m-sh-n">' + esc(c.n || '(이름 없음)') + ' · 지각</div>'
+    + '<div class="m-sh-s">도착 시각을 숫자로 입력하세요</div></div>'
+    + '<button class="m-del" data-m="lateclose" aria-label="닫기" style="width:44px;height:44px;color:#6B6862">✕</button></div>'
+    + '<div class="m-field"><label class="m-label" for="mlatein">도착 시각</label>'
+    + '<input id="mlatein" class="m-in m-time" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="done" value="' + esc(val) + '" data-mi="latein">'
+    + '<div class="m-hint" id="mlatehint">' + esc(val) + ' 도착</div></div>'
+    + '<button class="m-save" data-m="lateok" id="mlateok">확인</button></div>';
+}
+function paintLate(v){
+  const t = parseClock(v);
+  const hint = mobEl.querySelector('#mlatehint'), ok = mobEl.querySelector('#mlateok');
+  if (!hint || !ok) return;
+  if (t === null) { hint.textContent = '시각을 다시 확인해 주세요 (예: 437 → 4:37)'; hint.classList.add('bad'); ok.disabled = true; }
+  else { hint.textContent = t ? t + ' 도착' : '시각 없이 지각만 표시합니다'; hint.classList.remove('bad'); ok.disabled = false; }
+}
+function focusLate(){
+  const el = mobEl.querySelector('#mlatein');
+  if (el) { el.focus(); try { el.select(); } catch(e){} }
 }
 
 /* ---------- 조립 ---------- */
@@ -1895,6 +1948,7 @@ function renderMobile(){
       + '<span>' + t[1] + '</span></button>').join('') + '</div>';
 
   if (mob.sheet) h += mobSheet();
+  if (mob.late) h += mobLate();
 
   mobEl.innerHTML = h;
   const nb = mobEl.querySelector('.m-body');
@@ -1924,9 +1978,23 @@ mobEl.addEventListener('click', async e => {
   if (act === 'table'){ document.body.classList.add('force-table'); render(); return; }
 
   if (act === 'mark') {
-    setMarkOn(mobCell(+b.dataset.p, +b.dataset.r), v);
+    const mc = mobCell(+b.dataset.p, +b.dataset.r);
+    if (v === '△' && markOf(mc.a) !== '△') {
+      mob.late = {p: +b.dataset.p, r: +b.dataset.r};
+      renderMobile(); focusLate(); return;
+    }
+    setMarkOn(mc, v);
     markDirty(); renderMobile(); return;
   }
+  if (act === 'lateok' && mob.late) {
+    const el = mobEl.querySelector('#mlatein');
+    const t = parseClock(el ? el.value : '');
+    if (t === null) { if (el) el.focus(); return; }
+    const c = mobCell(mob.late.p, mob.late.r);
+    c.a = composeA(t, '△', textLinesOf(c.a));
+    mob.late = null; markDirty(); renderMobile(); return;
+  }
+  if (act === 'lateclose') { mob.late = null; renderMobile(); return; }
   if (act === 'rows') {
     const per = week.periods[+b.dataset.p];
     per.rows = Math.min(30, Math.max(1, (per.rows || ROWS_DEFAULT) + (+v)));
@@ -1938,13 +2006,17 @@ mobEl.addEventListener('click', async e => {
     markDirty(); renderMobile(); return;
   }
   if (act === 'att' && mob.sheet) {
-    setMarkOn(mobCell(mob.sheet.p, mob.sheet.r), v);
-    markDirty(); renderMobile(); return;
+    const sc = mobCell(mob.sheet.p, mob.sheet.r);
+    const turnLate = v === '△' && markOf(sc.a) !== '△' && !clockOf(sc.a);
+    setMarkOn(sc, v);
+    if (turnLate) sc.a = composeA(nowClock(), '△', textLinesOf(sc.a));
+    markDirty(); renderMobile();
+    if (turnLate) { const ti = mobEl.querySelector('#mlate'); if (ti) { ti.focus(); ti.select(); } }
+    return;
   }
   if (act === 'now' && mob.sheet) {
     const c = mobCell(mob.sheet.p, mob.sheet.r);
-    const n = new Date();
-    c.a = [n.getHours() + ':' + pad2(n.getMinutes()), markOf(c.a)].filter(Boolean).join('\n');
+    c.a = composeA(nowClock(), markOf(c.a), textLinesOf(c.a));
     markDirty(); renderMobile(); return;
   }
   if ((act === 'hw' || act === 'hwclear') && mob.sheet) {
@@ -1961,12 +2033,13 @@ mobEl.addEventListener('click', async e => {
 mobEl.addEventListener('input', e => {
   const el = e.target.closest('[data-mi]');
   if (!el) return;
+  if (el.dataset.mi === 'latein') { paintLate(el.value); return; }
   const f = el.dataset.mi, di = mobDay(), day = week.days[di];
   if (f === 'cls')  { day.cls = day.cls || []; day.cls[+el.dataset.p] = el.value; }
   else if (f === 'note') { day.note = esc(el.value); day.noteH = 1; }
   else if (f === 'time' && mob.sheet) {
     const c = mobCell(mob.sheet.p, mob.sheet.r);
-    c.a = [el.value.trim(), markOf(c.a)].filter(Boolean).join('\n');
+    c.a = composeA(el.value.trim(), markOf(c.a), textLinesOf(c.a));
   }
   else if (f === 'hwrate' && mob.sheet) {
     const c = mobCell(mob.sheet.p, mob.sheet.r);
@@ -1986,6 +2059,23 @@ mobEl.addEventListener('input', e => {
   markDirty();
 });
 
+mobEl.addEventListener('change', e => {
+  const el = e.target.closest('[data-mi="time"]');
+  if (!el || !mob.sheet) return;
+  const t = parseClock(el.value);
+  if (t === null) return;
+  const c = mobCell(mob.sheet.p, mob.sheet.r);
+  c.a = composeA(t, markOf(c.a), textLinesOf(c.a));
+  el.value = t; markDirty();
+});
+mobEl.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (e.target && e.target.id === 'mlatein') {
+    e.preventDefault();
+    const ok = mobEl.querySelector('#mlateok');
+    if (ok && !ok.disabled) ok.click();
+  }
+});
 document.getElementById('backToPhone').onclick = () => {
   document.body.classList.remove('force-table');
   renderMobile();
