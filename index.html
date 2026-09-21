@@ -526,6 +526,67 @@ table.tbl tr:hover td{background:#fafbfc}
   }
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- 휴대폰 · 좁은 화면 ---------- */
+@media(max-width:700px){
+  .topbar{padding:8px 12px;gap:8px;flex-wrap:nowrap}
+  .topbar .mark{min-width:0;flex:0 1 auto}
+  .topbar .mark b{font-size:15.5px;white-space:nowrap}
+  .topbar .mark span{display:none}          /* 학원 이름은 설정에서 확인 */
+  .topbar .grow{flex:1 1 auto;min-width:4px}
+  .topbar .teacher{
+    padding:5px 10px;font-size:11.5px;white-space:nowrap;flex:0 1 auto;
+    max-width:40vw;overflow:hidden;text-overflow:ellipsis;
+  }
+  #saveState{display:none}                  /* 저장 상태는 설정 탭에 있습니다 */
+  #syncState{
+    font-size:11px;flex:none;padding:4px 8px;
+    max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  nav.tabs{overflow-x:auto;scrollbar-width:none}
+  nav.tabs::-webkit-scrollbar{display:none}
+  nav.tabs button{padding:11px 12px 9px;font-size:13.5px;white-space:nowrap}
+  main{padding:12px 12px calc(112px + env(safe-area-inset-bottom))}
+  .banner{padding:10px 12px;font-size:12.5px;line-height:1.5}
+  .banner .btn{padding:8px 11px;font-size:12px}
+
+  /* 날짜 줄 : 두 칸씩 */
+  .daybar{padding:12px;gap:8px}
+  .daybar .fld{flex:1 1 calc(50% - 5px);min-width:0}
+  .daybar .fld:first-child{flex:1 1 100%}
+  .daybar .btn{flex:1 1 calc(50% - 5px);padding:9px 8px;font-size:12.5px}
+  .daybar #btnPick{flex:1 1 100%}
+  .daybar .seg{width:100%;display:flex}
+  .daybar .seg button{flex:1;padding:8px 0;font-size:13px}
+  .daybar select,.daybar input[type=date]{width:100%}
+
+  /* 학생 카드 머리줄 */
+  .entry > header{gap:6px}
+  .entry > header .name{font-size:15px}
+  .entry > header .chip{font-size:10.5px;padding:2px 7px}
+  .entry > header .btn.sm{padding:5px 9px;font-size:12px}
+  .entry > header select.mini{padding:5px 20px 5px 8px;font-size:12px}
+  .entry > header .seg.mini{order:9;flex:1 1 100%}
+  .entry > header .seg.mini button{flex:1;padding:0 4px;font-size:12px;min-height:30px}
+  .entry > header .grow{display:none}
+  .entry .body{padding:7px 8px 8px}
+  .tmplbar.g2{grid-template-columns:repeat(2,1fr);width:100%}
+
+  /* 아래 고정 막대 */
+  .stickybar{padding:8px 10px calc(8px + env(safe-area-inset-bottom));gap:6px}
+  .stickybar .btn{padding:9px 10px;font-size:12.5px}
+  .stickybar .small{flex:1 1 100%;text-align:center;order:-1;margin-bottom:2px}
+}
+@media(max-width:430px){
+  /* 아주 좁은 화면에서는 페이지 칸이 줄어들게 */
+  .pgset,.rateset{min-width:0}
+  .pgset input{width:auto;flex:1 1 0;min-width:42px}
+  .topbar .teacher{max-width:34vw}
+  #syncState{max-width:74px;font-size:10.5px}
+  nav.tabs button{padding:10px 10px 8px;font-size:13px}
+  .daybar .btn{font-size:12px}
+}
+
 </style>
 </head>
 <body>
