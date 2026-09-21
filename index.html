@@ -594,6 +594,63 @@ table.tbl tr:hover td{background:#fafbfc}
 #view-att iframe{width:100%;height:100%;border:0;display:block;background:#fff}
 body.att-phone #view-att.on{top:0;z-index:400}
 body.att-phone .toast{z-index:500}
+
+/* ---------- 출결 누적 ---------- */
+.asf{gap:8px;align-items:center}
+.asf input[type=date]{width:auto}
+.asf select{width:auto}
+.askpi{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+@media(max-width:900px){ .askpi{grid-template-columns:repeat(3,minmax(0,1fr))} }
+.askpi > div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--paper)}
+.askpi small{display:block;color:var(--ink-3);font-size:11.5px}
+.askpi b{display:block;font-size:22px;letter-spacing:-.03em;margin-top:2px}
+.askpi b em{font-style:normal;font-size:12px;color:var(--ink-3);font-weight:500;margin-left:2px}
+.astw{overflow-x:auto}
+table.ast{width:100%;border-collapse:collapse;min-width:760px}
+table.ast th{font-size:11.5px;color:var(--ink-3);text-align:left;font-weight:700;padding:8px;border-bottom:1.5px solid var(--line);white-space:nowrap}
+table.ast td{padding:8px;border-bottom:1px solid var(--line-2);font-size:13px;vertical-align:middle}
+table.ast tr.srow{cursor:pointer}
+table.ast tr.srow:hover td{background:var(--wash)}
+table.ast td.nm{font-weight:700;white-space:nowrap}
+table.ast td.nm small{color:var(--ink-3);font-weight:500;margin-left:4px}
+.pbar{display:inline-block;width:90px;height:7px;border-radius:99px;background:var(--line-2);overflow:hidden;vertical-align:middle;margin-right:6px}
+.pbar i{display:block;height:100%;background:var(--good)}
+.dots{display:flex;flex-wrap:wrap;gap:3px}
+.dots i{width:11px;height:11px;border-radius:3px;background:#dff2e7;display:inline-block}
+.dots i.l{background:#ffd98a}.dots i.a{background:#f2a39a}.dots i.m{background:#a9c8ef}.dots i.h{background:#e3e6ea}.dots i.x{background:#fff;box-shadow:inset 0 0 0 1px #c8d0da}
+table.ast tr.det td{background:var(--wash);padding:10px 12px}
+.evl{display:flex;flex-wrap:wrap;gap:6px}
+.ev{display:inline-flex;align-items:center;gap:5px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:12px}
+.ev b{font-weight:700}
+.ev .st-출석{color:var(--good)} .ev .st-지각{color:#a8670b} .ev .st-결석{color:var(--low)} .ev .st-보강{color:#1565c0} .ev .st-휴회{color:var(--ink-3)}
+.ev button{border:0;background:var(--brand-wash);color:var(--brand);border-radius:6px;font-size:11px;padding:2px 6px;cursor:pointer}
+.aslegend{font-size:11.5px;color:var(--ink-3);margin-top:10px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.aslegend i{width:11px;height:11px;border-radius:3px;display:inline-block;vertical-align:-1px;margin-right:4px;background:#dff2e7}
+/* 리포트 창 출결 선택 */
+.rmatt{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2);margin-left:12px;white-space:nowrap}
+.rmatt select{width:auto;padding:5px 26px 5px 9px;font-size:12.5px}
+/* 리포트 안 출결 칸 */
+.sheet .att5{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.sheet .att5 > div{border:1px solid var(--line);border-radius:6px;padding:3px 2px;text-align:center}
+.sheet .att5 small{display:block;font-size:7.5px;color:var(--ink-3)}
+.sheet .att5 b{display:block;font-size:12px;line-height:1.25}
+.sheet .adots{display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin-top:5px;font-size:7.5px;color:var(--ink-3)}
+.sheet .adots i{width:8px;height:8px;border-radius:2px;background:#dff2e7;display:inline-block}
+.sheet .adots i.l{background:#ffd98a}.sheet .adots i.a{background:#f2a39a}.sheet .adots i.m{background:#a9c8ef}.sheet .adots i.h{background:#e3e6ea}
+.sheet .adots .am{margin-right:3px;font-weight:700}
+.sheet .adots .al{margin-left:6px}
+.sheet table.amt{width:100%;border-collapse:collapse;font-size:8.5px}
+.sheet table.amt th{font-size:7.5px;color:var(--ink-3);font-weight:700;text-align:center;padding:2px;border-bottom:1px solid var(--line)}
+.sheet table.amt td{text-align:center;padding:2.5px 2px;border-bottom:1px solid var(--line-2)}
+.sheet table.amt td:first-child,.sheet table.amt th:first-child{text-align:left}
+.sheet table.amt tr.sum td{font-weight:800;background:#f4faf6}
+.sheet .lab .lsub{font-weight:500;color:var(--ink-3);margin-left:3px}
+/* 새 버전 알림 */
+#updBar{position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top,0px));z-index:600;
+  background:var(--ink);color:#fff;border-radius:12px;padding:9px 12px 9px 14px;display:none;align-items:center;gap:10px;
+  box-shadow:0 10px 30px -10px rgba(0,0,0,.45);font-size:13px;max-width:calc(100vw - 20px)}
+#updBar.on{display:flex}
+#updBar button{border:0;border-radius:8px;padding:6px 11px;font-weight:700;background:#fff;color:var(--ink);cursor:pointer;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -610,6 +667,7 @@ body.att-phone .toast{z-index:500}
   <button role="tab" data-view="att">출석부</button>
   <button role="tab" data-view="today" aria-selected="true">오늘 수업</button>
   <button role="tab" data-view="search">기록 검색</button>
+  <button role="tab" data-view="attstat">출결 누적</button>
   <button role="tab" data-view="stats">학생 현황</button>
   <button role="tab" data-view="students">학생 관리</button>
   <button role="tab" data-view="books">교재 · 단원</button>
@@ -623,6 +681,24 @@ body.att-phone .toast{z-index:500}
     <span>⚠</span>
     <div>이 브라우저에서 자동 저장을 쓸 수 없습니다. 창을 닫으면 입력한 내용이 사라집니다. 파일을 컴퓨터에 내려받아 직접 열면 자동 저장이 켜집니다. 지금 작업한 내용은 <b>설정 · 백업 → 백업 파일 내려받기</b>로 보관하세요.</div>
   </div>
+
+  <!-- ============ 출결 누적 ============ -->
+  <section class="view" id="view-attstat">
+    <div class="card pad mb">
+      <div class="row asf">
+        <input type="date" id="asFrom" aria-label="시작 날짜"><span class="muted">~</span><input type="date" id="asTo" aria-label="끝 날짜">
+        <div class="seg" id="asQuick">
+          <button type="button" data-q="week">이번 주</button><button type="button" data-q="month">이번 달</button>
+          <button type="button" data-q="prev">지난달</button><button type="button" data-q="3m">3개월</button>
+        </div>
+        <select id="asStu" aria-label="학생"></select>
+        <select id="asPer" aria-label="교시"><option value="">전체 교시</option><option>1교시</option><option>2교시</option></select>
+        <span style="flex:1"></span>
+        <button class="btn ghost" id="asCsv">CSV 내보내기</button>
+      </div>
+    </div>
+    <div id="asBody"></div>
+  </section>
 
   <!-- ============ 출석부 (원래 출석부를 그대로 띄웁니다) ============ -->
   <section class="view" id="view-att"><iframe id="attFrame" title="출석부"></iframe></section>
@@ -852,6 +928,11 @@ body.att-phone .toast{z-index:500}
   <div class="panel">
     <div class="phd">
       <h3 id="rmTitle">리포트</h3>
+      <label class="rmatt" title="부모님 리포트에 들어가는 출결 칸">출결
+        <select id="rmAttM">
+          <option value="1">이번 달</option><option value="2">2개월</option><option value="3">3개월</option>
+          <option value="6">6개월</option><option value="0">넣지 않음</option>
+        </select></label>
       <div class="grow" style="flex:1"></div>
       <button class="btn ghost" data-close>닫기</button>
     </div>
@@ -2377,6 +2458,9 @@ function sheetHTML(rec){
     h+='</div>';
   }
 
+  /* 출결 (이번 달 · 여러 달) */
+  h+=attBlockHTML(rec);
+
   /* 리포팅 */
   var closing = (DB.meta&&DB.meta.closing)||"";
   if(rec.reporting || rec.next || closing){
@@ -2399,6 +2483,7 @@ function reportText(rec){
   L.push(rec.studentName+" 학생 · "+(rec.type==="특강"?"방학특강":"정규수업")
     +(rec.period && rec.period!=="미지정"? " · "+rec.period:"")+(attendText(rec)? " · "+attendText(rec) : ""));
   L.push("");
+  var atl=attTextLine(rec); if(atl){ L.push(atl); L.push(""); }
   if(rec.prev&&rec.prev.length){
     L.push("◈ 지난 과제 달성률 : "+(rec.prevRate==null?"확인 중":rec.prevRate+"% ("+rateWord(rec.prevRate)+")"));
     rec.prev.forEach(function(p){ L.push("  - "+(p.book||"")+" "+(p.range||"")+" → "+(p.rate==null?"미확인":p.rate+"%")); });
@@ -2430,6 +2515,7 @@ function reportText(rec){
 /* ----- 모달 열기 ----- */
 function openReport(id, queue){
   var rec = recById(id);
+  var am=$("#rmAttM"); if(am){ var c=attBlockCfg(); am.value = c.on? String(c.months) : "0"; }
   if(!rec){ toast("리포트를 찾을 수 없습니다"); return; }
   reportQueue = queue || drafts.filter(function(d){return d.saved;}).map(function(d){return d.id;});
   if(reportQueue.indexOf(id)<0) reportQueue=[id];
@@ -2725,7 +2811,7 @@ function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent)
 function registerSW(){
   if(!("serviceWorker" in navigator)) return;
   if(location.protocol!=="https:" && location.hostname!=="localhost" && location.hostname!=="127.0.0.1") return;
-  navigator.serviceWorker.register("sw.js").catch(function(e){ console.warn("sw",e); });
+  navigator.serviceWorker.register("sw.js").then(function(r){ swReg=r; }).catch(function(e){ console.warn("sw",e); });
 }
 window.addEventListener("beforeinstallprompt", function(e){
   e.preventDefault(); installPrompt=e;
@@ -3384,7 +3470,7 @@ function askLossChoice(local, remote){
     +'<div class="small muted mt">고르기 전에 <b>백업 파일 내려받기</b>로 이 기기 기록을 먼저 받아두시길 권합니다.</div>',
     [["보관함 기록 쓰기","primary",function(){
         keepRestorePoint();
-        DB=remote; dedupeDB(DB); save(); saveBase(DB); syncDirty=false; boot();
+        DB=remote; dedupeDB(DB); save(); saveBase(DB); syncDirty=false; lsDel("dailyreport.dirty"); boot();
         closeModals(); toast("보관함 기록을 가져왔습니다");
       }],
      ["이 기기 기록 쓰기","",function(){
@@ -3446,7 +3532,7 @@ function syncNow(silent, force){
     if(JSON.stringify(DB.att||null)!==attBefore) attRefreshFrame();   // 다른 기기의 출석부를 반영
     linkSoon();
     if(res!=="skip"){
-      syncDirty=false;
+      syncDirty=false; lsDel("dailyreport.dirty");
       saveBase(DB);
       DB.meta.syncedAt=new Date().toISOString();
       rawSet(JSON.stringify(DB));
@@ -3473,6 +3559,7 @@ function syncNow(silent, force){
 }
 function scheduleSync(){
   syncDirty=true;
+  lsSet("dailyreport.dirty","1");                 // 앱을 바로 닫아도 다음에 열 때 올립니다
   if(!syncOn() || !syncCfg.auto) return;
   setSyncStatus("보낼 내용 있음");
   clearTimeout(syncT);
@@ -3498,6 +3585,7 @@ function initSync(){
   if(syncInited) return;
   syncInited=true;
   loadSyncCfg();
+  if(lsGet("dailyreport.dirty")) syncDirty=true;  // 지난번에 못 올린 것이 있으면
 
   document.addEventListener("visibilitychange", function(){
     if(document.hidden){ flushSync(); return; }      // 화면을 벗어날 때 남은 것 올리기
@@ -4110,7 +4198,7 @@ function renderSettings(){
     }
   }
   $("#dbStat").textContent="학생 "+DB.students.length+"명 · 교재 "+DB.books.length+"종 · 수업 기록 "+DB.records.length+"건"
-    + (dates.length? " ("+dates[0]+" ~ "+dates[dates.length-1]+")" : "");
+    + (dates.length? " ("+dates[0]+" ~ "+dates[dates.length-1]+")" : "") + " · 앱 "+APP_VERSION;
 }
 $("#btnSaveSettings").addEventListener("click", function(){
   DB.meta.teacher=$("#setTeacher").value.trim();
@@ -4227,6 +4315,7 @@ function switchView(v){
   if(v==="students") renderStudents();
   if(v==="books") renderBooks();
   if(v==="stats") renderStats();
+  if(v==="attstat") renderAttStat();
   if(v==="settings") renderSettings();
   if(v==="search" && !$("#searchResult").innerHTML) runSearch();
   $("#stickybar").style.display = (v==="today" && drafts.length)? "flex":"none";
@@ -4885,6 +4974,276 @@ function addFromAtt(){
              : (missing.length? "학생 관리에 없는 이름입니다: "+missing.join(", ") : "이미 모두 불러와 있습니다"));
 }
 document.addEventListener("click", function(e){ if(e.target && e.target.id==="btnFromAtt") addFromAtt(); });
+
+/* =========================================================
+   앱 버전 · 새 버전 자동 적용
+   ========================================================= */
+var APP_VERSION="v20";
+var swReg=null, swReloading=false;
+var hadController=!!(navigator.serviceWorker && navigator.serviceWorker.controller);
+function checkUpdate(){ try{ if(swReg) swReg.update(); }catch(e){} }
+document.addEventListener("visibilitychange", function(){ if(!document.hidden) checkUpdate(); });
+setInterval(checkUpdate, 20*60*1000);
+if(navigator.serviceWorker){
+  navigator.serviceWorker.addEventListener("controllerchange", function(){
+    if(!hadController){ hadController=true; return; }   // 처음 설치될 때는 새로 열지 않습니다
+    newVersionReady();
+  });
+}
+function newVersionReady(){
+  if(swReloading) return;
+  var unsaved=drafts.some(function(d){ return !d.saved; });
+  var cw=null; try{ cw=(attFrame && attLoaded)? attFrame.contentWindow : null; }catch(e){}
+  if(unsaved || (cw && attBusy(cw))){ showUpdateBar(); return; }
+  reloadForUpdate();
+}
+function showUpdateBar(){
+  var b=$("#updBar");
+  if(!b){
+    b=document.createElement("div"); b.id="updBar";
+    b.innerHTML='<span>새 버전이 준비됐습니다. 입력 중인 카드를 저장한 뒤 눌러주세요</span><button type="button">새로 열기</button>';
+    document.body.appendChild(b);
+    b.querySelector("button").addEventListener("click", function(){
+      if(drafts.some(function(d){ return !d.saved; })){ toast("저장하지 않은 카드가 있습니다. 저장한 뒤 눌러주세요"); return; }
+      reloadForUpdate();
+    });
+  }
+  b.classList.add("on");
+}
+/* 새로 열기 전에 : 출석부 입력 저장 → 합치기 → 보관함에 올리기 */
+function reloadForUpdate(){
+  if(swReloading) return; swReloading=true;
+  var go=function(){ location.reload(); };
+  var cw=null; try{ cw=(attFrame && attLoaded)? attFrame.contentWindow : null; }catch(e){}
+  var flush=null; try{ flush=(cw && typeof cw.saveAll==="function")? cw.saveAll() : null; }catch(e){}
+  Promise.resolve(flush).catch(function(){}).then(function(){
+    try{ if(attCapT){ clearTimeout(attCapT); attCapT=null; } if(attCapture()) save(); }catch(e){}
+    if(syncOn() && syncDirty){ clearTimeout(syncT); setTimeout(go, 8000); syncNow(true).then(go, go); }
+    else go();
+  });
+}
+
+/* =========================================================
+   출결 누적 : 출석부 칸 + 데일리 리포트 기록을 날짜 · 학생별로 모읍니다
+   ========================================================= */
+function todayYmd(){ return ymdOf(new Date()); }
+function minsOf(t){ var m=String(t||"").match(/^(\d{1,2}):(\d{2})$/); return m? (+m[1])*60+(+m[2]) : null; }
+function defStart(d,p){ return d===5? (p===0? "10:00":"14:00") : (p===0? "16:20":"19:10"); }
+function periodStart(W,d,p){
+  var per=W && W.w && W.w.periods && W.w.periods[p];
+  var txt=per? (d===5? per.sat : per.wd) : "";
+  var m=String(txt||"").match(/(\d{1,2}:\d{2})\s*[-~]\s*\d{1,2}:\d{2}/);
+  return m? to24(m[1], d, p) : defStart(d,p);
+}
+function attEvents(from, to){
+  var out=[], seen={}, today=todayYmd();
+  if(!to || to>today) to=today;
+  var ridx={};
+  DB.records.forEach(function(r){ var k=r.date+"|"+nameKey(r.studentName); if(!ridx[k] || (ridx[k].type!=="정규" && r.type==="정규")) ridx[k]=r; });
+  if(DB.att && DB.att.weeks){
+    Object.keys(DB.att.weeks).forEach(function(wk){
+      var W=DB.att.weeks[wk], w=W && W.w; if(!w || !w.days) return;
+      var mon=parseISO(wk);
+      w.days.forEach(function(day, d){
+        if(!day || !day.p) return;
+        var dt=new Date(mon); dt.setDate(dt.getDate()+d); var date=ymdOf(dt);
+        if(date<from || date>to) return;
+        day.p.forEach(function(rows, p){
+          (rows||[]).forEach(function(c){
+            if(!c || !c.n) return;
+            var key=date+"|"+nameKey(c.n); if(seen[key]) return;
+            var ci=cellInfo(c.a, c.h), rec=ridx[key]||null;
+            var st= ci.mark? MARK2ATT[ci.mark] : (ci.text.length? "" : null);
+            if(st===null){ if(rec) st=(rec.attendance==null? "출석" : rec.attendance); else return; }   // 체크 안 된 칸은 뺍니다
+            if(st==="출석" && rec && rec.attendance==="보강") st="보강";
+            seen[key]=1;
+            var arrive= st==="지각"? (ci.time? to24(ci.time,d,p) : ((rec && rec.arriveAt)||"")) : "";
+            var st0=periodStart(W,d,p);
+            var late=(arrive && minsOf(arrive)!=null && minsOf(st0)!=null)? Math.max(0, minsOf(arrive)-minsOf(st0)) : null;
+            out.push({date:date, name:String(c.n).trim(), period:p===0?"1교시":"2교시", st:st, arrive:arrive, late:late,
+                      rate: ci.rate!=null? ci.rate : (rec && rec.prevRate!=null? rec.prevRate : null), rec:rec});
+          });
+        });
+      });
+    });
+  }
+  DB.records.forEach(function(r){
+    if(r.date<from || r.date>to) return;
+    var key=r.date+"|"+nameKey(r.studentName); if(seen[key]) return; seen[key]=1;
+    var dt=parseISO(r.date), d=(dt.getDay()+6)%7, p=(r.period==="2교시")? 1 : 0;
+    var st=(r.attendance==null? "출석" : r.attendance), arrive= st==="지각"? (r.arriveAt||"") : "";
+    var late=(arrive && minsOf(arrive)!=null)? Math.max(0, minsOf(arrive)-minsOf(defStart(d,p))) : null;
+    out.push({date:r.date, name:r.studentName, period:r.period||"", st:st, arrive:arrive, late:late,
+              rate:r.prevRate==null? null : r.prevRate, rec:r});
+  });
+  out.sort(function(a,b){ return a.date<b.date? -1 : a.date>b.date? 1 : 0; });
+  return out;
+}
+function attSum(evs){
+  var s={n:0, att:0, ok:0, late:0, abs:0, mk:0, off:0, etc:0, lateSum:0, lateN:0, rateSum:0, rateN:0};
+  evs.forEach(function(e){
+    if(e.st==="출석"){ s.n++; s.att++; s.ok++; }
+    else if(e.st==="지각"){ s.n++; s.att++; s.late++; if(e.late!=null){ s.lateSum+=e.late; s.lateN++; } }
+    else if(e.st==="보강"){ s.n++; s.att++; s.mk++; }
+    else if(e.st==="결석"){ s.n++; s.abs++; }
+    else if(e.st==="휴회") s.off++;
+    else s.etc++;
+    if(e.rate!=null){ s.rateSum+=e.rate; s.rateN++; }
+  });
+  s.pct= s.n? Math.round(s.att/s.n*1000)/10 : null;
+  s.lateAvg= s.lateN? Math.round(s.lateSum/s.lateN) : null;
+  s.rateAvg= s.rateN? Math.round(s.rateSum/s.rateN) : null;
+  return s;
+}
+function dotCls(st){ return st==="지각"? "l" : st==="결석"? "a" : st==="보강"? "m" : st==="휴회"? "h" : st==="출석"? "" : "x"; }
+function mdLabel(ymd){ var d=parseISO(ymd); return (d.getMonth()+1)+"/"+d.getDate(); }
+function pctTxt(v){ return v==null? "—" : (Math.round(v)===v? v : v.toFixed(1))+"%"; }
+
+/* 기간 빠른 선택 */
+function asRange(q){
+  var t=new Date(), a, b;
+  if(q==="week"){ a=new Date(t); a.setDate(t.getDate()-((t.getDay()+6)%7)); b=new Date(a); b.setDate(a.getDate()+6); }
+  else if(q==="prev"){ a=new Date(t.getFullYear(), t.getMonth()-1, 1); b=new Date(t.getFullYear(), t.getMonth(), 0); }
+  else if(q==="3m"){ a=new Date(t.getFullYear(), t.getMonth()-2, 1); b=new Date(t.getFullYear(), t.getMonth()+1, 0); }
+  else { a=new Date(t.getFullYear(), t.getMonth(), 1); b=new Date(t.getFullYear(), t.getMonth()+1, 0); }
+  return [ymdOf(a), ymdOf(b)];
+}
+var asState={q:"month", open:{}};
+function renderAttStat(){
+  var f=$("#asFrom"), t=$("#asTo");
+  if(!f.value || !t.value){ var r=asRange(asState.q); f.value=r[0]; t.value=r[1]; }
+  $$("#asQuick button").forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-q")===asState.q); });
+  var sel=$("#asStu"), keep=sel.value;
+  var studs=DB.students.slice().sort(cmpStudent);
+  sel.innerHTML='<option value="">전체 학생</option>'+studs.map(function(x){ return '<option value="'+esc(x.name)+'">'+esc(x.name)+'</option>'; }).join("");
+  sel.value=keep;
+  var evs=attEvents(f.value, t.value);
+  var per=$("#asPer").value, who=sel.value;
+  if(per) evs=evs.filter(function(e){ return e.period===per; });
+  if(who) evs=evs.filter(function(e){ return nameKey(e.name)===nameKey(who); });
+  var host=$("#asBody");
+  if(!evs.length){ host.innerHTML='<div class="card"><div class="empty"><b>이 기간에 출결 기록이 없습니다</b>출석부에 ○ △ X 를 체크하면 여기에 모입니다.</div></div>'; return; }
+  var S=attSum(evs);
+  var h='<div class="card pad mb"><div class="askpi">'
+    +'<div><small>수업 횟수</small><b>'+S.n+'<em>회</em></b></div>'
+    +'<div><small>출석률</small><b style="color:var(--good)">'+pctTxt(S.pct)+'</b></div>'
+    +'<div><small>지각</small><b style="color:#a8670b">'+S.late+'<em>회'+(S.lateAvg!=null? ' · 평균 '+S.lateAvg+'분' : '')+'</em></b></div>'
+    +'<div><small>결석</small><b style="color:var(--low)">'+S.abs+'<em>회</em></b></div>'
+    +'<div><small>보강</small><b style="color:#1565c0">'+S.mk+'<em>회</em></b></div>'
+    +'<div><small>과제 평균</small><b>'+(S.rateAvg==null? "—" : S.rateAvg+'<em>%</em>')+'</b></div>'
+    +'</div></div>';
+  // 학생별
+  var by={}, order=[];
+  evs.forEach(function(e){ var k=nameKey(e.name); if(!by[k]){ by[k]={name:e.name, evs:[]}; order.push(k); } by[k].evs.push(e); });
+  var rank={}; studs.forEach(function(x,i){ rank[nameKey(x.name)]=i; });
+  order.sort(function(a,b){ var ra=(a in rank)? rank[a] : 9999, rb=(b in rank)? rank[b] : 9999; return ra-rb || (a<b?-1:1); });
+  h+='<div class="card pad"><div class="astw"><table class="ast"><thead><tr><th>학생</th><th>수업</th><th>출석률</th><th>지각</th><th>결석</th><th>보강</th><th>휴회</th><th>과제 평균</th><th>날짜별 흐름</th></tr></thead><tbody>';
+  order.forEach(function(k){
+    var g=by[k], s=attSum(g.evs), stu=studentByName(g.name)||{};
+    h+='<tr class="srow" data-as="'+esc(k)+'"><td class="nm">'+esc(g.name)+(stu.grade? '<small>'+esc(stu.grade)+'</small>' : '')+'</td>'
+      +'<td>'+s.n+'</td>'
+      +'<td><span class="pbar"><i style="width:'+(s.pct||0)+'%;'+(s.pct!=null && s.pct<85? 'background:'+(s.pct<70?'var(--low)':'var(--mid)') : '')+'"></i></span>'+pctTxt(s.pct)+'</td>'
+      +'<td style="color:#a8670b">'+(s.late? s.late+(s.lateAvg!=null? ' · '+s.lateAvg+'분' : '') : '0')+'</td>'
+      +'<td style="color:'+(s.abs? 'var(--low)' : 'inherit')+'">'+s.abs+'</td><td>'+s.mk+'</td><td>'+s.off+'</td>'
+      +'<td>'+(s.rateAvg==null? '—' : s.rateAvg+'%')+'</td>'
+      +'<td><div class="dots">'+g.evs.map(function(e){ return '<i class="'+dotCls(e.st)+'" title="'+esc(mdLabel(e.date)+' '+(e.st||'기타')+(e.arrive? ' '+e.arrive : ''))+'"></i>'; }).join('')+'</div></td></tr>';
+    if(asState.open[k]){
+      h+='<tr class="det"><td colspan="9"><div class="evl">'+g.evs.map(function(e){
+        var dd=parseISO(e.date), wd="일월화수목금토"[dd.getDay()];
+        return '<span class="ev"><b>'+mdLabel(e.date)+'('+wd+')</b>'+esc(e.period||'')
+          +' <span class="st-'+esc(e.st||'기타')+'">'+esc(e.st||'기타')+(e.arrive? ' '+esc(e.arrive) : '')+(e.late? ' ('+e.late+'분)' : '')+'</span>'
+          +(e.rate!=null? ' · 과제 '+e.rate+'%' : '')
+          +(e.rec? ' <button type="button" data-asrep="'+esc(e.rec.id)+'">리포트</button>' : '')+'</span>';
+      }).join('')+'</div></td></tr>';
+    }
+  });
+  h+='</tbody></table></div>'
+    +'<div class="aslegend"><span><i></i>출석</span><span><i style="background:#ffd98a"></i>지각</span><span><i style="background:#f2a39a"></i>결석</span>'
+    +'<span><i style="background:#a9c8ef"></i>보강</span><span><i style="background:#e3e6ea"></i>휴회</span>'
+    +'<span>· 학생 줄을 누르면 날짜별 기록과 리포트가 펼쳐집니다 · 출석률 = (출석+지각+보강) ÷ (휴회를 뺀 수업)</span></div></div>';
+  host.innerHTML=h;
+}
+document.addEventListener("click", function(e){
+  var q=e.target.closest && e.target.closest("#asQuick button");
+  if(q){ asState.q=q.getAttribute("data-q"); var r=asRange(asState.q); $("#asFrom").value=r[0]; $("#asTo").value=r[1]; renderAttStat(); return; }
+  var rp=e.target.closest && e.target.closest("[data-asrep]");
+  if(rp){ openReport(rp.getAttribute("data-asrep"), [rp.getAttribute("data-asrep")]); return; }
+  var row=e.target.closest && e.target.closest("tr.srow[data-as]");
+  if(row){ var k=row.getAttribute("data-as"); asState.open[k]=!asState.open[k]; renderAttStat(); return; }
+  if(e.target && e.target.id==="asCsv") asCsv();
+});
+document.addEventListener("change", function(e){
+  if(!e.target) return;
+  if(e.target.id==="asFrom" || e.target.id==="asTo"){ asState.q=""; renderAttStat(); }
+  if(e.target.id==="asStu" || e.target.id==="asPer") renderAttStat();
+  if(e.target.id==="rmAttM"){
+    var v=+e.target.value;
+    DB.meta.attBlock={on:v>0, months:v||1};
+    save(); paintReport();
+  }
+});
+function asCsv(){
+  var f=$("#asFrom").value, t=$("#asTo").value, evs=attEvents(f,t);
+  var per=$("#asPer").value, who=$("#asStu").value;
+  if(per) evs=evs.filter(function(e){ return e.period===per; });
+  if(who) evs=evs.filter(function(e){ return nameKey(e.name)===nameKey(who); });
+  var q=function(v){ v=(v==null? "" : String(v)); return /[",\n]/.test(v)? '"'+v.replace(/"/g,'""')+'"' : v; };
+  var L=[["날짜","요일","교시","학생","학년","출결","도착","지각(분)","과제 달성률"].join(",")];
+  evs.forEach(function(e){ var stu=studentByName(e.name)||{}; var d=parseISO(e.date);
+    L.push([e.date,"일월화수목금토"[d.getDay()],e.period,e.name,stu.grade||"",e.st||"기타",e.arrive,e.late==null?"":e.late,e.rate==null?"":e.rate].map(q).join(",")); });
+  var blob=new Blob(["\ufeff"+L.join("\r\n")],{type:"text/csv;charset=utf-8"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="출결누적_"+f+"_"+t+".csv";
+  document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 800);
+}
+
+/* =========================================================
+   부모님 리포트 : 출결 칸 (이번 달 · 2 · 3 · 6개월)
+   ========================================================= */
+function attBlockCfg(){ var c=(DB.meta && DB.meta.attBlock) || {on:true, months:1}; return {on:c.on!==false, months:c.months||1}; }
+function attForReport(rec){
+  var cfg=attBlockCfg(); if(!cfg.on) return null;
+  var e=parseISO(rec.date), from=ymdOf(new Date(e.getFullYear(), e.getMonth()-(cfg.months-1), 1));
+  var k=nameKey(rec.studentName);
+  var evs=attEvents(from, rec.date).filter(function(x){ return nameKey(x.name)===k; });
+  return evs.length? {cfg:cfg, from:from, evs:evs} : null;
+}
+function attBlockHTML(rec){
+  var A=attForReport(rec); if(!A) return "";
+  var cfg=A.cfg, evs=A.evs, e=parseISO(rec.date);
+  var h='<div class="blk">';
+  if(cfg.months===1){
+    var S=attSum(evs);
+    h+='<div class="lab">'+(e.getMonth()+1)+'월 출결<span class="lsub">'+mdLabel(A.from)+' ~ '+mdLabel(rec.date)+'</span></div>';
+    h+='<div class="att5">'
+      +'<div><small>출석</small><b style="color:var(--good)">'+S.ok+'</b></div>'
+      +'<div><small>지각</small><b style="color:#a8670b">'+S.late+'</b></div>'
+      +'<div><small>결석</small><b style="color:var(--low)">'+S.abs+'</b></div>'
+      +'<div><small>보강</small><b style="color:#1565c0">'+S.mk+'</b></div>'
+      +'<div><small>출석률</small><b>'+pctTxt(S.pct)+'</b></div></div>';
+    h+='<div class="adots"><span class="am">'+(e.getMonth()+1)+'월</span>'
+      +evs.map(function(x){ return '<i class="'+dotCls(x.st)+'"></i>'; }).join('')
+      +(S.lateAvg!=null? '<span class="al">지각 평균 '+S.lateAvg+'분</span>' : '')+'</div>';
+  }else{
+    h+='<div class="lab">최근 '+cfg.months+'개월 출결<span class="lsub">'+(parseISO(evs[0].date).getMonth()+1)+'월 ~ '+(e.getMonth()+1)+'월</span></div>';
+    h+='<table class="amt"><tr><th>월</th><th>수업</th><th>출석</th><th>지각</th><th>결석</th><th>보강</th><th>출석률</th></tr>';
+    var first=evs[0].date.slice(0,7);                    // 기록이 시작되는 달부터 보여줍니다
+    for(var i=cfg.months-1;i>=0;i--){
+      var md=new Date(e.getFullYear(), e.getMonth()-i, 1), pre=ymdOf(md).slice(0,7);
+      if(pre<first) continue;
+      var S2=attSum(evs.filter(function(x){ return x.date.slice(0,7)===pre; }));
+      h+='<tr><td>'+(md.getMonth()+1)+'월</td><td>'+S2.n+'</td><td>'+S2.ok+'</td><td>'+S2.late+'</td><td>'+S2.abs+'</td><td>'+S2.mk+'</td><td>'+pctTxt(S2.pct)+'</td></tr>';
+    }
+    var T=attSum(evs);
+    h+='<tr class="sum"><td>합계</td><td>'+T.n+'</td><td>'+T.ok+'</td><td>'+T.late+'</td><td>'+T.abs+'</td><td>'+T.mk+'</td><td>'+pctTxt(T.pct)+'</td></tr></table>';
+  }
+  return h+'</div>';
+}
+function attTextLine(rec){
+  var A=attForReport(rec); if(!A) return "";
+  var S=attSum(A.evs), e=parseISO(rec.date);
+  var title= A.cfg.months===1? (e.getMonth()+1)+"월 출결" : "최근 "+A.cfg.months+"개월 출결";
+  return "◈ "+title+" : 출석 "+S.ok+" · 지각 "+S.late+" · 결석 "+S.abs+" · 보강 "+S.mk+" · 출석률 "+pctTxt(S.pct);
+}
 
 load();
 boot();
