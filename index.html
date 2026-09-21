@@ -587,6 +587,13 @@ table.tbl tr:hover td{background:#fafbfc}
   .daybar .btn{font-size:12px}
 }
 
+
+/* ---------- 출석부 탭 ---------- */
+#view-att{display:none}
+#view-att.on{display:block;position:fixed;left:0;right:0;bottom:0;top:var(--att-top,96px);z-index:45;background:#fff}
+#view-att iframe{width:100%;height:100%;border:0;display:block;background:#fff}
+body.att-phone #view-att.on{top:0;z-index:400}
+body.att-phone .toast{z-index:500}
 </style>
 </head>
 <body>
@@ -600,6 +607,7 @@ table.tbl tr:hover td{background:#fafbfc}
 </div>
 
 <nav class="tabs" role="tablist">
+  <button role="tab" data-view="att">출석부</button>
   <button role="tab" data-view="today" aria-selected="true">오늘 수업</button>
   <button role="tab" data-view="search">기록 검색</button>
   <button role="tab" data-view="stats">학생 현황</button>
@@ -615,6 +623,9 @@ table.tbl tr:hover td{background:#fafbfc}
     <span>⚠</span>
     <div>이 브라우저에서 자동 저장을 쓸 수 없습니다. 창을 닫으면 입력한 내용이 사라집니다. 파일을 컴퓨터에 내려받아 직접 열면 자동 저장이 켜집니다. 지금 작업한 내용은 <b>설정 · 백업 → 백업 파일 내려받기</b>로 보관하세요.</div>
   </div>
+
+  <!-- ============ 출석부 (원래 출석부를 그대로 띄웁니다) ============ -->
+  <section class="view" id="view-att"><iframe id="attFrame" title="출석부"></iframe></section>
 
   <!-- ============ 오늘 수업 ============ -->
   <section class="view on" id="view-today">
@@ -3214,8 +3225,15 @@ function ghRead(){
       if(!res.ok) throw new Error("불러오기 실패 ("+res.status+")");
       return res.json().then(function(j){
         syncSha=j.sha;
-        try{ return JSON.parse(b64decode(j.content)); }
-        catch(e){ throw new Error("보관된 파일을 읽을 수 없습니다."); }
+        if(j.content && j.encoding==="base64"){
+          try{ return JSON.parse(b64decode(j.content)); }
+          catch(e){ throw new Error("보관된 파일을 읽을 수 없습니다."); }
+        }
+        /* 1MB 가 넘으면 내용이 비어 옵니다 → 원문 그대로 다시 받습니다 */
+        var h=ghHeaders(); h["Accept"]="application/vnd.github.raw";
+        return fetch(ghUrl()+"?ref=HEAD&t="+Date.now(), {headers:h, cache:"no-store"})
+          .then(function(r){ if(!r.ok) throw new Error("불러오기 실패 ("+r.status+")"); return r.text(); })
+          .then(function(t){ try{ return JSON.parse(t); }catch(e){ throw new Error("보관된 파일을 읽을 수 없습니다."); } });
       });
     });
 }
@@ -3248,6 +3266,7 @@ function loadBase(){
   catch(e){ return {records:[],students:[],books:[]}; }
 }
 function saveBase(db){
+  saveAttBase(db && db.att);
   lsSet(BASE_KEY, JSON.stringify({
     records:(db.records||[]).map(function(x){return x.id;}),
     students:(db.students||[]).map(function(x){return x.id;}),
@@ -3280,7 +3299,8 @@ function mergeDB(local, remote){
       return ts(r.savedAt) > ts(l.savedAt) ? r : l;      // 나중에 저장한 쪽
     }),
     students: mergeSide(local.students, remote.students, base.students, function(l,r){ return lNew? l : r; }),
-    books:    mergeSide(local.books,    remote.books,    base.books,    function(l,r){ return lNew? l : r; })
+    books:    mergeSide(local.books,    remote.books,    base.books,    function(l,r){ return lNew? l : r; }),
+    att:      mergeAtt(local.att, remote.att, loadAttBase())
   };
   out.records.sort(function(a,b){ return a.date<b.date? -1 : a.date>b.date? 1 : 0; });
   return out;
@@ -3376,7 +3396,7 @@ function syncNow(silent, force){
   if(!navigator.onLine){ setSyncMsg("인터넷에 연결되면 자동으로 맞춥니다"); return Promise.resolve(false); }
   syncBusy=true; setSyncStatus("맞추는 중…");
 
-  var prevSha=syncSha, pulled=false, before=null;
+  var prevSha=syncSha, pulled=false, before=null, attBefore=JSON.stringify(DB.att||null);
   return ghRead().then(function(remote){
     var remoteChanged = (prevSha===null) || (syncSha!==prevSha);
     if(remote && remote.records && remote.students && remoteChanged){
@@ -3384,7 +3404,9 @@ function syncNow(silent, force){
       var ln=(DB.records||[]).length, rn=(remote.records||[]).length;
       if(!ln){
         keepRestorePoint();
+        var myAtt=DB.att;
         DB=remote;                       // 이 기기에 기록이 없을 때만 보관함 것을 그대로 받습니다
+        DB.att=mergeAtt(myAtt, remote.att, loadAttBase());   // 출석부는 이 기기 것도 합칩니다
       }else{                             // 기록이 있으면 절대 통째로 덮지 않고 합칩니다
         var cand=mergeDB(DB, remote);
         if(looksLikeLoss(ln, rn, (cand.records||[]).length)){
@@ -3413,6 +3435,7 @@ function syncNow(silent, force){
   }).then(function(res){
     if(res==="halt") return false;
     syncBusy=false;
+    if(JSON.stringify(DB.att||null)!==attBefore) attRefreshFrame();   // 다른 기기의 출석부를 반영
     if(res!=="skip"){
       syncDirty=false;
       saveBase(DB);
@@ -4188,6 +4211,8 @@ function openDialog(title, bodyHTML, buttons){
    뷰 전환 · 초기화
    ========================================================= */
 function switchView(v){
+  if(v==="att") attOpen();
+  else document.body.classList.remove("att-phone");
   $$("nav.tabs button").forEach(function(b){ b.setAttribute("aria-selected", b.getAttribute("data-view")===v); });
   $$(".view").forEach(function(s){ s.classList.toggle("on", s.id==="view-"+v); });
   if(v==="students") renderStudents();
@@ -4355,6 +4380,7 @@ function boot(){
   renderSettings();
   initFileStore();
   initSync();
+  if(attInited) attRefreshFrame();
   if(window.__bookUpdate){
     var u=window.__bookUpdate; window.__bookUpdate=null;
     setTimeout(function(){
@@ -4363,8 +4389,254 @@ function boot(){
   }
 }
 
+/* =========================================================
+   출석부 연결
+   · 같은 주소의 attendance.html(원래 출석부)을 탭 안에 띄웁니다.
+   · 출석부는 자기 칸(att:*)에 저장하고, 여기서 그 내용을 DB.att 에
+     옮겨 기기 간 동기화에 함께 싣습니다.
+   · 여러 기기에서 같은 주를 고쳐도 칸 단위로 합쳐 서로 지우지 않습니다.
+   ========================================================= */
+window.__DR_HOST__ = true;
+var ATT_BASE_KEY="dailyreport.attbase";
+var attFrame=null, attLoaded=false, attLastEdit=0, attCapT=null, attNeedReload=false, attSeen={meta:null,weeks:{}};
+
+function jeq(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
+function jcopy(o){ return o==null? o : JSON.parse(JSON.stringify(o)); }
+function loadAttBase(){ try{ return JSON.parse(lsGet(ATT_BASE_KEY)||"null"); }catch(e){ return null; } }
+function saveAttBase(att){ try{ if(att) lsSet(ATT_BASE_KEY, JSON.stringify(att)); }catch(e){} }
+
+/* ---- 세 방향 합치기 : 기준(b) 에서 한쪽만 바뀌면 바뀐 쪽, 둘 다 바뀌면 prefL ---- */
+function nz(v){ return (v===undefined||v===null)? "" : v; }
+function m3(b,l,r,prefL){
+  b=nz(b); l=nz(l); r=nz(r);
+  if(jeq(l,r)) return l;
+  if(jeq(l,b)) return r;
+  if(jeq(r,b)) return l;
+  return prefL? l : r;
+}
+var CELL_F=["n","s","g","h","a","st"];
+function blankCellX(){ return {n:"",s:"",g:"",h:"",a:"",st:{}}; }
+function cellKey(c){ return c && c.n ? String(c.n).replace(/\s+/g,"") : ""; }
+function mergeCell(b,l,r,prefL){
+  var o={};
+  CELL_F.forEach(function(f){
+    var bv=b? b[f] : undefined, lv=l[f], rv=r[f];
+    if(f==="st"){ bv=bv||{}; lv=lv||{}; rv=rv||{}; }
+    o[f]=m3(bv,lv,rv,prefL);
+    if(f==="st" && (o[f]===""||o[f]==null)) o[f]={};
+  });
+  return o;
+}
+/* 한 교시의 학생 줄들 : 이름으로 짝을 짓고, 자리는 바뀐 쪽을 따릅니다 */
+function mergeRows(b,l,r,prefL){
+  b=b||[]; l=l||[]; r=r||[];
+  function keyed(arr){
+    var m={}, order=[], seen={};
+    arr.forEach(function(c,i){
+      var k=cellKey(c); if(!k) return;
+      if(seen[k]){ seen[k]++; k=k+"#"+seen[k]; } else seen[k]=1;
+      m[k]={c:c,i:i}; order.push(k);
+    });
+    return {m:m, order:order};
+  }
+  var B=keyed(b), L=keyed(l), R=keyed(r);
+  var lMoved=!jeq(L.order,B.order) || l.some(function(c,i){ return B.m[cellKey(c)] && B.m[cellKey(c)].i!==i; });
+  var lead = lMoved? L : R, other = lMoved? R : L;
+  var len=Math.max(l.length, r.length, b.length);
+  var out=new Array(len).fill(null), used={};
+  function place(k,cell,idx){
+    if(idx<len && !out[idx]){ out[idx]=cell; return; }
+    for(var i=0;i<len;i++){ if(!out[i]){ out[i]=cell; return; } }
+    out.push(cell);
+  }
+  function mergedFor(k){
+    var inL=!!L.m[k], inR=!!R.m[k], inB=!!B.m[k];
+    if(inL && inR) return mergeCell(inB? B.m[k].c : null, L.m[k].c, R.m[k].c, prefL);
+    if(inL){ if(inB && jeq(L.m[k].c, B.m[k].c)) return null; return L.m[k].c; }   // 저쪽에서 지움
+    if(inR){ if(inB && jeq(R.m[k].c, B.m[k].c)) return null; return R.m[k].c; }   // 이쪽에서 지움
+    return null;
+  }
+  lead.order.forEach(function(k){ var c=mergedFor(k); used[k]=1; if(c) place(k,c,lead.m[k].i); });
+  other.order.forEach(function(k){ if(used[k]) return; var c=mergedFor(k); used[k]=1; if(c) place(k,c,other.m[k].i); });
+  for(var i=0;i<out.length;i++) if(!out[i]) out[i]=blankCellX();
+  return out;
+}
+function mergeWeek(b,l,r,prefL){
+  if(!l) return jcopy(r); if(!r) return jcopy(l);
+  b=b||{};
+  var o=jcopy(prefL? l : r);
+  o.label=m3(b.label,l.label,r.label,prefL);
+  var np=Math.max((l.periods||[]).length,(r.periods||[]).length);
+  o.periods=[];
+  for(var p=0;p<np;p++){
+    var bp=(b.periods||[])[p], lp=(l.periods||[])[p], rp=(r.periods||[])[p];
+    o.periods.push(lp&&rp? m3(bp,lp,rp,prefL) : (lp||rp));
+  }
+  o.days=[];
+  for(var d=0; d<6; d++){
+    var bd=(b.days||[])[d]||{}, ld=(l.days||[])[d]||{}, rd=(r.days||[])[d]||{};
+    var od={};
+    ["note","noteSt","noteH"].forEach(function(f){ var v=m3(bd[f],ld[f],rd[f],prefL); if(v!==""||ld[f]!==undefined||rd[f]!==undefined) od[f]=v; });
+    var nc=Math.max((ld.cls||[]).length,(rd.cls||[]).length, np);
+    od.cls=[]; od.clsSt=[];
+    for(var i=0;i<nc;i++){
+      od.cls.push(m3((bd.cls||[])[i],(ld.cls||[])[i],(rd.cls||[])[i],prefL));
+      od.clsSt.push(m3((bd.clsSt||[])[i],(ld.clsSt||[])[i],(rd.clsSt||[])[i],prefL));
+    }
+    var npp=Math.max((ld.p||[]).length,(rd.p||[]).length);
+    od.p=[];
+    for(var q=0;q<npp;q++) od.p.push(mergeRows((bd.p||[])[q],(ld.p||[])[q],(rd.p||[])[q],prefL));
+    o.days.push(od);
+  }
+  return o;
+}
+function mergeMeta(b,l,r,prefL){
+  if(!l) return jcopy(r); if(!r) return jcopy(l);
+  b=b||{};
+  var o={}, keys={};
+  Object.keys(l).concat(Object.keys(r)).forEach(function(k){ keys[k]=1; });
+  Object.keys(keys).forEach(function(k){
+    if(k==="weeks"){                                   // 기록된 주차 목록은 모두 모읍니다
+      var u={}; (l.weeks||[]).concat(r.weeks||[]).forEach(function(w){ u[w]=1; });
+      o.weeks=Object.keys(u).sort(); return;
+    }
+    if(!(k in l)) { o[k]=r[k]; return; }
+    if(!(k in r)) { o[k]=l[k]; return; }
+    o[k]=m3(b[k],l[k],r[k],prefL);
+  });
+  return o;
+}
+function mergeAtt(L,R,B){
+  if(!L || (!L.meta && !Object.keys(L.weeks||{}).length)) return jcopy(R)||null;
+  if(!R || (!R.meta && !Object.keys(R.weeks||{}).length)) return jcopy(L);
+  B=B||{meta:null,weeks:{}};
+  var out={meta:mergeMeta(B.meta, L.meta, R.meta, (L.mt||0)>=(R.mt||0)),
+           mt:Math.max(L.mt||0, R.mt||0), weeks:{}};
+  var ks={};
+  Object.keys(L.weeks||{}).concat(Object.keys(R.weeks||{})).forEach(function(k){ ks[k]=1; });
+  Object.keys(ks).forEach(function(k){
+    var lw=(L.weeks||{})[k], rw=(R.weeks||{})[k], bw=(B.weeks||{})[k];
+    if(lw && rw){
+      out.weeks[k]={ w:mergeWeek(bw&&bw.w, lw.w, rw.w, (lw.t||0)>=(rw.t||0)), t:Math.max(lw.t||0, rw.t||0) };
+    } else out.weeks[k]=jcopy(lw||rw);
+  });
+  return out;
+}
+
+/* ---- 출석부 칸 ↔ DB.att ---- */
+function attLocal(){
+  var out={meta:null, weeks:{}};
+  try{
+    var m=localStorage.getItem("att:meta"); if(m) out.meta=JSON.parse(m);
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      if(k && k.indexOf("att:w:")===0){ try{ out.weeks[k.slice(6)]=JSON.parse(localStorage.getItem(k)); }catch(e){} }
+    }
+  }catch(e){}
+  return out;
+}
+function attWriteLocal(){
+  if(!DB.att) return false;
+  var changed=false;
+  try{
+    if(DB.att.meta){
+      var ms=JSON.stringify(DB.att.meta);
+      if(localStorage.getItem("att:meta")!==ms){ localStorage.setItem("att:meta", ms); changed=true; }
+    }
+    Object.keys(DB.att.weeks||{}).forEach(function(k){
+      var s=JSON.stringify(DB.att.weeks[k].w);
+      if(localStorage.getItem("att:w:"+k)!==s){ localStorage.setItem("att:w:"+k, s); changed=true; }
+    });
+    localStorage.setItem("att:seeded","1");
+  }catch(e){ console.warn(e); }
+  return changed;
+}
+/* 출석부에서 저장한 것을 DB.att 로 : 출석부가 알던 내용(attSeen)을 기준으로 합칩니다 */
+function attCapture(stamp){
+  var l=attLocal(), now=(stamp==null? Date.now() : stamp), changed=false, reload=false;
+  if(!DB.att) DB.att={meta:null, mt:0, weeks:{}};
+  if(l.meta && !jeq(l.meta, DB.att.meta)){
+    var mm=DB.att.meta? mergeMeta(attSeen.meta, l.meta, DB.att.meta, true) : l.meta;
+    if(!jeq(mm, DB.att.meta)){ DB.att.meta=mm; DB.att.mt=now; changed=true; }
+    if(!jeq(mm, l.meta)) reload=true;
+  }
+  Object.keys(l.weeks).forEach(function(k){
+    var cur=DB.att.weeks[k];
+    if(cur && jeq(cur.w, l.weeks[k])) return;
+    var mw= cur? mergeWeek(attSeen.weeks[k], l.weeks[k], cur.w, true) : l.weeks[k];
+    if(!cur || !jeq(mw, cur.w)){ DB.att.weeks[k]={w:mw, t:now}; changed=true; }
+    if(!jeq(mw, l.weeks[k])) reload=true;
+  });
+  attSeen=l;
+  if(reload){ attNeedReload=true; attRefreshFrame(); }
+  return changed;
+}
+function attRefreshFrame(){
+  if(attWriteLocal()) attNeedReload=true;
+  if(!attNeedReload || !attFrame || !attLoaded) return;
+  if(Date.now()-attLastEdit < 4000){                 // 입력 중이면 잠시 뒤에
+    clearTimeout(attRefreshFrame._t);
+    attRefreshFrame._t=setTimeout(attRefreshFrame, 4000);
+    return;
+  }
+  attNeedReload=false;
+  try{ attFrame.contentWindow.location.reload(); }catch(e){}
+}
+function attFlush(){
+  if(!attCapT) return;
+  clearTimeout(attCapT); attCapT=null;
+  if(attCapture()) save();
+}
+window.addEventListener("storage", function(e){
+  if(!e.key || e.key.indexOf("att:")!==0 || e.key==="att:seeded" || e.key==="att:clsblank") return;
+  attLastEdit=Date.now();
+  clearTimeout(attCapT);
+  attCapT=setTimeout(function(){ attCapT=null; if(attCapture()) save(); }, 700);
+});
+document.addEventListener("visibilitychange", function(){ if(document.hidden) attFlush(); });
+window.addEventListener("pagehide", attFlush);
+
+/* 처음 한 번 : 이 기기 칸에만 남은 출석부가 있으면 먼저 싣고, 그다음 DB.att 를 칸에 씁니다 */
+var attInited=false;
+function attInit(){
+  if(attInited) return; attInited=true;
+  var l=attLocal(), has=!!l.meta || Object.keys(l.weeks).length>0;
+  var dbHas=DB.att && (DB.att.meta || Object.keys(DB.att.weeks||{}).length);
+  if(has){
+    attSeen= dbHas? {meta:jcopy(DB.att.meta), weeks:(function(){ var w={}; Object.keys(DB.att.weeks).forEach(function(k){ w[k]=DB.att.weeks[k].w; }); return w; })()} : {meta:null,weeks:{}};
+    if(attCapture(dbHas? null : 0)) save();
+  }
+  attWriteLocal();
+  attSeen=attLocal();
+}
+function attOpen(){
+  attInit();
+  var sec=$("#view-att");
+  var nav=document.querySelector("nav.tabs");
+  if(nav) sec.style.setProperty("--att-top", Math.round(nav.getBoundingClientRect().bottom)+"px");
+  if(isPhone()) document.body.classList.add("att-phone");
+  if(!attFrame){
+    attFrame=$("#attFrame");
+    attFrame.addEventListener("load", function(){ attLoaded=true; attSeen=attLocal(); });
+    attFrame.src="attendance.html";
+  }
+}
+function isPhone(){ return window.matchMedia && window.matchMedia("(max-width:700px)").matches; }
+window.addEventListener("resize", function(){
+  var sec=$("#view-att"), nav=document.querySelector("nav.tabs");
+  if(sec && nav) sec.style.setProperty("--att-top", Math.round(nav.getBoundingClientRect().bottom)+"px");
+});
+window.addEventListener("message", function(e){
+  if(e.data && e.data.type==="dr-open"){
+    document.body.classList.remove("att-phone");
+    switchView("today");
+  }
+});
+
 load();
 boot();
+attInit();
+if(isPhone()) switchView("att");       // 휴대폰은 출석부 간편 화면으로 바로 엽니다
 window.addEventListener("beforeunload", function(e){
   if(drafts.some(function(d){return !d.saved;})){
     e.preventDefault(); e.returnValue="";
