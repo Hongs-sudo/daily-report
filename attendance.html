@@ -362,6 +362,13 @@
     tr.r-cls td{background:var(--blue-tint)!important}
     .r-date td.today{background:var(--amber)!important;box-shadow:none!important}
     tr.stu.zebra td{background:#fff!important}
+    /* 줄무늬 바탕이 칸 색을 덮지 않도록 (칠한 칸은 인쇄에서도 그대로) */
+    tr.stu.zebra td.b-r{background:#FFD9D9!important}
+    tr.stu.zebra td.b-b{background:#D9E8FF!important}
+    tr.stu.zebra td.b-p{background:#FFDCEE!important}
+    tr.stu.zebra td.b-o{background:#FFE5C7!important}
+    tr.stu.zebra td.b-gy{background:#E4E4E4!important}
+    tr.stu.zebra td.hl{background:#FFF200!important}
     .r-top td{border:none!important}
     .r-top td.legend{border:1px solid #9A9A9A!important}
     td.cls:empty::before{content:""!important}
