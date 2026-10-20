@@ -777,6 +777,14 @@ table.tbl tr:hover td{background:#fafbfc}
   font-size:11.5px;font-weight:700;color:#5C8C85;display:flex;justify-content:space-between}
 .scC .avgl b{color:#0F6E63}
 
+/* ---------- 링크로 보내기 ---------- */
+.lkst{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;
+  color:var(--ink-3);background:var(--bg-2);border:1px solid var(--line);
+  border-radius:999px;padding:3px 10px;white-space:nowrap}
+.lkst.ok{color:#1e7a46;background:#eaf7ef;border-color:#bfe3cd}
+.lkst.off{color:var(--ink-3);opacity:.75}
+@media(max-width:700px){ .lkst{font-size:11px;padding:2px 8px} }
+
 @media print{
   @page{size:A4 portrait;margin:8mm}
   html,body{background:#fff}
@@ -1144,6 +1152,11 @@ table.ast tr.det td{background:var(--wash);padding:10px 12px}
     </div>
 
     <div class="card pad mb">
+      <h3 class="mb">링크로 보내기</h3>
+      <div id="linkBox"></div>
+    </div>
+
+    <div class="card pad mb">
       <h3 class="mb">기기 간 동기화</h3>
       <div class="small muted mb">PC · 아이패드 · 휴대폰이 같은 기록을 쓰게 합니다. 어느 기기에서 저장하든 다른 기기를 열면 자동으로 맞춰집니다.</div>
       <div id="syncBox"></div>
@@ -1236,6 +1249,7 @@ table.ast tr.det td{background:var(--wash);padding:10px 12px}
       <span class="rmseg" id="rmModeSeg" title="누구에게 보낼 리포트인지 고릅니다">
         <button type="button" data-m="parent">부모님용</button><button type="button" data-m="student">학생용</button>
       </span>
+      <span class="lkst" id="rmLinkState" style="display:none"></span>
       <span class="rmseg" id="rmSkinSeg" title="학생용 카드 디자인">
         <button type="button" data-s="a">코믹스</button><button type="button" data-s="b">지브리</button><button type="button" data-s="c">퀘스트</button>
       </span>
@@ -1257,6 +1271,7 @@ table.ast tr.det td{background:var(--wash);padding:10px 12px}
       <button class="btn ghost" id="btnSms">문자 앱 열기</button>
       <button class="btn ghost" id="btnCopyText">글로 복사</button>
       <button class="btn ghost" id="btnPrint">인쇄</button>
+      <button class="btn" id="btnMakeLink">링크로 보내기</button>
       <div style="flex:1"></div>
       <button class="btn ghost" id="btnPrevStu">◀ 이전</button>
       <button class="btn ghost" id="btnNextStu">다음 ▶</button>
@@ -1783,7 +1798,7 @@ function draftFromRecord(r){
     }):[newHw()]),
     attitude:r.attitude||0, focus:r.focus||0,
     test:r.test?{name:r.test.name,score:r.test.score,total:r.test.total}:{name:"",score:"",total:""},
-    reporting:r.reporting||"", reportingColor:r.reportingColor||"", next:r.next||"",
+    reporting:r.reporting||"", reportingColor:r.reportingColor||"", next:r.next||"", handNote:r.handNote||"",
     more:false, saved:true, collapsed:false
   };
 }
@@ -1821,7 +1836,7 @@ function newDraft(stu, period){
     attendance:"출석", arriveAt:"", prev:[], prevComment:"",
     progress:[newProg()], homework:[newHw()],
     attitude:0, focus:0, test:{name:"",score:"",total:""},
-    reporting:"", reportingColor:"", next:"", more:false, saved:false, collapsed:false
+    reporting:"", reportingColor:"", next:"", handNote:"", more:false, saved:false, collapsed:false
   };
   var src=pickSourceLesson(stu.name, curDate, null);
   applySource(d, src);
@@ -2219,6 +2234,8 @@ function entryHTML(d){
     h+='</div></div></div>';
     h+='<div class="crow"><span class="clab">다음<br>수업</span><div class="cstack">'
       +'<input type="text" class="mini" data-field="next" value="'+esc(d.next)+'" placeholder="예: 다음 수업에 수열 마무리 후 단원평가"></div></div>';
+    h+='<div class="crow"><span class="clab">부모님께</span><div class="cstack">'
+      +'<input type="text" class="mini" data-field="handNote" value="'+esc(d.handNote||"")+'" placeholder="학부모님께만 보이는 한마디 (비워두면 나오지 않습니다)"></div></div>';
     h+='</div>';
   }
 
@@ -2472,6 +2489,7 @@ $("#entries").addEventListener("input", function(e){
   else if(f==="prog.pFrom"){ d.progress[i].pFrom=el.value; }
   else if(f==="prog.pTo"){ d.progress[i].pTo=el.value; }
   else if(f==="next"){ d.next=el.value; }
+  else if(f==="handNote"){ d.handNote=el.value; }
   else if(f==="test.name"){ d.test.name=el.value; }
   else if(f==="test.score"){ d.test.score=el.value; }
   else if(f==="test.total"){ d.test.total=el.value; }
@@ -2575,7 +2593,7 @@ function draftToRecord(d){
     }),
     attitude: d.attitude, focus: d.focus,
     test: (d.test.name||d.test.score!=="")? {name:d.test.name,score:d.test.score,total:d.test.total}:null,
-    reporting: sanitizeRich(d.reporting||""), reportingColor: d.reportingColor||"", next: d.next,
+    reporting: sanitizeRich(d.reporting||""), reportingColor: d.reportingColor||"", next: d.next, handNote: d.handNote||"",
     savedAt: new Date().toISOString()
   };
 }
@@ -3316,6 +3334,410 @@ function stuText(rec){
   return L.join("\n");
 }
 
+/* =========================================================
+   링크로 보내기 — 리포트를 인터넷 주소 하나로 만들어 보냅니다
+   · 내용은 Firebase 에 보관되고, 받은 분은 링크로 열어 봅니다
+   · 받은 분이 확인 단추를 누르면 그 시각이 여기에 들어옵니다
+   · 링크는 2주 뒤 저절로 만료됩니다
+   ========================================================= */
+
+var LINK_DAYS = 14;
+var LINK_COLL = "reports";
+var LINK_SKINS = [["parent","부모님용"],["comic","학생용 · 코믹"],["quest","학생용 · 퀘스트"]];
+
+function fbCfg(){
+  var c=(DB.meta && DB.meta.fb) || {};
+  return {apiKey:c.apiKey||"", authDomain:c.authDomain||"", projectId:c.projectId||"",
+          appId:c.appId||"", viewer:c.viewer||""};
+}
+function fbOn(){ var c=fbCfg(); return !!(c.apiKey && c.projectId && c.appId); }
+function viewerBase(){
+  var c=fbCfg();
+  if(c.viewer) return c.viewer.replace(/[#?].*$/,"").replace(/\/+$/,"");
+  var u=location.href.replace(/[#?].*$/,"").replace(/[^\/]*$/,"");
+  return u + "r.html";
+}
+
+/* ---------- Firebase 불러오기 ---------- */
+var fbP=null, fbDB=null;
+function loadScript(src){
+  return new Promise(function(res,rej){
+    var s=document.createElement("script"); s.src=src;
+    s.onload=res; s.onerror=function(){ rej(new Error("no-network")); };
+    document.head.appendChild(s);
+  });
+}
+function fbReady(){
+  if(fbDB) return Promise.resolve(fbDB);
+  if(fbP) return fbP;
+  if(!fbOn()) return Promise.reject(new Error("no-config"));
+  var V="https://www.gstatic.com/firebasejs/10.12.2/";
+  fbP = (window.firebase && firebase.firestore ? Promise.resolve()
+        : loadScript(V+"firebase-app-compat.js").then(function(){ return loadScript(V+"firebase-firestore-compat.js"); })
+          .then(function(){ return loadScript(V+"firebase-auth-compat.js"); }))
+    .then(function(){
+      var c=fbCfg();
+      if(!firebase.apps.length){
+        firebase.initializeApp({apiKey:c.apiKey, authDomain:c.authDomain, projectId:c.projectId, appId:c.appId});
+      }
+      fbDB = firebase.firestore();
+      return firebase.auth().signInAnonymously().catch(function(e){ console.warn("익명 로그인 실패", e); });
+    })
+    .then(function(){ return fbDB; });
+  return fbP;
+}
+
+/* ---------- 링크 열쇠 ---------- */
+function linkKey(){
+  var s="abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789", out="";
+  var a=new Uint8Array(12);
+  if(window.crypto && crypto.getRandomValues) crypto.getRandomValues(a);
+  else for(var i=0;i<12;i++) a[i]=Math.floor(Math.random()*256);
+  for(var j=0;j<12;j++) out += s.charAt(a[j] % s.length);
+  return out;
+}
+
+/* ---------- 학생별 기본 디자인 ---------- */
+function linkSkinFor(rec){
+  var s=studentByName(rec.studentName)||{};
+  if(/^(parent|comic|quest)$/.test(s.linkSkin||"")) return s.linkSkin;
+  return lsGet("dailyreport.linkSkin") || "parent";
+}
+
+/* =========================================================
+   보낼 내용 만들기
+   ========================================================= */
+function linkPayload(rec, kind){
+  var stu=studentByName(rec.studentName)||{}, m=DB.meta||{};
+  var d=parseISO(rec.date);
+  var p={
+    v:1, kind:kind,
+    academy:m.academy||"", slogan:"", teacher:m.teacher||"", phone:m.phone||"",
+    name:rec.studentName, grade:stu.grade||"", school:stu.school||"",
+    dateText:d.getFullYear()+". "+(d.getMonth()+1)+". "+d.getDate()+". "+DOW[d.getDay()]+"요일",
+    periodText:(rec.type==="특강"?"방학특강":"정규수업")
+      +(rec.period && rec.period!=="미지정"? " · "+rec.period : ""),
+    att:attPayload(rec),
+    prog:(rec.progress||[]).map(function(x){
+      var b=bookByName(x.book), tot=(b&&b.units)? b.units.length : 0;
+      var done=(x.doneIdxs&&x.doneIdxs.length)? x.doneIdxs.length
+             : (x.unitIdx!=null&&x.unitIdx>=0? x.unitIdx+1 : null);
+      var cur=(x.unitIdxs&&x.unitIdxs.length)? x.unitIdxs.slice() : (x.unitIdx!=null&&x.unitIdx>=0? [x.unitIdx]:[]);
+      return {book:x.book||"", unit:x.unit||"",
+              pages:(x.pFrom||x.pTo)? ("p."+(x.pFrom||"")+"~"+(x.pTo||"")) : "",
+              note:(x.note && !isRichEmpty(x.note))? richToText(x.note) : "",
+              done:done, total:tot, today:cur.length, cur:cur,
+              pct:(tot&&done!=null)? Math.round(done*100/tot) : (x.rate!=null? x.rate : null)};
+    }),
+    hw:(rec.homework||[]).map(function(x){
+      return {book:x.book||"", range:(x.rangeHtml!=null&&x.rangeHtml!=="")? richToText(x.rangeHtml) : (x.range||"")};
+    }),
+    report:(rec.reporting && !isRichEmpty(rec.reporting))? sanitizeRich(rec.reporting) : "",
+    next:rec.next||"",
+    footer:(/고/.test(stu.grade||"")? "고등부":"중등부")+" · 담당 "+(m.teacher||"")+"T"
+  };
+
+  if(kind==="parent"){
+    if(rec.prev && rec.prev.length){
+      p.prev={ rate:rec.prevRate==null? null : rec.prevRate,
+               word:rateWord(rec.prevRate),
+               comment:rec.prevComment||"",
+               items:rec.prev.map(function(x){
+                 return {book:x.book||"과제", range:x.range||"", rate:x.rate==null? null : Number(x.rate)};
+               })};
+    }
+    p.kv={attitude:rec.attitude||0, focus:rec.focus||0,
+          test:(rec.test && rec.test.score!=null && rec.test.score!=="")
+            ? {name:rec.test.name||"확인 테스트", score:String(rec.test.score), total:rec.test.total? String(rec.test.total):""}
+            : null};
+    var tr=hwTrend(rec.studentName, rec.date, 4);
+    if(tr.length>1){
+      p.trend={avg:Math.round(tr.reduce(function(a,b){return a+b.v;},0)/tr.length),
+               items:tr.map(function(t){ return {d:fmtShort(t.d), v:t.v}; })};
+    }
+    p.attm=attmPayload(rec);
+    if(rec.handNote) p.hand=esc(rec.handNote);
+    if(m.closing) p.closing=esc(m.closing);
+  }else{
+    p.rate = rec.prevRate==null? null : rec.prevRate;
+    p.rateWord = rateCheer(rec.prevRate);
+    p.rateItems = (rec.prev||[]).filter(function(x){ return x.rate!=null; })
+                   .map(function(x){ return {book:x.book||"과제", rate:Number(x.rate)}; });
+    var lb=peerBoard(rec);
+    if(lb.ok){
+      p.board={book:lb.book, grade:lb.grade, month:+lb.ym.slice(5,7), avg:lb.avg, n:lb.n,
+               myUnits:lb.myUnits, bookUnits:lb.bookUnits, myRank:lb.myRank,
+               rows:boardRows(lb,3).map(function(r){
+                 return {nm: r.me? r.name : maskName(r.name), rate:r.rate, me:!!r.me, rank:r.rank};
+               })};
+    }else{
+      var mm=myMonth(rec);
+      p.month={m:mm.m, n:mm.n, att:mm.att, rate:mm.rate, pct:mm.pct};
+    }
+  }
+  return p;
+}
+function attPayload(rec){
+  var a=(rec.attendance==null? "출석" : rec.attendance);
+  var k = a==="지각"?"late" : a==="결석"?"abs" : a==="휴회"?"off" : a==="보강"?"mk" : "ok";
+  return {w:a, k:k, t:(a==="지각"&&rec.arriveAt)? niceTime(rec.arriveAt) : ""};
+}
+function attmPayload(rec){
+  var A=attForReport(rec); if(!A) return null;
+  var S=attSum(A.evs), e=parseISO(rec.date);
+  var kindOf=function(st){ return st==="지각"?"late" : st==="결석"?"abs" : st==="보강"?"mk" : st==="휴회"?"" : "ok"; };
+  var groups=[], last=null;
+  A.evs.forEach(function(x){
+    var mm=(parseISO(x.date).getMonth()+1)+"월";
+    if(!last || last.m!==mm){ last={m:mm, list:[]}; groups.push(last); }
+    last.list.push(kindOf(x.st));
+  });
+  return {label:(A.cfg.months===1? (e.getMonth()+1)+"월 출결" : "최근 "+A.cfg.months+"개월 출결"),
+          range:mdLabel(A.from)+" ~ "+mdLabel(rec.date),
+          pct:S.pct==null? null : Math.round(S.pct), att:S.ok, late:S.late, abs:S.abs, mk:S.mk,
+          days:groups};
+}
+function rateCheer(v){
+  if(v==null) return "";
+  if(v>=95) return "지난 과제, 완벽하게 해냈어!";
+  if(v>=85) return "지난 과제, 거의 다 해냈어!";
+  if(v>=70) return "조금만 더 채우면 완벽해!";
+  if(v>=50) return "다음엔 더 할 수 있어!";
+  return "다음 과제는 꼭 함께 끝내보자";
+}
+
+/* =========================================================
+   링크 만들기
+   ========================================================= */
+function linkRecordOf(recId, kind){
+  return (DB.links||[]).filter(function(x){ return x.recId===recId && x.kind===kind; })[0] || null;
+}
+function makeLink(rec, kind){
+  return fbReady().then(function(db){
+    var key=linkKey(), now=Date.now();
+    var p=linkPayload(rec, kind);
+    var doc={ kind:kind, payload:JSON.stringify(p),
+              name:rec.studentName, date:rec.date,
+              createdAt:now, expireAt:now + LINK_DAYS*86400000,
+              expireTS: firebase.firestore.Timestamp.fromMillis(now + LINK_DAYS*86400000) };
+    return db.collection(LINK_COLL).doc(key).set(doc).then(function(){
+      if(!DB.links) DB.links=[];
+      DB.links = DB.links.filter(function(x){ return !(x.recId===rec.id && x.kind===kind); });
+      DB.links.unshift({key:key, recId:rec.id, kind:kind, name:rec.studentName, date:rec.date,
+                        createdAt:now, expireAt:doc.expireAt, readAt:null});
+      if(DB.links.length>400) DB.links.length=400;
+      save();
+      return viewerBase()+"#k="+key;
+    });
+  });
+}
+function linkURL(key){ return viewerBase()+"#k="+key; }
+
+/* 받은 분이 확인했는지 가져옵니다 */
+function refreshLinkReads(keys){
+  return fbReady().then(function(db){
+    var list=(keys&&keys.length? keys : (DB.links||[]).slice(0,40).map(function(x){return x.key;}));
+    return Promise.all(list.map(function(k){
+      return db.collection(LINK_COLL).doc(k).get().then(function(s){
+        var d=s.exists? s.data() : null;
+        (DB.links||[]).forEach(function(x){
+          if(x.key!==k) return;
+          x.gone = !s.exists;
+          if(d && d.readAt) x.readAt = d.readAt.toMillis? d.readAt.toMillis() : +new Date(d.readAt);
+          if(d && d.readCount) x.readCount = d.readCount;
+        });
+      }).catch(function(){});
+    })).then(function(){ save(); });
+  });
+}
+function whenShort(ms){
+  if(!ms) return "";
+  var n=new Date(ms), ap=n.getHours()<12?"오전":"오후", h=n.getHours()%12||12;
+  return (n.getMonth()+1)+"/"+n.getDate()+" "+ap+" "+h+":"+("0"+n.getMinutes()).slice(-2);
+}
+
+/* =========================================================
+   리포트 창 — 링크 만들기 단추
+   ========================================================= */
+function openLinkDialog(){
+  var rec=recById(reportQueue[reportPos]); if(!rec) return;
+  if(!fbOn()){
+    openDialog("링크로 보내기",
+      '<div class="small mb">링크로 보내려면 먼저 <b>설정 · 백업 → 링크로 보내기</b>에서 '
+      +'Firebase 설정을 넣어 주세요. 한 번만 해두면 계속 쓸 수 있습니다.</div>'
+      +'<div class="small muted">설치안내.md 의 “링크로 보내기 준비” 쪽에 화면 순서가 적혀 있습니다.</div>',
+      [["설정으로 가기","primary",function(){ closeModals(); switchView("settings");
+        setTimeout(function(){ var el=$("#linkBox"); if(el) el.scrollIntoView({block:"center"}); },120); }],["닫기","ghost",closeModals]]);
+    return;
+  }
+  var mine=linkSkinFor(rec);
+  var h='<div class="small muted mb">받는 분에게 보낼 모양을 고르세요. 링크는 '+LINK_DAYS+'일 뒤 저절로 만료됩니다.</div>';
+  h+='<div class="card unitpick" id="lkPick">';
+  LINK_SKINS.forEach(function(k){
+    var ex=linkRecordOf(rec.id, k[0]);
+    h+='<label><input type="radio" name="lkSkin" value="'+k[0]+'"'+(mine===k[0]?" checked":"")+'>'
+      +'<span style="flex:1;min-width:0"><b>'+esc(k[1])+'</b>'
+      +(ex? '<div class="tiny muted">이미 만든 링크가 있습니다 · '
+            +(ex.readAt? '<b style="color:var(--good)">'+esc(whenShort(ex.readAt))+' 확인</b>' : '아직 안 읽음')+'</div>':'')
+      +'</span></label>';
+  });
+  h+='</div>';
+  h+='<label class="small" style="display:flex;gap:8px;align-items:center;margin-top:11px;cursor:pointer">'
+    +'<input type="checkbox" id="lkRemember" checked> 이 학생은 앞으로도 이 모양으로</label>';
+  h+='<div class="small muted mt" id="lkState"></div>';
+  openDialog("링크로 보내기", h, [
+    ["링크 만들기","primary",function(){
+      var kind=($('input[name="lkSkin"]:checked')||{}).value||"parent";
+      if($("#lkRemember") && $("#lkRemember").checked){
+        var st=studentByName(rec.studentName);
+        if(st){ st.linkSkin=kind; }
+        lsSet("dailyreport.linkSkin", kind);
+      }
+      var st2=$("#lkState"); if(st2) st2.textContent="만드는 중…";
+      makeLink(rec, kind).then(function(url){
+        closeModals();
+        shareLink(url, rec, kind);
+      }).catch(function(e){
+        console.warn(e);
+        if(st2) st2.innerHTML='<b style="color:var(--low)">만들지 못했습니다.</b> 인터넷 연결과 Firebase 설정을 확인해 주세요.';
+      });
+    }],
+    ["닫기","ghost",closeModals]
+  ]);
+}
+function shareLink(url, rec, kind){
+  var who = kind==="parent"? "학부모님" : "학생";
+  var txt = rec.studentName+" 학생 "+fmtShort(rec.date)+" 학습 리포트입니다.\n"+url;
+  var h='<div class="small mb">아래 주소를 '+who+'께 보내 주세요. '+LINK_DAYS+'일 동안 열어볼 수 있습니다.</div>'
+    + '<div class="card pad" style="word-break:break-all;font-size:13.5px;line-height:1.6"><b id="lkUrl">'+esc(url)+'</b></div>'
+    + '<div class="small muted mt">받는 분이 <b>확인</b>을 누르면 리포트 창과 <b>보낸 링크</b> 목록에 표시됩니다.</div>';
+  openDialog("링크가 만들어졌습니다", h, [
+    ["주소 복사","primary",function(){
+      var ok=function(){ toast("주소를 복사했습니다"); };
+      if(navigator.clipboard && navigator.clipboard.writeText)
+        navigator.clipboard.writeText(url).then(ok, function(){ fallbackCopy(url); });
+      else fallbackCopy(url);
+    }],
+    ["카톡·문자로 보내기","",function(){
+      if(navigator.share){ navigator.share({title:rec.studentName+" 학습 리포트", text:txt}).catch(function(){}); }
+      else { fallbackCopy(txt); toast("복사했습니다. 카톡이나 문자에 붙여넣어 주세요"); }
+    }],
+    ["열어 보기","",function(){ window.open(url,"_blank","noopener"); }],
+    ["닫기","ghost",closeModals]
+  ]);
+}
+
+/* 리포트 창 머리줄에 보낸 상태를 적어 둡니다 */
+function linkStateHTML(rec){
+  if(!fbOn()) return "";
+  var best=null;
+  (DB.links||[]).forEach(function(x){
+    if(x.recId!==rec.id) return;
+    if(!best || x.createdAt>best.createdAt) best=x;
+  });
+  if(!best) return "";
+  var name=(LINK_SKINS.filter(function(k){return k[0]===best.kind;})[0]||["","",""])[1];
+  if(best.readAt) return '<span class="lkst ok">'+esc(name)+' · '+esc(whenShort(best.readAt))+' 확인</span>';
+  if(Date.now()>best.expireAt) return '<span class="lkst off">'+esc(name)+' · 기간 지남</span>';
+  return '<span class="lkst">'+esc(name)+' · 아직 안 읽음</span>';
+}
+
+/* =========================================================
+   보낸 링크 목록
+   ========================================================= */
+function openLinkList(){
+  var h='<div class="row mb" style="gap:8px;align-items:center">'
+    + '<button class="btn sm" id="lkRefresh">확인 여부 새로 가져오기</button>'
+    + '<span class="small muted" id="lkRefSt"></span></div>'
+    + '<div id="lkListBox"></div>';
+  openDialog("보낸 링크", h, [["닫기","ghost",closeModals]]);
+  renderLinkList();
+  $("#lkRefresh").addEventListener("click", function(){
+    var s=$("#lkRefSt"); s.textContent="가져오는 중…";
+    refreshLinkReads().then(function(){ s.textContent="방금 가져왔습니다"; renderLinkList(); })
+      .catch(function(){ s.textContent="가져오지 못했습니다"; });
+  });
+}
+function renderLinkList(){
+  var box=$("#lkListBox"); if(!box) return;
+  var list=(DB.links||[]).slice(0,80);
+  if(!list.length){ box.innerHTML='<div class="small muted">아직 만든 링크가 없습니다.</div>'; return; }
+  var h='<table class="tbl"><thead><tr><th>학생</th><th>날짜</th><th>모양</th><th>확인</th><th style="width:78px"></th></tr></thead><tbody>';
+  list.forEach(function(x){
+    var nm=(LINK_SKINS.filter(function(k){return k[0]===x.kind;})[0]||["","?"])[1];
+    var st = x.gone? '<span class="muted">지워짐</span>'
+           : x.readAt? '<b style="color:var(--good)">'+esc(whenShort(x.readAt))+'</b>'
+           : (Date.now()>x.expireAt? '<span class="muted">기간 지남</span>' : '<span class="muted">아직</span>');
+    h+='<tr><td>'+esc(x.name)+'</td><td>'+esc(fmtShort(x.date))+'</td><td class="tiny">'+esc(nm)+'</td>'
+      +'<td>'+st+'</td><td><button class="btn sm ghost" data-lk="'+esc(x.key)+'">주소</button></td></tr>';
+  });
+  box.innerHTML=h+'</tbody></table>';
+  box.addEventListener("click", function(e){
+    var b=e.target.closest("[data-lk]"); if(!b) return;
+    var url=linkURL(b.getAttribute("data-lk"));
+    if(navigator.clipboard && navigator.clipboard.writeText)
+      navigator.clipboard.writeText(url).then(function(){ toast("주소를 복사했습니다"); }, function(){ fallbackCopy(url); });
+    else fallbackCopy(url);
+  });
+}
+
+/* =========================================================
+   설정 화면
+   ========================================================= */
+function renderLinkBox(){
+  var box=$("#linkBox"); if(!box) return;
+  var c=fbCfg();
+  var h='<div class="small muted mb">리포트를 인터넷 주소 하나로 만들어 카톡이나 문자로 보냅니다. '
+    + '받는 분이 <b>확인</b>을 누르면 읽은 시각이 여기로 들어옵니다. 링크는 '+LINK_DAYS+'일 뒤 만료됩니다.</div>';
+  h+='<div class="row">'
+    + '<div style="flex:1;min-width:190px"><label class="f">apiKey</label><input type="text" id="fbKey" value="'+esc(c.apiKey)+'" placeholder="AIza..."></div>'
+    + '<div style="flex:1;min-width:190px"><label class="f">authDomain</label><input type="text" id="fbDom" value="'+esc(c.authDomain)+'" placeholder="프로젝트.firebaseapp.com"></div>'
+    + '</div>';
+  h+='<div class="row mt">'
+    + '<div style="flex:1;min-width:190px"><label class="f">projectId</label><input type="text" id="fbPrj" value="'+esc(c.projectId)+'" placeholder="daily-report-xxxx"></div>'
+    + '<div style="flex:1;min-width:190px"><label class="f">appId</label><input type="text" id="fbApp" value="'+esc(c.appId)+'" placeholder="1:0000:web:..."></div>'
+    + '</div>';
+  h+='<div class="mt"><label class="f">리포트를 여는 주소 (비워두면 이 앱과 같은 폴더의 r.html)</label>'
+    + '<input type="text" id="fbView" value="'+esc(c.viewer)+'" placeholder="'+esc(viewerBase())+'"></div>';
+  h+='<div class="row mt"><button class="btn primary" id="btnFbSave">저장</button>'
+    + '<button class="btn" id="btnFbTest">연결 확인</button>'
+    + '<button class="btn" id="btnFbCopy">r.html 에 넣을 설정 복사</button>'
+    + '<button class="btn" id="btnLkList">보낸 링크 보기</button>'
+    + '<span class="small muted" id="fbState" style="align-self:center"></span></div>';
+  h+='<details class="small muted mt"><summary style="cursor:pointer">값을 어디서 가져오나요</summary>'
+    + '<div class="mt">Firebase 콘솔 → 프로젝트 설정 → 내 앱(웹) → SDK 설정 및 구성에 나오는 '
+    + '<code>firebaseConfig</code> 의 네 줄을 그대로 옮겨 적으면 됩니다. '
+    + '같은 값을 <b>r.html</b> 파일 위쪽 <code>FB</code> 에도 한 번 넣어 주세요.</div></details>';
+  box.innerHTML=h;
+
+  $("#btnFbSave").addEventListener("click", function(){
+    if(!DB.meta) DB.meta={};
+    DB.meta.fb={ apiKey:$("#fbKey").value.trim(), authDomain:$("#fbDom").value.trim(),
+                 projectId:$("#fbPrj").value.trim(), appId:$("#fbApp").value.trim(),
+                 viewer:$("#fbView").value.trim() };
+    fbP=null; fbDB=null;
+    save(); toast("저장했습니다");
+    $("#fbState").textContent = fbOn()? "설정이 들어갔습니다" : "값이 비어 있습니다";
+  });
+  $("#btnFbTest").addEventListener("click", function(){
+    var s=$("#fbState"); s.textContent="확인하는 중…";
+    fbReady().then(function(db){
+      return db.collection(LINK_COLL).doc("__test__"+Date.now()).get();
+    }).then(function(){ s.innerHTML='<b style="color:var(--good)">연결됐습니다</b>'; })
+      .catch(function(e){ console.warn(e); s.innerHTML='<b style="color:var(--low)">연결하지 못했습니다</b> — 설정값과 보안 규칙을 확인해 주세요'; });
+  });
+  $("#btnFbCopy").addEventListener("click", function(){
+    var c=fbCfg();
+    var t='var FB = {\n  apiKey: "'+c.apiKey+'",\n  authDomain: "'+c.authDomain
+        +'",\n  projectId: "'+c.projectId+'",\n  appId: "'+c.appId+'"\n};';
+    if(navigator.clipboard && navigator.clipboard.writeText)
+      navigator.clipboard.writeText(t).then(function(){ toast("복사했습니다. r.html 의 같은 자리에 덮어써 주세요"); },
+        function(){ fallbackCopy(t); });
+    else fallbackCopy(t);
+  });
+  $("#btnLkList").addEventListener("click", openLinkList);
+}
+
 /* ----- 모달 열기 ----- */
 function openReport(id, queue){
   var rec = recById(id);
@@ -3371,6 +3793,10 @@ function paintReport(){
   }
   syncRepSeg();
   fitSheet();
+  var lkEl=$("#rmLinkState");
+  if(lkEl){ var lh=linkStateHTML(rec); lkEl.innerHTML=lh? lh.replace(/^<span[^>]*>|<\/span>$/g,"") : "";
+    lkEl.className = "lkst"+(/확인</.test(lh)?" ok":(/기간 지남/.test(lh)?" off":""));
+    lkEl.style.display = lh? "" : "none"; }
   $("#rmTitle").textContent = rec.studentName+" · "+fmtShort(rec.date);
   $("#btnPrevStu").disabled = reportPos<=0;
   $("#btnNextStu").disabled = reportPos>=reportQueue.length-1;
@@ -3421,6 +3847,7 @@ $("#rmSkinSeg").addEventListener("click", function(e){
   }
   paintReport();
 });
+$("#btnMakeLink").addEventListener("click", openLinkDialog);
 $("#btnPrevStu").addEventListener("click",function(){ if(reportPos>0){reportPos--;paintReport();} });
 $("#btnNextStu").addEventListener("click",function(){ if(reportPos<reportQueue.length-1){reportPos++;paintReport();} });
 
@@ -4739,7 +5166,7 @@ document.addEventListener("click", function(e){
 function renderStudents(){
   sortStudents();
   var t=$("#stuTable");
-  var h='<thead><tr><th style="width:110px">이름</th><th style="width:70px">학년</th><th>학교</th><th>학부모</th><th>연락처</th><th>메모</th><th style="width:92px" title="학생용 카드 리포트의 기본 디자인">카드</th><th style="width:130px"></th></tr></thead><tbody>';
+  var h='<thead><tr><th style="width:110px">이름</th><th style="width:70px">학년</th><th>학교</th><th>학부모</th><th>연락처</th><th>메모</th><th style="width:92px" title="학생용 카드 리포트의 기본 디자인">카드</th><th style="width:104px" title="링크로 보낼 때의 기본 모양">링크</th><th style="width:130px"></th></tr></thead><tbody>';
   DB.students.forEach(function(s){
     h+='<tr data-id="'+s.id+'"'+(s.active===false?' style="opacity:.5"':'')+'>';
     h+='<td><input type="text" data-f="name" value="'+esc(s.name)+'"></td>';
@@ -4751,6 +5178,9 @@ function renderStudents(){
     h+='<td><select data-f="skin"><option value="">기본</option>'
       + STU_SKINS.map(function(k){ return '<option value="'+k[0]+'"'+((s.skin||"")===k[0]?' selected':'')+'>'+k[1]+'</option>'; }).join("")
       + '</select></td>';
+    h+='<td><select data-f="linkSkin"><option value="">기본</option>'
+      + LINK_SKINS.map(function(k){ return '<option value="'+k[0]+'"'+((s.linkSkin||"")===k[0]?' selected':'')+'>'+k[1].replace("학생용 · ","")+'</option>'; }).join("")
+      + '</select></td>';
     h+='<td><button class="btn sm" data-act="toggleActive">'+(s.active===false?"복귀":"휴원")+'</button> '
       +'<button class="btn sm ghost" data-act="del">삭제</button></td>';
     h+='</tr>';
@@ -4759,7 +5189,13 @@ function renderStudents(){
   t.innerHTML=h;
 }
 $("#stuTable").addEventListener("change", function(e){
-  if(e.target.getAttribute("data-f")!=="skin") return;
+  var ff=e.target.getAttribute("data-f");
+  if(ff==="linkSkin"){
+    var id2=e.target.closest("tr").getAttribute("data-id");
+    DB.students.forEach(function(st){ if(st.id===id2) st.linkSkin=e.target.value; });
+    save(); return;
+  }
+  if(ff!=="skin") return;
   var id=e.target.closest("tr").getAttribute("data-id");
   DB.students.forEach(function(st){ if(st.id===id) st.skin=e.target.value; });
   save();
@@ -5196,6 +5632,7 @@ function openDialog(title, bodyHTML, buttons){
    뷰 전환 · 초기화
    ========================================================= */
 function switchView(v){
+  if(v==="settings") setTimeout(function(){ try{ renderLinkBox(); }catch(e){} },0);
   if(v==="att") attOpen();
   else document.body.classList.remove("att-phone");
   $$("nav.tabs button").forEach(function(b){ b.setAttribute("aria-selected", b.getAttribute("data-view")===v); });
@@ -5866,7 +6303,7 @@ document.addEventListener("click", function(e){ if(e.target && e.target.id==="bt
 /* =========================================================
    앱 버전 · 새 버전 자동 적용
    ========================================================= */
-var APP_VERSION="v23";
+var APP_VERSION="v24";
 var swReg=null, swReloading=false;
 var hadController=!!(navigator.serviceWorker && navigator.serviceWorker.controller);
 function checkUpdate(){ try{ if(swReg) swReg.update(); }catch(e){} }
