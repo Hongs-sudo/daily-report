@@ -3536,7 +3536,9 @@ function linkURL(key){ return viewerBase()+"#k="+key; }
 /* 받은 분이 확인했는지 가져옵니다 */
 function refreshLinkReads(keys){
   return fbReady().then(function(db){
-    var list=(keys&&keys.length? keys : (DB.links||[]).slice(0,40).map(function(x){return x.key;}));
+    var list=(keys&&keys.length? keys
+      : (DB.links||[]).filter(function(x){ return !x.readAt && !x.gone; }).slice(0,40).map(function(x){return x.key;}));
+    if(!list.length) return Promise.resolve();
     return Promise.all(list.map(function(k){
       return db.collection(LINK_COLL).doc(k).get().then(function(s){
         var d=s.exists? s.data() : null;
@@ -3627,6 +3629,27 @@ function shareLink(url, rec, kind){
   ]);
 }
 
+/* 리포트 창 머리줄 — 상태를 그리고, 아직 안 읽은 링크는 조용히 확인해 옵니다 */
+function paintLinkState(){
+  var el=$("#rmLinkState"); if(!el) return;
+  var rec=recById(reportQueue[reportPos]);
+  var lh=rec? linkStateHTML(rec) : "";
+  el.innerHTML = lh? lh.replace(/^<span[^>]*>|<\/span>$/g,"") : "";
+  el.className = "lkst"+(/확인</.test(lh)? " ok" : (/기간 지남/.test(lh)? " off" : ""));
+  el.style.display = lh? "" : "none";
+}
+var lkAsked={};
+function refreshLinkFor(rec){
+  if(!fbOn() || !rec) return;
+  var now=Date.now();
+  var keys=(DB.links||[]).filter(function(x){
+    return x.recId===rec.id && !x.gone && !x.readAt && now<x.expireAt && !(lkAsked[x.key]>now-20000);
+  }).map(function(x){ return x.key; });
+  if(!keys.length) return;
+  keys.forEach(function(k){ lkAsked[k]=now; });
+  refreshLinkReads(keys).then(paintLinkState).catch(function(){});
+}
+
 /* 리포트 창 머리줄에 보낸 상태를 적어 둡니다 */
 function linkStateHTML(rec){
   if(!fbOn()) return "";
@@ -3652,6 +3675,11 @@ function openLinkList(){
     + '<div id="lkListBox"></div>';
   openDialog("보낸 링크", h, [["닫기","ghost",closeModals]]);
   renderLinkList();
+  if(fbOn()){
+    var s0=$("#lkRefSt"); if(s0) s0.textContent="확인 여부를 가져오는 중…";
+    refreshLinkReads().then(function(){ if($("#lkRefSt")) $("#lkRefSt").textContent="방금 가져왔습니다"; renderLinkList(); })
+      .catch(function(){ if($("#lkRefSt")) $("#lkRefSt").textContent=""; });
+  }
   $("#lkRefresh").addEventListener("click", function(){
     var s=$("#lkRefSt"); s.textContent="가져오는 중…";
     refreshLinkReads().then(function(){ s.textContent="방금 가져왔습니다"; renderLinkList(); })
@@ -3793,10 +3821,8 @@ function paintReport(){
   }
   syncRepSeg();
   fitSheet();
-  var lkEl=$("#rmLinkState");
-  if(lkEl){ var lh=linkStateHTML(rec); lkEl.innerHTML=lh? lh.replace(/^<span[^>]*>|<\/span>$/g,"") : "";
-    lkEl.className = "lkst"+(/확인</.test(lh)?" ok":(/기간 지남/.test(lh)?" off":""));
-    lkEl.style.display = lh? "" : "none"; }
+  paintLinkState();
+  refreshLinkFor(rec);                 /* 아직 안 읽은 링크는 조용히 확인해 옵니다 */
   $("#rmTitle").textContent = rec.studentName+" · "+fmtShort(rec.date);
   $("#btnPrevStu").disabled = reportPos<=0;
   $("#btnNextStu").disabled = reportPos>=reportQueue.length-1;
@@ -6303,7 +6329,7 @@ document.addEventListener("click", function(e){ if(e.target && e.target.id==="bt
 /* =========================================================
    앱 버전 · 새 버전 자동 적용
    ========================================================= */
-var APP_VERSION="v24";
+var APP_VERSION="v25";
 var swReg=null, swReloading=false;
 var hadController=!!(navigator.serviceWorker && navigator.serviceWorker.controller);
 function checkUpdate(){ try{ if(swReg) swReg.update(); }catch(e){} }
