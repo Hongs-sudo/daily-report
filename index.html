@@ -777,6 +777,81 @@ table.tbl tr:hover td{background:#fafbfc}
   font-size:11.5px;font-weight:700;color:#5C8C85;display:flex;justify-content:space-between}
 .scC .avgl b{color:#0F6E63}
 
+/* ---------- 하루 마무리 화면 ---------- */
+.finwrap{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;animation:finIn .5s ease}
+@keyframes finIn{from{opacity:0}to{opacity:1}}
+.finwrap canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.finscrim{position:absolute;inset:0;opacity:0;transition:opacity .5s}
+.finwrap.dim .finscrim{opacity:1}
+.finwrap.t-fire.dim   .finscrim{background:rgba(8,18,26,.46)}
+.finwrap.t-sakura.dim .finscrim{background:rgba(120,54,86,.16)}
+.finwrap.t-maple.dim  .finscrim{background:rgba(120,70,24,.16)}
+.finwrap.t-snow.dim   .finscrim{background:rgba(26,52,82,.3)}
+
+.fincard{position:relative;z-index:3;width:min(380px,86vw);border-radius:22px;padding:30px 26px 24px;
+  text-align:center;pointer-events:auto;animation:finUp .55s cubic-bezier(.2,.9,.3,1)}
+@keyframes finUp{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+.finwrap.t-fire   .fincard{background:#0F2A26F2;border:1px solid #DEBC6266;color:#fff;box-shadow:0 26px 64px -22px #00000099}
+.finwrap.t-sakura .fincard{background:#fffffff5;border:1px solid #E8C4D4;color:#4A3340;box-shadow:0 22px 54px -22px #8d5c7299}
+.finwrap.t-maple  .fincard{background:#fffffff5;border:1px solid #E3C79B;color:#4A3A28;box-shadow:0 22px 54px -22px #8a653499}
+.finwrap.t-snow   .fincard{background:#fffffff5;border:1px solid #BFD4E8;color:#1F3448;box-shadow:0 22px 54px -22px #16293d99}
+
+.finlg{display:flex;justify-content:center;margin-bottom:16px}
+.finlg svg{width:140px;height:auto;display:block}
+.finwrap.t-fire .finlg{color:#DEBC62}
+.finwrap.t-sakura .finlg,.finwrap.t-maple .finlg,.finwrap.t-snow .finlg{color:#0A4844}
+
+.fint{font-size:24px;font-weight:800;letter-spacing:-.045em;line-height:1.34;word-break:keep-all}
+.fint em{font-style:normal}
+.finwrap.t-fire .fint em{color:#F0D79A}
+.finwrap.t-sakura .fint em{color:#C2567E}
+.finwrap.t-maple .fint em{color:#C25E25}
+.finwrap.t-snow .fint em{color:#2E6FA8}
+.find{font-size:13px;font-weight:700;margin-top:7px;opacity:.72}
+
+.finstats{display:flex;gap:9px;margin-top:20px}
+.finstats div{flex:1;border-radius:13px;padding:11px 6px 12px}
+.finwrap.t-fire .finstats div{background:#ffffff14;border:1px solid #ffffff1f}
+.finwrap.t-sakura .finstats div{background:#FDF2F6;border:1px solid #F0D7E2}
+.finwrap.t-maple .finstats div{background:#FDF4E8;border:1px solid #EEDCBD}
+.finwrap.t-snow .finstats div{background:#F1F6FB;border:1px solid #D8E5F0}
+.finstats b{display:block;font-size:23px;font-weight:800;letter-spacing:-.04em;line-height:1.1}
+.finstats span{display:block;font-size:11px;font-weight:700;opacity:.62;margin-top:3px}
+.finwrap.t-fire .finstats b{color:#8FE8C8} .finwrap.t-sakura .finstats b{color:#C2567E}
+.finwrap.t-maple .finstats b{color:#C25E25} .finwrap.t-snow .finstats b{color:#2E6FA8}
+
+.finmsg{font-size:14px;font-weight:600;line-height:1.6;margin-top:18px;opacity:.8;letter-spacing:-.02em}
+.finbtn{margin-top:20px;width:100%;border:0;border-radius:13px;padding:14px;cursor:pointer;
+  font-size:15.5px;font-weight:800;font-family:inherit;letter-spacing:-.02em}
+.finwrap.t-fire .finbtn{background:#DEBC62;color:#14312C}
+.finwrap.t-sakura .finbtn{background:#C2567E;color:#fff}
+.finwrap.t-maple .finbtn{background:#C25E25;color:#fff}
+.finwrap.t-snow .finbtn{background:#2E6FA8;color:#fff}
+@media(min-width:760px){
+  .fincard{width:430px;padding:34px 30px 28px;border-radius:24px}
+  .finlg svg{width:160px}
+  .fint{font-size:28px}
+  .find{font-size:14px;margin-top:9px}
+  .finstats{gap:11px;margin-top:23px}
+  .finstats div{padding:13px 6px 14px}
+  .finstats b{font-size:26px}
+  .finstats span{font-size:12px}
+  .finmsg{font-size:15px;margin-top:21px}
+  .finbtn{font-size:16.5px;padding:15px;margin-top:23px}
+}
+/* 설정 칸 */
+.finpick label{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);
+  border-radius:10px;cursor:pointer;font-size:13.5px;margin-bottom:7px}
+.finpick label.on{background:var(--brand-wash);border-color:var(--brand-2)}
+.finpick input{width:16px;height:16px;accent-color:var(--brand);flex:none}
+.finpick b{font-weight:800;letter-spacing:-.02em}
+.finpick .tiny{font-size:11.5px;color:var(--ink-3);font-weight:600;margin-left:auto;text-align:right}
+.finchk{display:flex;align-items:center;gap:8px;margin-top:4px;font-size:12.5px;
+  color:var(--ink-2);font-weight:600;cursor:pointer}
+.finchk input{width:15px;height:15px;accent-color:var(--brand)}
+@media print{ .finwrap{display:none!important} }
+
 /* ---------- 링크로 보내기 ---------- */
 .lkst{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;
   color:var(--ink-3);background:var(--bg-2);border:1px solid var(--line);
@@ -1179,6 +1254,11 @@ table.ast tr.det td{background:var(--wash);padding:10px 12px}
     <div class="card pad mb">
       <h3 class="mb">링크로 보내기</h3>
       <div id="linkBox"></div>
+    </div>
+
+    <div class="card pad mb">
+      <h3 class="mb">하루 마무리 화면</h3>
+      <div id="finBox"></div>
     </div>
 
     <div class="card pad mb">
@@ -3673,6 +3753,7 @@ function doMakeLink(){
   makeLink(rec, kind).then(function(url){
     paintLinkState();
     shareLink(url, rec, kind);
+    try{ finCheck(rec.date); }catch(e){}      /* 그날 치를 다 보냈으면 마무리 화면 */
   }).catch(function(e){
     console.warn(e);
     var el2=$("#lkState");
@@ -3851,6 +3932,280 @@ function renderLinkBox(){
     else fallbackCopy(t);
   });
   $("#btnLkList").addEventListener("click", openLinkList);
+}
+
+/* =========================================================
+   하루 마무리 화면 — 그날 리포트를 모두 보내면 나타납니다
+   ========================================================= */
+var FIN_SKINS = [["fire","불꽃놀이"],["sakura","벚꽃"],["maple","단풍"],["snow","함박눈"]];
+var FIN_MSG = { fire:"오늘도 수고 많으셨습니다.",
+                sakura:"봄바람처럼 가벼운 하루 되세요.",
+                maple:"오늘도 한 걸음, 잘 쌓으셨습니다.",
+                snow:"따뜻한 저녁 보내세요." };
+var FIN_COLORS = ["#FF1E8E","#00E1FF","#6BFF1F","#FFD400","#B04BFF","#FF6A1F","#00FFC6"];
+
+function finCfg(){
+  if(!DB.meta) DB.meta={};
+  if(!DB.meta.fin) DB.meta.fin={ mode:"auto", dim:false };
+  if(typeof DB.meta.fin.dim!=="boolean") DB.meta.fin.dim=false;
+  return DB.meta.fin;
+}
+function finSeason(){
+  var m=new Date().getMonth()+1;
+  if(m>=3 && m<=5)  return "sakura";
+  if(m>=9 && m<=11) return "maple";
+  if(m===12 || m<=2) return "snow";
+  return "fire";
+}
+function finKind(){
+  var c=finCfg();
+  if(c.mode==="off") return null;
+  return c.mode==="auto" ? finSeason() : c.mode;
+}
+
+/* ----- 그날 치가 다 끝났는지 ----- */
+function finDayStat(date){
+  var recs=DB.records.filter(function(r){ return r.date===date; });
+  var sent=0, read=0;
+  recs.forEach(function(r){
+    var best=null;
+    (DB.links||[]).forEach(function(x){ if(x.recId===r.id && (!best || x.createdAt>best.createdAt)) best=x; });
+    if(best){ sent++; if(best.readAt) read++; }
+  });
+  return { n:recs.length, sent:sent, read:read, done:(recs.length>0 && sent>=recs.length) };
+}
+function finCheck(date){
+  if(!date) return;
+  var k=finKind(); if(!k) return;
+  if(lsGet("dailyreport.finDone")===date) return;
+  var st=finDayStat(date);
+  if(!st.done) return;
+  lsSet("dailyreport.finDone", date);
+  setTimeout(function(){ finShow(k, date, st); }, 420);
+}
+
+/* ----- 화면 ----- */
+var finRAF=null, finP=[], finKindNow="fire", finSpawn=0, finCv=null, finCtx=null, finW=0, finH=0, finDPR=1;
+
+function finShow(kind, date, st){
+  finClose(true);
+  var d=date? new Date(date+"T00:00:00") : new Date();
+  var ds=d.getFullYear()+". "+(d.getMonth()+1)+". "+d.getDate()+". "
+        +"일월화수목금토".charAt(d.getDay())+"요일";
+  st=st||finDayStat(date);
+  var wrap=document.createElement("div");
+  wrap.className="finwrap t-"+kind+(finCfg().dim?" dim":"");
+  wrap.id="finWrap";
+  wrap.innerHTML='<div class="finscrim"></div><canvas id="finCv"></canvas>'
+    +'<div class="fincard">'
+    +'<div class="finlg">'+LOGO_H+'</div>'
+    +'<div class="fint">오늘 수업, <em>모두 마무리</em>했습니다</div>'
+    +'<div class="find">'+esc(ds)+'</div>'
+    +'<div class="finstats">'
+      +'<div><b>'+st.n+'</b><span>학생</span></div>'
+      +'<div><b>'+st.sent+'</b><span>리포트 발송</span></div>'
+      +'<div><b>'+st.read+'</b><span>확인함</span></div>'
+    +'</div>'
+    +'<div class="finmsg">'+esc(FIN_MSG[kind]||"")+'</div>'
+    +'<button class="finbtn" id="finClose">닫기</button>'
+    +'</div>';
+  document.body.appendChild(wrap);
+  $("#finClose").addEventListener("click", function(){ finClose(); });
+  finStart(kind);
+}
+function finClose(quiet){
+  if(finRAF){ cancelAnimationFrame(finRAF); finRAF=null; }
+  finP.length=0;
+  var w=document.getElementById("finWrap");
+  if(w) w.parentNode.removeChild(w);
+  if(!quiet){ /* 그냥 닫습니다 */ }
+}
+
+/* ----- 알갱이 ----- */
+function finRnd(a,b){ return a+Math.random()*(b-a); }
+function finFit(){
+  finW=finCv.clientWidth; finH=finCv.clientHeight;
+  finCv.width=finW*finDPR; finCv.height=finH*finDPR;
+  finCtx.setTransform(finDPR,0,0,finDPR,0,0);
+}
+function finLaunch(){
+  var curve=Math.random()<.45, side=Math.random()<.5?-1:1;
+  var x0 = curve ? (side<0 ? finRnd(finW*.55,finW*.95) : finRnd(finW*.05,finW*.45))
+                 : finRnd(finW*.07,finW*.93);
+  var r={k:"rocket", x:x0, y:finH+10,
+         vx: curve? side*finRnd(.55,1.15) : finRnd(-.09,.09), ax:0,
+         vy: finRnd(-3.1,-2.3), tgt: finRnd(finH*.05,finH*.46),
+         c: FIN_COLORS[(Math.random()*FIN_COLORS.length)|0], tr:[]};
+  if(curve) r.ax=-r.vx*.001125;
+  finP.push(r); return r;
+}
+function finBurst(x,y,c){
+  var big=Math.min(Math.max(Math.min(finW,finH)/760,.85),1.6);
+  var n=78+((Math.random()*34)|0), ring=Math.random()<.45, i;
+  for(i=0;i<n;i++){
+    var a=(i/n)*Math.PI*2 + finRnd(-.05,.05);
+    var sp=(ring? finRnd(1.25,1.55) : finRnd(.22,1.75))*big;
+    finP.push({k:"spark", x:x, y:y, px:x, py:y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
+               life:1, decay:finRnd(.0017,.0031), c:c, sz:finRnd(2.6,4.1),
+               tw:finRnd(0,Math.PI*2), tws:finRnd(.12,.26)});
+  }
+  for(i=0;i<16;i++){
+    finP.push({k:"spark", x:x, y:y, px:x, py:y, vx:finRnd(-.4,.4)*big, vy:finRnd(-.4,.4)*big,
+               life:1, decay:finRnd(.0009,.00175), c:c, sz:finRnd(1.8,2.9),
+               tw:finRnd(0,Math.PI*2), tws:finRnd(.14,.3)});
+  }
+}
+function finPetal(kindName){
+  var o={k:kindName, x:finRnd(-40,finW+40), y:finRnd(-finH*.6,-20),
+         vy:finRnd(.17,.52), sway:finRnd(.3,.85), ph:finRnd(0,Math.PI*2), sp:finRnd(.004,.0095),
+         rot:finRnd(0,Math.PI*2), vr:finRnd(-.007,.007), sz:finRnd(12,23), o:finRnd(.65,1)};
+  if(kindName==="sakura") o.c=["#FFADC8","#FFC2D8","#F58BB0","#FFD6E3"][(Math.random()*4)|0];
+  if(kindName==="maple"){ o.c=["#E2622A","#C8411F","#E89A2B","#B8411A","#D9742A"][(Math.random()*5)|0];
+                          o.vy=finRnd(.2,.6); o.sz=finRnd(14,27); }
+  if(kindName==="snow"){ o.c="#fff"; o.vy=finRnd(.15,.52); o.sz=finRnd(5,15); o.o=finRnd(.55,1); }
+  return o;
+}
+function finSeed(k){
+  finP.length=0;
+  if(k==="fire"){ var hs=[.34,.58,.82,1.02];
+    for(var i=0;i<hs.length;i++){ var r=finLaunch(); r.y=finH*hs[i]; } }
+  else{
+    var mul=Math.min(Math.max((finW*finH)/(390*780),1),3.2);
+    var n=Math.round((k==="snow"?115:k==="maple"?46:66)*mul);
+    for(var j=0;j<n;j++){ var p=finPetal(k); p.y=finRnd(-finH,finH); finP.push(p); }
+  }
+}
+function finDrawSakura(p){
+  var c=finCtx, z=p.sz;
+  c.save(); c.translate(p.x,p.y); c.rotate(p.rot); c.globalAlpha=p.o; c.fillStyle=p.c;
+  c.shadowColor="rgba(150,70,105,.28)"; c.shadowBlur=3;
+  c.beginPath();
+  c.moveTo(0,z*.52);
+  c.bezierCurveTo( z*.44, z*.30,  z*.46,-z*.18,  z*.21,-z*.48);
+  c.quadraticCurveTo( z*.10,-z*.56, 0,-z*.30);
+  c.quadraticCurveTo(-z*.10,-z*.56, -z*.21,-z*.48);
+  c.bezierCurveTo(-z*.46,-z*.18, -z*.44, z*.30, 0, z*.52);
+  c.closePath(); c.fill(); c.restore();
+}
+function finDrawMaple(p){
+  var c=finCtx, s=p.sz/14;
+  c.save(); c.translate(p.x,p.y); c.rotate(p.rot); c.globalAlpha=p.o;
+  c.fillStyle=p.c; c.strokeStyle=p.c; c.lineWidth=1.3*s; c.lineCap="round";
+  c.beginPath(); c.moveTo(0,3*s); c.lineTo(0,10.5*s); c.stroke();
+  var LOBE=[[-90,9.4,5.0],[-34,8.2,4.4],[-146,8.2,4.4],[22,6.6,4.0],[158,6.6,4.0]];
+  for(var L=0;L<LOBE.length;L++){
+    var ang=LOBE[L][0]*Math.PI/180, len=LOBE[L][1]*s, wid=LOBE[L][2]*s;
+    c.save(); c.rotate(ang+Math.PI/2);
+    c.beginPath(); c.ellipse(0,-len*.5, wid*.5, len*.62, 0, 0, Math.PI*2); c.fill();
+    c.restore();
+  }
+  c.beginPath(); c.arc(0,.6*s,3.1*s,0,Math.PI*2); c.fill();
+  c.restore();
+}
+function finDrawSnow(p){
+  var c=finCtx;
+  c.save(); c.globalAlpha=p.o;
+  c.shadowColor="rgba(96,140,186,.75)"; c.shadowBlur=p.sz*1.25;
+  c.fillStyle="#fff";
+  c.beginPath(); c.arc(p.x,p.y,p.sz/2,0,Math.PI*2); c.fill();
+  c.restore();
+}
+function finStep(ts){
+  finRAF=requestAnimationFrame(finStep);
+  var c=finCtx;
+  c.clearRect(0,0,finW,finH);
+  c.globalCompositeOperation="source-over";
+  if(finKindNow==="fire" && ts-finSpawn>1680){
+    finSpawn=ts; finLaunch(); if(Math.random()<.4) setTimeout(finLaunch,640);
+  }
+  for(var i=finP.length-1;i>=0;i--){
+    var p=finP[i];
+    if(p.k==="rocket"){
+      p.vx+=p.ax||0; p.x+=p.vx; p.y+=p.vy; p.vy+=.0053125;
+      p.tr.push({x:p.x,y:p.y}); if(p.tr.length>44) p.tr.shift();
+      c.save(); c.lineCap="round"; c.shadowColor=p.c; c.shadowBlur=7;
+      for(var k=1;k<p.tr.length;k++){
+        var f=k/p.tr.length;
+        c.globalAlpha=f; c.strokeStyle=p.c; c.lineWidth=3.2*f+.6;
+        c.beginPath(); c.moveTo(p.tr[k-1].x,p.tr[k-1].y); c.lineTo(p.tr[k].x,p.tr[k].y); c.stroke();
+      }
+      c.globalAlpha=.95; c.fillStyle="#fff"; c.shadowBlur=10;
+      c.beginPath(); c.arc(p.x,p.y,1.8,0,Math.PI*2); c.fill();
+      c.restore(); c.globalAlpha=1;
+      if(p.vy>=-.15 || p.y<=p.tgt){ finBurst(p.x,p.y,p.c); finP.splice(i,1); }
+    }
+    else if(p.k==="spark"){
+      p.px=p.x; p.py=p.y;
+      p.x+=p.vx; p.y+=p.vy; p.vy+=.00225; p.vx*=.99625; p.vy*=.99625; p.life-=p.decay;
+      if(p.life<=0){ finP.splice(i,1); continue; }
+      var a=Math.max(p.life,0); p.tw+=p.tws;
+      var tw=.72+.28*Math.sin(p.tw), r0=Math.max(p.sz*a,.5);
+      c.save();
+      c.shadowColor=p.c; c.shadowBlur=r0*3.4*tw;
+      c.globalAlpha=a*.78*tw; c.strokeStyle=p.c; c.lineWidth=p.sz*a*1.25; c.lineCap="round";
+      c.beginPath(); c.moveTo(p.px,p.py); c.lineTo(p.x,p.y); c.stroke();
+      c.globalAlpha=a*tw; c.fillStyle=p.c;
+      c.beginPath(); c.arc(p.x,p.y,r0,0,Math.PI*2); c.fill();
+      c.shadowBlur=r0*1.6; c.globalAlpha=a*tw*.95; c.fillStyle="#fff";
+      c.beginPath(); c.arc(p.x,p.y,r0*.42,0,Math.PI*2); c.fill();
+      c.restore(); c.globalAlpha=1;
+    }
+    else{
+      p.ph+=p.sp; p.y+=p.vy; p.x+=Math.sin(p.ph)*p.sway; p.rot+=p.vr;
+      if(p.y>finH+24){ var np=finPetal(p.k); np.y=-20; finP[i]=np; continue; }
+      if(p.k==="sakura") finDrawSakura(p);
+      else if(p.k==="maple") finDrawMaple(p);
+      else finDrawSnow(p);
+    }
+  }
+}
+function finStart(k){
+  finKindNow=k; finSpawn=0;
+  finCv=document.getElementById("finCv"); if(!finCv) return;
+  finCtx=finCv.getContext("2d");
+  finDPR=Math.min(window.devicePixelRatio||1,2);
+  finFit(); finCtx.clearRect(0,0,finW,finH); finSeed(k);
+  if(finRAF) cancelAnimationFrame(finRAF);
+  finRAF=requestAnimationFrame(finStep);
+}
+addEventListener("resize", function(){ if(finCv && document.getElementById("finWrap")) finFit(); });
+
+/* ----- 설정 칸 ----- */
+function renderFinBox(){
+  var box=$("#finBox"); if(!box) return;
+  var c=finCfg();
+  var h='<div class="small muted mb">그날 저장한 수업 기록을 모두 링크로 보내고 나면, 마무리 화면이 한 번 나타납니다.</div>';
+  h+='<div class="finpick">';
+  h+='<label class="'+(c.mode==="off"?"on":"")+'"><input type="radio" name="finMode" value="off"'
+    +(c.mode==="off"?" checked":"")+'><b>끄기</b><span class="tiny">나타나지 않습니다</span></label>';
+  h+='<label class="'+(c.mode==="auto"?"on":"")+'"><input type="radio" name="finMode" value="auto"'
+    +(c.mode==="auto"?" checked":"")+'><b>계절 자동</b><span class="tiny">봄 벚꽃 · 가을 단풍 · 겨울 눈 · 여름 불꽃</span></label>';
+  FIN_SKINS.forEach(function(s){
+    h+='<label class="'+(c.mode===s[0]?"on":"")+'"><input type="radio" name="finMode" value="'+s[0]+'"'
+      +(c.mode===s[0]?" checked":"")+'><b>'+s[1]+'</b><span class="tiny">늘 이 모양으로</span></label>';
+  });
+  h+='</div>';
+  h+='<label class="finchk"><input type="checkbox" id="finDim"'+(c.dim?" checked":"")+'> '
+    +'배경을 살짝 어둡게 (효과가 더 또렷해집니다)</label>';
+  h+='<div class="row mt" style="gap:8px;flex-wrap:wrap">'
+    +'<button class="btn sm" id="finPrev">미리 보기</button>'
+    +'<button class="btn sm ghost" id="finReset">오늘 다시 보이게</button></div>';
+  box.innerHTML=h;
+
+  box.addEventListener("change", function(e){
+    if(e.target.name==="finMode"){
+      finCfg().mode=e.target.value; save();
+      $$(".finpick label", box).forEach(function(l){ l.classList.toggle("on", l.querySelector("input").checked); });
+    }else if(e.target.id==="finDim"){ finCfg().dim=e.target.checked; save(); }
+  });
+  $("#finPrev").addEventListener("click", function(){
+    var k=finKind()||"fire";
+    finShow(k, todayISO(), finDayStat(todayISO()));
+  });
+  $("#finReset").addEventListener("click", function(){
+    lsSet("dailyreport.finDone","");
+    toast("오늘 분이 다시 나타납니다");
+  });
 }
 
 /* ----- 모달 열기 ----- */
@@ -5755,7 +6110,7 @@ function openDialog(title, bodyHTML, buttons){
    뷰 전환 · 초기화
    ========================================================= */
 function switchView(v){
-  if(v==="settings") setTimeout(function(){ try{ renderLinkBox(); }catch(e){} },0);
+  if(v==="settings") setTimeout(function(){ try{ renderLinkBox(); }catch(e){} try{ renderFinBox(); }catch(e){} },0);
   if(v==="att") attOpen();
   else document.body.classList.remove("att-phone");
   $$("nav.tabs button").forEach(function(b){ b.setAttribute("aria-selected", b.getAttribute("data-view")===v); });
@@ -6426,7 +6781,7 @@ document.addEventListener("click", function(e){ if(e.target && e.target.id==="bt
 /* =========================================================
    앱 버전 · 새 버전 자동 적용
    ========================================================= */
-var APP_VERSION="v26";
+var APP_VERSION="v27";
 var swReg=null, swReloading=false;
 var hadController=!!(navigator.serviceWorker && navigator.serviceWorker.controller);
 function checkUpdate(){ try{ if(swReg) swReg.update(); }catch(e){} }
