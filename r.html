@@ -44,12 +44,13 @@ body{font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFo
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="fb-config.js"></script>
 <script>
 /* =========================================================
    수학도서관 · 데일리 리포트 링크 뷰어
-   아래 FB 값만 Firebase 프로젝트 설정으로 바꾸면 됩니다.
+   Firebase 설정은 같은 폴더의 fb-config.js 에서 읽습니다 (없으면 아래 값).
    ========================================================= */
-var FB = {
+var FB = window.DR_FB || {
   apiKey: "AIzaSyCfUMZR8vJaOZVJcwjQGez8oqm2VIiiZio",
   authDomain: "daily-report-f269b.firebaseapp.com",
   projectId: "daily-report-f269b",

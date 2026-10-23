@@ -4029,12 +4029,14 @@ function renderLinkBox(){
   h+='<div class="row mt"><button class="btn primary" id="btnFbSave">저장</button>'
     + '<button class="btn" id="btnFbTest">연결 확인</button>'
     + '<button class="btn" id="btnFbCopy">r.html 에 넣을 설정 복사</button>'
+    + '<button class="btn" id="btnFbFile" title="GitHub 앱 폴더에 한 번 올려 두는 설정 파일">설정 파일 내려받기</button>'
     + '<button class="btn" id="btnLkList">보낸 링크 보기</button>'
     + '<span class="small muted" id="fbState" style="align-self:center"></span></div>';
   h+='<details class="small muted mt"><summary style="cursor:pointer">값을 어디서 가져오나요</summary>'
     + '<div class="mt">Firebase 콘솔 → 프로젝트 설정 → 내 앱(웹) → SDK 설정 및 구성에 나오는 '
     + '<code>firebaseConfig</code> 의 네 줄을 그대로 옮겨 적으면 됩니다. '
-    + '같은 값을 <b>r.html</b> 파일 위쪽 <code>FB</code> 에도 한 번 넣어 주세요.</div></details>';
+    + '그다음 <b>설정 파일 내려받기</b>로 받은 <code>fb-config.js</code> 를 GitHub 앱 폴더에 한 번 올려 두면, '
+    + 'r.html(학부모 링크)과 선생님 앱이 그 파일에서 설정을 읽습니다.</div></details>';
   box.innerHTML=h;
 
   $("#btnFbSave").addEventListener("click", function(){
@@ -7341,7 +7343,7 @@ document.addEventListener("click", function(e){ if(e.target && e.target.id==="bt
 /* =========================================================
    앱 버전 · 새 버전 자동 적용
    ========================================================= */
-var APP_VERSION="v39";
+var APP_VERSION="v40";
 var swReg=null, swReloading=false;
 var hadController=!!(navigator.serviceWorker && navigator.serviceWorker.controller);
 function checkUpdate(){ try{ if(swReg) swReg.update(); }catch(e){} }
@@ -7975,9 +7977,11 @@ function inboxSoon(force){
    ========================================================= */
 /* 초대 링크(#join=…)로 열렸으면 정보를 받아 두고 주소에서 지웁니다 */
 (function(){
-  var m=location.hash.match(/[#&]join=([A-Za-z0-9_-]+)/);
+  var m=location.hash.match(/[#&]join(?:=([A-Za-z0-9_-]+))?(?:&|$)/);
   if(!m) return;
-  try{ var j=unb64url(m[1]); if(j && j.fb) lsSet(JOIN_KEY, JSON.stringify(j)); }catch(e){ console.warn(e); }
+  var j={};
+  if(m[1]){ try{ j=unb64url(m[1])||{}; }catch(e){ console.warn(e); j={}; } }   /* 예전 긴 초대 링크도 그대로 */
+  lsSet(JOIN_KEY, JSON.stringify(j));
   try{ history.replaceState(null, "", location.pathname+location.search); }catch(e){}
 })();
 function joinInfo(){ try{ return JSON.parse(lsGet(JOIN_KEY)||"null"); }catch(e){ return null; } }
@@ -7992,10 +7996,21 @@ function fbCfgFromViewer(){
     return (o.apiKey && !/^여기에/.test(o.apiKey) && o.projectId && o.appId)? o : null;
   }).catch(function(){ return null; });
 }
+/* 같은 폴더의 fb-config.js (원장님이 한 번 올려 둔 설정 파일) */
+function fbCfgFromFile(){
+  return new Promise(function(res){
+    if(window.DR_FB) return res(window.DR_FB);
+    var s=document.createElement("script"); s.src="fb-config.js?t="+Date.now();
+    s.onload=function(){ res(window.DR_FB||null); }; s.onerror=function(){ res(null); };
+    document.head.appendChild(s);
+  });
+}
+function fbCfgOk(c){ return !!(c && c.apiKey && !/^여기에/.test(c.apiKey) && c.projectId && c.appId); }
 function ensureFbCfg(){
   if(fbOn()) return Promise.resolve(true);
   var j=joinInfo();
-  var get = (j && j.fb)? Promise.resolve(j.fb) : fbCfgFromViewer();
+  var get = (j && j.fb)? Promise.resolve(j.fb)
+          : fbCfgFromFile().then(function(c){ return fbCfgOk(c)? c : fbCfgFromViewer(); });
   return get.then(function(c){
     if(!c) return false;
     DB.meta.fb={apiKey:c.apiKey, authDomain:c.authDomain, projectId:c.projectId, appId:c.appId};
@@ -8356,14 +8371,11 @@ function stuPicked(id){ return $$("#"+id+" input:checked").map(function(i){ retu
 
 /* ---------- 초대 링크 ---------- */
 function inviteLink(t){
-  var c=fbCfg();
-  var base=location.href.replace(/[#?].*$/,"");
-  return base+"#join="+b64url({fb:{apiKey:c.apiKey, authDomain:c.authDomain, projectId:c.projectId, appId:c.appId},
-                              name:t.name, email:t.email, academy:(meDB().meta||{}).academy||""});
+  return location.href.replace(/[#?].*$/,"")+"#join";
 }
 function inviteText(t){
   return t.name+" 선생님, 데일리 리포트 앱 초대 링크입니다.\n"
-    +"아래 링크를 열고 'Google 계정으로 로그인'에서 "+t.email+" 계정을 고르시면 됩니다.\n"+inviteLink(t);
+    +t.email+" 계정으로 로그인해 주세요.\n"+inviteLink(t);
 }
 function showInvite(t, title){
   openDialog(title||"초대 링크", '<div class="small" style="line-height:1.85"><b>'+esc(t.name)+' 선생님</b>께 아래 글을 카톡으로 보내 주세요. '
@@ -8799,6 +8811,16 @@ var _rpOR=openReport;
 openReport=function(){ var r=_rpOR.apply(this, arguments); paintRpBtns(); return r; };
 
 
+/* 설정 파일(fb-config.js) 내려받기 */
+document.addEventListener("click", function(e){
+  if(!e.target || e.target.id!=="btnFbFile") return;
+  var c=fbCfg();
+  if(!fbCfgOk(c)){ toast("먼저 네 칸을 채우고 저장해 주세요"); return; }
+  var t='/* 데일리 리포트 · Firebase 설정\n   r.html(학부모·학생 링크)과 선생님 앱이 함께 씁니다.\n   한 번 올려 두면 새 판을 올릴 때 다시 올리지 않아도 됩니다. */\n'
+    +'window.DR_FB = {\n  apiKey: "'+c.apiKey+'",\n  authDomain: "'+c.authDomain+'",\n  projectId: "'+c.projectId+'",\n  appId: "'+c.appId+'"\n};\n';
+  downloadBlob(new Blob([t],{type:"application/javascript"}), "fb-config.js");
+  toast("fb-config.js 를 내려받았습니다. GitHub 앱 폴더에 올려 주세요");
+});
 load();
 boot();
 attInit();
