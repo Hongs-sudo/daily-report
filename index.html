@@ -4020,6 +4020,7 @@ function finCheck(date){
 }
 
 /* ----- 화면 ----- */
+var finLast=0, FIN_TRAIL_MS=220;
 var finRAF=null, finP=[], finKindNow="fire", finSpawn=0, finCv=null, finCtx=null, finW=0, finH=0, finDPR=1;
 
 function finShow(kind, date, st){
@@ -4068,10 +4069,10 @@ function finLaunch(){
   var x0 = curve ? (side<0 ? finRnd(finW*.55,finW*.95) : finRnd(finW*.05,finW*.45))
                  : finRnd(finW*.07,finW*.93);
   var r={k:"rocket", x:x0, y:finH+10,
-         vx: curve? side*finRnd(1.4025,2.9325) : finRnd(-.2295,.2295), ax:0,
-         vy: finRnd(-7.905,-5.865), tgt: finRnd(finH*.05,finH*.46),
+         vx: curve? side*finRnd(2.0196,4.2228) : finRnd(-.3305,.3305), ax:0,
+         vy: finRnd(-11.383,-8.446), tgt: finRnd(finH*.05,finH*.46),
          c: FIN_COLORS[(Math.random()*FIN_COLORS.length)|0], tr:[]};
-  if(curve) r.ax=-r.vx*.004303125;
+  if(curve) r.ax=-r.vx*.0061965;
   finP.push(r); return r;
 }
 function finBurst(x,y,c){
@@ -4147,17 +4148,20 @@ function finDrawSnow(p){
 }
 function finStep(ts){
   finRAF=requestAnimationFrame(finStep);
+  /* 지난 그림에서 흐른 시간 — 화면이 느리게 그려져도 움직임은 같은 빠르기로 */
+  var dt = finLast? Math.min(Math.max((ts-finLast)/16.6667, 0), 3) : 1;
+  finLast=ts;
   var c=finCtx;
   c.clearRect(0,0,finW,finH);
   c.globalCompositeOperation="source-over";
-  if(finKindNow==="fire" && ts-finSpawn>1120){
-    finSpawn=ts; finLaunch(); if(Math.random()<.4) setTimeout(finLaunch,427);
+  if(finKindNow==="fire" && ts-finSpawn>780){
+    finSpawn=ts; finLaunch(); if(Math.random()<.4) setTimeout(finLaunch,300);
   }
   for(var i=finP.length-1;i>=0;i--){
     var p=finP[i];
     if(p.k==="rocket"){
-      p.vx+=p.ax||0; p.x+=p.vx; p.y+=p.vy; p.vy+=.034544531;
-      p.tr.push({x:p.x,y:p.y}); if(p.tr.length>18) p.tr.shift();
+      p.vx+=(p.ax||0)*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=.071631*dt;
+      p.tr.push({x:p.x,y:p.y,t:ts}); while(p.tr.length>2 && ts-p.tr[0].t>FIN_TRAIL_MS) p.tr.shift();
       c.save(); c.lineCap="round"; c.shadowColor=p.c; c.shadowBlur=7;
       for(var k=1;k<p.tr.length;k++){
         var f=k/p.tr.length;
@@ -4167,13 +4171,14 @@ function finStep(ts){
       c.globalAlpha=.95; c.fillStyle="#fff"; c.shadowBlur=10;
       c.beginPath(); c.arc(p.x,p.y,1.8,0,Math.PI*2); c.fill();
       c.restore(); c.globalAlpha=1;
-      if(p.vy>=-.3825 || p.y<=p.tgt){ finBurst(p.x,p.y,p.c); finP.splice(i,1); }
+      if(p.vy>=-.5508 || p.y<=p.tgt){ finBurst(p.x,p.y,p.c); finP.splice(i,1); }
     }
     else if(p.k==="spark"){
       p.px=p.x; p.py=p.y;
-      p.x+=p.vx; p.y+=p.vy; p.vy+=.0165; p.vx*=.99437; p.vy*=.99437; p.life-=p.decay;
+      var drg=Math.pow(.99437, dt);
+      p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=.0165*dt; p.vx*=drg; p.vy*=drg; p.life-=p.decay*dt;
       if(p.life<=0){ finP.splice(i,1); continue; }
-      var a=Math.max(p.life,0); p.tw+=p.tws;
+      var a=Math.max(p.life,0); p.tw+=p.tws*dt;
       var tw=.72+.28*Math.sin(p.tw), r0=Math.max(p.sz*a,.5);
       c.save();
       c.shadowColor=p.c; c.shadowBlur=r0*3.4*tw;
@@ -4186,7 +4191,7 @@ function finStep(ts){
       c.restore(); c.globalAlpha=1;
     }
     else{
-      p.ph+=p.sp; p.y+=p.vy; p.x+=Math.sin(p.ph)*p.sway; p.rot+=p.vr;
+      p.ph+=p.sp*dt; p.y+=p.vy*dt; p.x+=Math.sin(p.ph)*p.sway*dt; p.rot+=p.vr*dt;
       if(p.y>finH+24){ var np=finPetal(p.k); np.y=-20; finP[i]=np; continue; }
       if(p.k==="sakura") finDrawSakura(p);
       else if(p.k==="maple") finDrawMaple(p);
@@ -4195,7 +4200,7 @@ function finStep(ts){
   }
 }
 function finStart(k){
-  finKindNow=k; finSpawn=0;
+  finKindNow=k; finSpawn=0; finLast=0;
   finCv=document.getElementById("finCv"); if(!finCv) return;
   finCtx=finCv.getContext("2d");
   finDPR=Math.min(window.devicePixelRatio||1,2);
@@ -7240,7 +7245,7 @@ document.addEventListener("click", function(e){ if(e.target && e.target.id==="bt
 /* =========================================================
    앱 버전 · 새 버전 자동 적용
    ========================================================= */
-var APP_VERSION="v32";
+var APP_VERSION="v33";
 var swReg=null, swReloading=false;
 var hadController=!!(navigator.serviceWorker && navigator.serviceWorker.controller);
 function checkUpdate(){ try{ if(swReg) swReg.update(); }catch(e){} }
