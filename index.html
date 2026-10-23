@@ -4081,12 +4081,12 @@ function finBurst(x,y,c){
     var a=(i/n)*Math.PI*2 + finRnd(-.05,.05);
     var sp=(ring? finRnd(1.875,2.325) : finRnd(.33,2.625))*big;
     finP.push({k:"spark", x:x, y:y, px:x, py:y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
-               life:1, decay:finRnd(.00255,.00465), c:c, sz:finRnd(2.6,4.1),
+               life:1, decay:finRnd(.0051,.0093), c:c, sz:finRnd(2.6,4.1),
                tw:finRnd(0,Math.PI*2), tws:finRnd(.18,.39)});
   }
   for(i=0;i<16;i++){
     finP.push({k:"spark", x:x, y:y, px:x, py:y, vx:finRnd(-.6,.6)*big, vy:finRnd(-.6,.6)*big,
-               life:1, decay:finRnd(.00135,.002625), c:c, sz:finRnd(1.8,2.9),
+               life:1, decay:finRnd(.0027,.00525), c:c, sz:finRnd(1.8,2.9),
                tw:finRnd(0,Math.PI*2), tws:finRnd(.21,.45)});
   }
 }
@@ -4171,7 +4171,7 @@ function finStep(ts){
     }
     else if(p.k==="spark"){
       p.px=p.x; p.py=p.y;
-      p.x+=p.vx; p.y+=p.vy; p.vy+=.0050625; p.vx*=.99437; p.vy*=.99437; p.life-=p.decay;
+      p.x+=p.vx; p.y+=p.vy; p.vy+=.0165; p.vx*=.99437; p.vy*=.99437; p.life-=p.decay;
       if(p.life<=0){ finP.splice(i,1); continue; }
       var a=Math.max(p.life,0); p.tw+=p.tws;
       var tw=.72+.28*Math.sin(p.tw), r0=Math.max(p.sz*a,.5);
@@ -7130,7 +7130,7 @@ document.addEventListener("click", function(e){ if(e.target && e.target.id==="bt
 /* =========================================================
    앱 버전 · 새 버전 자동 적용
    ========================================================= */
-var APP_VERSION="v30";
+var APP_VERSION="v31";
 var swReg=null, swReloading=false;
 var hadController=!!(navigator.serviceWorker && navigator.serviceWorker.controller);
 function checkUpdate(){ try{ if(swReg) swReg.update(); }catch(e){} }
