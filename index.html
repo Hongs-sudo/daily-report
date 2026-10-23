@@ -4433,9 +4433,12 @@ function mkLine(row){
   var c=row.c||{}, ci=cellInfo(c.a, c.h), label="";
   linesOf(c.h).concat(linesOf(c.a)).some(function(l){ if(MAKEUP_RE.test(l)){ label=l.trim(); return true; } return false; });
   if(!label) label="보강";
+  /* 과제 칸에 '결석 / 보강'처럼 두 줄로 적혀 있으면 '결석보강'으로 합칩니다 */
+  var hl=linesOf(c.h).map(function(l){ return String(l).trim(); }).filter(Boolean), hj=hl.join(""), used={};
+  if(MAKEUP_RE.test(hj) && hj.length<=8){ label=hj; hl.forEach(function(l){ used[l]=1; }); }
   var att = ci.mark==="○"? "출석" : ci.mark==="△"? "지각" : (ci.mark==="X"||ci.mark==="x")? "결석" : ci.mark==="휴회"? "휴회" : "";
   var t   = (ci.mark==="△" && ci.time)? " ("+ci.time+" 도착)" : "";
-  var memo= ci.text.concat(ci.memo).filter(function(l){ return !MAKEUP_RE.test(l); }).join(" · ");
+  var memo= ci.text.concat(ci.memo).filter(function(l){ return !MAKEUP_RE.test(l) && !used[String(l).trim()]; }).join(" · ");
   return "※ "+label+" · "+autoPeriodName(row.p)+(att? " "+att : "")+t+(memo? " · "+memo : "");
 }
 function mkHTML(lines){
@@ -4525,7 +4528,18 @@ function autoSync(manual){
     var g=byName[k];
     var real=g.rows.filter(function(r){ return !r.mk; });
     g.rows.forEach(function(r){ if(r.mk){ autoMkSkip.push(g.name+"("+autoPeriodName(r.p)+")"); mkAdd(k, r); } });
-    if(!real.length) return;                       /* 전부 보강이면 카드를 만들지 않습니다 */
+    if(!real.length){                              /* 보강 자리만 있는 날 : 보강 카드를 만듭니다 (결석 · 휴회 칸은 빼고) */
+      var live=g.rows.filter(function(r){ var m=cellInfo((r.c||{}).a,(r.c||{}).h).mark; return !(m==="X"||m==="x"||m==="휴회"); });
+      if(!live.length) return;
+      var b4=added.length;
+      autoPut(g.name, live[0], have, added, missing, moved);
+      var nd=have[k];
+      if(nd && added.length>b4 && added[added.length-1]===nd){
+        nd.attendance="보강"; nd.arriveAt=""; nd.mkCard=true; nd.autoSig=autoSig(nd);
+      }
+      if(nd) autoMkSkip=autoMkSkip.filter(function(x){ return x.indexOf(g.name+"(")!==0; });
+      return;
+    }
 
     var use=real;
     if(real.length>1){
@@ -7343,7 +7357,7 @@ document.addEventListener("click", function(e){ if(e.target && e.target.id==="bt
 /* =========================================================
    앱 버전 · 새 버전 자동 적용
    ========================================================= */
-var APP_VERSION="v40";
+var APP_VERSION="v41";
 var swReg=null, swReloading=false;
 var hadController=!!(navigator.serviceWorker && navigator.serviceWorker.controller);
 function checkUpdate(){ try{ if(swReg) swReg.update(); }catch(e){} }
