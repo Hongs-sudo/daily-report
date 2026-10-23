@@ -4282,7 +4282,7 @@ function attRoster(date){
   (W.w.days[d].p||[]).forEach(function(rows, p){
     (rows||[]).forEach(function(c){
       if(!c || !c.n) return;
-      out.push({ n:c.n, p:p, mk: MAKEUP_RE.test(String(c.h||"")) || MAKEUP_RE.test(String(c.a||"")) });
+      out.push({ n:c.n, p:p, c:c, mk: MAKEUP_RE.test(String(c.h||"")) || MAKEUP_RE.test(String(c.a||"")) });
     });
   });
   return out;
@@ -4311,7 +4311,7 @@ function autoRegPeriod(name, date){
   return autoHistPeriod(name, date);
 }
 
-var autoLast=[], autoAskMove=[], autoAskReg=[], autoGone=[], autoMkSkip=[],
+var autoLast=[], autoAskMove=[], autoAskReg=[], autoGone=[], autoMkSkip=[], autoAskMk=[],
     autoMissSeen={}, autoSoonT=null;
 
 function autoSoon(){
@@ -4322,6 +4322,60 @@ function autoSoon(){
 function autoOnOpen(){
   if(autoCfg().mode==="off") return;
   try{ autoSync(false); }catch(e){ console.warn(e); }
+}
+
+/* ----- 보강 내역 한 줄 ----- */
+var MK_LINE_RE=/^※ .*보강 · [12]교시/;
+function mkLine(row){
+  var c=row.c||{}, ci=cellInfo(c.a, c.h), label="";
+  linesOf(c.h).concat(linesOf(c.a)).some(function(l){ if(MAKEUP_RE.test(l)){ label=l.trim(); return true; } return false; });
+  if(!label) label="보강";
+  var att = ci.mark==="○"? "출석" : ci.mark==="△"? "지각" : (ci.mark==="X"||ci.mark==="x")? "결석" : ci.mark==="휴회"? "휴회" : "";
+  var t   = (ci.mark==="△" && ci.time)? " ("+ci.time+" 도착)" : "";
+  var memo= ci.text.concat(ci.memo).filter(function(l){ return !MAKEUP_RE.test(l); }).join(" · ");
+  return "※ "+label+" · "+autoPeriodName(row.p)+(att? " "+att : "")+t+(memo? " · "+memo : "");
+}
+function mkHTML(lines){
+  return lines.map(function(t){ return '<span style="color:#1565c0">'+esc(t)+'</span>'; }).join('<br>');
+}
+function mkTexts(html){
+  var box=document.createElement("div"); box.innerHTML=String(html||"");
+  return Array.prototype.slice.call(box.querySelectorAll("span"))
+    .map(function(x){ return x.textContent; })
+    .filter(function(t){ return MK_LINE_RE.test(t); });
+}
+function mkStrip(html){
+  var box=document.createElement("div"); box.innerHTML=String(html||"");
+  Array.prototype.slice.call(box.querySelectorAll("span")).forEach(function(x){
+    if(!MK_LINE_RE.test(x.textContent)) return;
+    var prev=x.previousSibling;
+    if(prev && prev.nodeName==="BR") prev.parentNode.removeChild(prev);
+    x.parentNode.removeChild(x);
+  });
+  return box.innerHTML.replace(/(<br\s*\/?>\s*)+$/i,"");
+}
+function mkPut(d, lines){
+  var base=mkStrip(d.reporting);
+  d.reporting=(base? base+'<br>' : '')+mkHTML(lines);
+  d.mkAdded=true;
+}
+/* 카드에 보강 한 줄을 맞춥니다 — 저장 안 한 카드는 바로, 저장한 카드는 물어봅니다 */
+function mkApply(d, lines){
+  var want=lines.join("\n"), have=mkTexts(d.reporting).join("\n");
+  if(have===want) return false;
+  if(d.saved){
+    if(have) return false;                              /* 이미 들어 있으면 그대로 둡니다 */
+    var sk=curDate+"|"+nameKey(d.studentName);
+    if(DB.meta.mkSkip && DB.meta.mkSkip[sk]) return false;
+    autoAskMk.push({key:d.key, name:d.studentName, lines:lines});
+    return false;
+  }
+  if(!have && d.mkAdded) d.mkOff=true;                  /* 붙였던 줄을 지우셨으면 다시 붙이지 않습니다 */
+  if(d.mkOff) return false;
+  var was=autoUntouched(d);
+  mkPut(d, lines);
+  if(was) d.autoSig=autoSig(d);
+  return true;
 }
 
 /* 카드 한 장 넣기 · 교시 맞추기 */
@@ -4360,13 +4414,14 @@ function autoSync(manual){
     byName[k].rows.push(r);
   });
 
-  var added=[], missing=[], moved=[];
-  autoAskMove=[]; autoAskReg=[]; autoMkSkip=[];
+  var added=[], missing=[], moved=[], mkRows={};
+  autoAskMove=[]; autoAskReg=[]; autoMkSkip=[]; autoAskMk=[];
+  function mkAdd(k, r){ (mkRows[k]=mkRows[k]||[]).push(r); }
 
   Object.keys(byName).forEach(function(k){
     var g=byName[k];
     var real=g.rows.filter(function(r){ return !r.mk; });
-    g.rows.forEach(function(r){ if(r.mk) autoMkSkip.push(g.name+"("+autoPeriodName(r.p)+")"); });
+    g.rows.forEach(function(r){ if(r.mk){ autoMkSkip.push(g.name+"("+autoPeriodName(r.p)+")"); mkAdd(k, r); } });
     if(!real.length) return;                       /* 전부 보강이면 카드를 만들지 않습니다 */
 
     var use=real;
@@ -4379,7 +4434,7 @@ function autoSync(manual){
       if(reg!=="both"){
         var m=real.filter(function(r){ return autoPeriodName(r.p)===reg; });
         if(m.length){
-          real.forEach(function(r){ if(autoPeriodName(r.p)!==reg) autoMkSkip.push(g.name+"("+autoPeriodName(r.p)+")"); });
+          real.forEach(function(r){ if(autoPeriodName(r.p)!==reg){ autoMkSkip.push(g.name+"("+autoPeriodName(r.p)+")"); mkAdd(k, r); } });
           use=m;
         }
       }
@@ -4392,11 +4447,21 @@ function autoSync(manual){
     return d.fromAtt && autoUntouched(d) && !inAtt[nameKey(d.studentName)];
   }) : [];
 
-  if(added.length || moved.length){ renderEntries(); updateSticky(); }
+  /* 정규 카드에 보강 내역 한 줄 — 입력 중일 때는 다음 차례로 미룹니다 */
+  var mkCh=false, ae=document.activeElement;
+  var typing = !!(ae && ae.closest && ae.closest("#entries"));
+  if(!typing){
+    Object.keys(mkRows).forEach(function(k){
+      var d=have[k]; if(!d) return;
+      if(mkApply(d, mkRows[k].map(mkLine))) mkCh=true;
+    });
+  }
+
+  if(added.length || moved.length || mkCh){ renderEntries(); updateSticky(); }
   autoLast = added.map(function(d){ return d.key; });
 
-  if(manual && !added.length && !moved.length && !missing.length
-     && !autoAskMove.length && !autoAskReg.length && !autoGone.length){
+  if(manual && !added.length && !moved.length && !missing.length && !mkCh
+     && !autoAskMove.length && !autoAskReg.length && !autoGone.length && !autoAskMk.length){
     toast("출석부와 이미 똑같습니다");
   }
   autoShow(added, missing, moved);
@@ -4449,6 +4514,14 @@ function autoShow(added, missing, moved){
        + '</div><div class="aac"><button type="button" class="btn sm" data-at="move" data-i="'+i+'">'+esc(m.to)+'로 옮기기</button>'
        + '<button type="button" class="btn sm ghost" data-at="keepp" data-i="'+i+'">그대로 두기</button></div></div>';
   });
+  autoAskMk.forEach(function(q, i){
+    out+='<div class="atbar info"><span class="aic">i</span><div class="atx">'
+       + '<b>'+esc(q.name)+'</b> 의 보강 내역이 있습니다 — '
+       + '<span style="color:#1565c0;font-weight:700">'+q.lines.map(esc).join(' / ')+'</span>'
+       + '<br>저장한 리포팅에 덧붙일까요?'
+       + '</div><div class="aac"><button type="button" class="btn sm" data-at="mkadd" data-i="'+i+'">리포팅에 넣기</button>'
+       + '<button type="button" class="btn sm ghost" data-at="mkno" data-i="'+i+'">넣지 않기</button></div></div>';
+  });
   if(autoGone.length){
     out+='<div class="atbar warn"><span class="aic">!</span><div class="atx">'
        + '출석부에서 빠진 학생이 <b>'+autoGone.length+'명</b> 있습니다 — '
@@ -4500,6 +4573,17 @@ document.addEventListener("click", function(e){
   if(a==="keepp"){                                   /* 그 학생 · 그 교시는 다시 묻지 않습니다 */
     var m2=autoAskMove[+b.getAttribute("data-i")]; if(!m2){ dropBar(); return; }
     drafts.forEach(function(d){ if(d.key===m2.key) d.keepPeriod=m2.to; });
+    dropBar(); return;
+  }
+  if(a==="mkadd"){
+    var q=autoAskMk[+b.getAttribute("data-i")]; if(!q){ dropBar(); return; }
+    drafts.forEach(function(d){ if(d.key===q.key){ mkPut(d, q.lines); saveDraft(d, true); } });
+    dropBar(); toast(q.name+" 리포팅에 보강 내역을 넣고 저장했습니다");
+    return;
+  }
+  if(a==="mkno"){
+    var q2=autoAskMk[+b.getAttribute("data-i")];
+    if(q2){ if(!DB.meta.mkSkip) DB.meta.mkSkip={}; DB.meta.mkSkip[curDate+"|"+nameKey(q2.name)]=1; save(); }
     dropBar(); return;
   }
   if(a==="del"){
@@ -7000,22 +7084,32 @@ function applyToCell(cell, r, d, p){
 
 /* 날짜 · 이름으로 출석부 칸 찾기 */
 function attWeekKey(date){ var dt=parseISO(date); var wd=(dt.getDay()+6)%7; dt.setDate(dt.getDate()-wd); return ymdOf(dt); }
-function attCellFor(date, name, prefP){
+/* 과제 칸(또는 출결 칸)에 "보강"이 적힌 자리 */
+function cellIsMakeup(c){ return !!c && (/보강/.test(String(c.h||"")) || /보강/.test(String(c.a||""))); }
+/* 카드 하나에 이을 칸 고르기
+   · prefP 가 있으면 그 교시만
+   · 보강 카드가 아니면 보강 칸보다 정규 칸을, 같은 교시를 먼저 */
+function attCellFor(date, name, prefP, wantP, wantMk){
   if(!DB.att || !DB.att.weeks) return null;
   var dt=parseISO(date), d=(dt.getDay()+6)%7; if(d>5) return null;
   var W=DB.att.weeks[attWeekKey(date)]; if(!W || !W.w || !W.w.days || !W.w.days[d]) return null;
-  var key=nameKey(name), day=W.w.days[d];
+  var key=nameKey(name), day=W.w.days[d], best=null, bestScore=-1;
   for(var p=0;p<(day.p||[]).length;p++){
     if(prefP!=null && p!==prefP) continue;          /* 고른 교시의 자리만 봅니다 */
     var rows=day.p[p]||[];
-    for(var r=0;r<rows.length;r++) if(rows[r] && nameKey(rows[r].n)===key) return {W:W, cell:rows[r], d:d, p:p};
+    for(var r=0;r<rows.length;r++){
+      if(!rows[r] || nameKey(rows[r].n)!==key) continue;
+      var sc=((cellIsMakeup(rows[r])===!!wantMk)? 2 : 0) + ((wantP!=null && p===wantP)? 1 : 0);
+      if(sc>bestScore){ best={W:W, cell:rows[r], d:d, p:p}; bestScore=sc; }
+    }
   }
-  return null;
+  return best;
 }
 
 /* 새 카드 : 출석부 칸에서 채웁니다 */
 function prefillFromAtt(dr, rateOnly, prefP){
-  var f=attCellFor(curDate, dr.studentName, prefP); if(!f) return;
+  var wantP = dr.period==="1교시"? 0 : dr.period==="2교시"? 1 : null;
+  var f=attCellFor(curDate, dr.studentName, prefP, wantP, dr.attendance==="보강"); if(!f) return;
   var cv=valsFromCell(cellInfo(f.cell.a, f.cell.h), f.d, f.p);
   if(!rateOnly){
     dr.period = f.p===0? "1교시" : f.p===1? "2교시" : dr.period;
@@ -7039,10 +7133,12 @@ function linkPass(){
     var k=r.date+"|"+nameKey(r.studentName);
     if(!idx[k] || (idx[k].type!=="정규" && r.type==="정규")) idx[k]=r;
   });
-  var now=Date.now(), nowIso=new Date(now).toISOString(), seen={};
+  var now=Date.now(), nowIso=new Date(now).toISOString();
+  /* 날짜 · 학생별로 그날의 칸을 모두 모은 뒤, 기록 하나에 맞는 칸 하나를 고릅니다 */
+  var groups={}, order=[], touchedW=[];
   Object.keys(DB.att.weeks).forEach(function(wk){
     var W=DB.att.weeks[wk], w=W && W.w; if(!w || !w.days) return;
-    var mon=parseISO(wk), touched=false;
+    var mon=parseISO(wk);
     w.days.forEach(function(day, d){
       if(!day || !day.p) return;
       var dt=new Date(mon); dt.setDate(dt.getDate()+d);
@@ -7051,8 +7147,16 @@ function linkPass(){
         (rows||[]).forEach(function(cell){
           if(!cell || !cell.n) return;
           var sk=date+"|"+nameKey(cell.n);
-          if(seen[sk]) return; seen[sk]=1;            // 하루에 한 칸만 잇습니다
+          if(!groups[sk]){ groups[sk]=[]; order.push(sk); }
+          groups[sk].push({cell:cell, d:d, p:p, W:W, date:date});
+        });
+      });
+    });
+  });
+  order.forEach(function(sk){
           var r=idx[sk]; if(!r) return;
+          var g=linkPick(groups[sk], r); if(!g) return;   // 정규 기록은 보강 칸과 잇지 않습니다
+          var cell=g.cell, d=g.d, p=g.p, W=g.W, date=g.date;
           var ci=cellInfo(cell.a, cell.h), cv=valsFromCell(ci,d,p), rv=recVals(r);
           var link=r.att, recCh=false, cellCh=false;
           if(!link){
@@ -7076,15 +7180,21 @@ function linkPass(){
             else return;
           }
           if(recCh){ r.savedAt=nowIso; out.rec=true; out.dates[date]=1; }
-          if(cellCh){ touched=true; out.att=true; }
+          if(cellCh){ if(touchedW.indexOf(W)<0) touchedW.push(W); out.att=true; }
           r.att={a:cell.a||"", h:cell.h||"", v:recVals(r)};
           out.rec=true;
-        });
-      });
-    });
-    if(touched) W.t=now;
   });
+  touchedW.forEach(function(W){ W.t=now; });
   return out;
+}
+/* 기록 하나에 이을 칸 : 보강 기록이 아니면 보강 칸은 빼고, 기록의 교시와 같은 칸을 먼저 */
+function linkPick(list, r){
+  var mk = r.attendance==="보강";
+  var cand = mk ? list.slice() : list.filter(function(g){ return !cellIsMakeup(g.cell); });
+  if(mk){ var only=cand.filter(function(g){ return cellIsMakeup(g.cell); }); if(only.length) cand=only; }
+  if(!cand.length) return null;
+  var want = r.period==="1교시"? 0 : r.period==="2교시"? 1 : -1;
+  return cand.filter(function(g){ return g.p===want; })[0] || cand[0];
 }
 var linkT=null, linkBusy=false;
 function linkSoon(){ clearTimeout(linkT); linkT=setTimeout(linkRun, 250); }
@@ -7130,7 +7240,7 @@ document.addEventListener("click", function(e){ if(e.target && e.target.id==="bt
 /* =========================================================
    앱 버전 · 새 버전 자동 적용
    ========================================================= */
-var APP_VERSION="v31";
+var APP_VERSION="v32";
 var swReg=null, swReloading=false;
 var hadController=!!(navigator.serviceWorker && navigator.serviceWorker.controller);
 function checkUpdate(){ try{ if(swReg) swReg.update(); }catch(e){} }
@@ -7200,21 +7310,43 @@ function attEvents(from, to){
         if(!day || !day.p) return;
         var dt=new Date(mon); dt.setDate(dt.getDate()+d); var date=ymdOf(dt);
         if(date<from || date>to) return;
+        /* 그날 학생별 칸을 모읍니다 */
+        var byKey={}, keys=[];
         day.p.forEach(function(rows, p){
           (rows||[]).forEach(function(c){
             if(!c || !c.n) return;
-            var key=date+"|"+nameKey(c.n); if(seen[key]) return;
-            var ci=cellInfo(c.a, c.h), rec=ridx[key]||null;
-            var st= ci.mark? MARK2ATT[ci.mark] : (ci.text.length? "" : null);
-            if(st===null){ if(rec) st=(rec.attendance==null? "출석" : rec.attendance); else return; }   // 체크 안 된 칸은 뺍니다
-            if(st==="출석" && rec && rec.attendance==="보강") st="보강";
-            seen[key]=1;
-            var arrive= st==="지각"? (ci.time? to24(ci.time,d,p) : ((rec && rec.arriveAt)||"")) : "";
-            var st0=periodStart(W,d,p);
-            var late=(arrive && minsOf(arrive)!=null && minsOf(st0)!=null)? Math.max(0, minsOf(arrive)-minsOf(st0)) : null;
-            out.push({date:date, name:String(c.n).trim(), period:p===0?"1교시":"2교시", st:st, arrive:arrive, late:late,
-                      rate: ci.rate!=null? ci.rate : (rec && rec.prevRate!=null? rec.prevRate : null), rec:rec});
+            var key=date+"|"+nameKey(c.n);
+            if(!byKey[key]){ byKey[key]=[]; keys.push(key); }
+            byKey[key].push({c:c, p:p});
           });
+        });
+        keys.forEach(function(key){
+          if(seen[key]) return;
+          var rec=ridx[key]||null, list=byKey[key];
+          var reg=list.filter(function(x){ return !cellIsMakeup(x.c); });
+          var onlyMk=!reg.length;
+          var pick;
+          if(onlyMk) pick=list[0];
+          else{
+            var want = rec? (rec.period==="1교시"? 0 : rec.period==="2교시"? 1 : -1) : -1;
+            pick = reg.filter(function(x){ return x.p===want; })[0] || reg[0];
+          }
+          var c=pick.c, p=pick.p;
+          var ci=cellInfo(c.a, c.h);
+          var st= ci.mark? MARK2ATT[ci.mark] : (ci.text.length? "" : null);
+          if(onlyMk){                                   // 보강만 온 날 : 왔으면 보강 1회, 안 왔으면 세지 않습니다
+            if(st==="결석" || st==="휴회") return;
+            if(st===null && !rec) return;
+            st="보강";
+          }
+          if(st===null){ if(rec) st=(rec.attendance==null? "출석" : rec.attendance); else return; }   // 체크 안 된 칸은 뺍니다
+          if(st==="출석" && rec && rec.attendance==="보강") st="보강";
+          seen[key]=1;
+          var arrive= st==="지각"? (ci.time? to24(ci.time,d,p) : ((rec && rec.arriveAt)||"")) : "";
+          var st0=periodStart(W,d,p);
+          var late=(arrive && minsOf(arrive)!=null && minsOf(st0)!=null)? Math.max(0, minsOf(arrive)-minsOf(st0)) : null;
+          out.push({date:date, name:String(c.n).trim(), period:p===0?"1교시":"2교시", st:st, arrive:arrive, late:late,
+                    rate: ci.rate!=null? ci.rate : (rec && rec.prevRate!=null? rec.prevRate : null), rec:rec});
         });
       });
     });
