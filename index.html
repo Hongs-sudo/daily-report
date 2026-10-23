@@ -4246,8 +4246,12 @@ function renderFinBox(){
 /* =========================================================
    출석부 → 오늘 수업 자동 추가
    · 출석부에 적힌 이름을 그날 오늘 수업에 교시별로 넣습니다.
+   · 과제 칸에 "…보강"이 적힌 자리는 건너뜁니다.
+   · 한 학생이 두 교시에 모두 있으면 정규 교시 쪽만 만듭니다.
    · 이미 만든 카드는 건드리지 않습니다.
    ========================================================= */
+var MAKEUP_RE=/보강/;
+
 function autoCfg(){
   if(!DB.meta) DB.meta={};
   if(!DB.meta.autoAtt) DB.meta.autoAtt={ mode:"on", regularOnly:true, askRemove:true };
@@ -4268,7 +4272,7 @@ function autoUntouched(d){
 }
 function autoPeriodName(p){ return (p===0? "1교시" : "2교시"); }
 
-/* 그날 출석부에 적힌 이름 — [{n:이름, p:교시번호}] */
+/* 그날 출석부에 적힌 자리 — [{n:이름, p:교시번호, mk:보강인가}] */
 function attRoster(date){
   if(!DB.att || !DB.att.weeks) return null;
   var dt=parseISO(date), d=(dt.getDay()+6)%7;
@@ -4276,12 +4280,39 @@ function attRoster(date){
   if(d>5 || !W || !W.w || !W.w.days || !W.w.days[d]) return null;
   var out=[];
   (W.w.days[d].p||[]).forEach(function(rows, p){
-    (rows||[]).forEach(function(c){ if(c && c.n) out.push({n:c.n, p:p}); });
+    (rows||[]).forEach(function(c){
+      if(!c || !c.n) return;
+      out.push({ n:c.n, p:p, mk: MAKEUP_RE.test(String(c.h||"")) || MAKEUP_RE.test(String(c.a||"")) });
+    });
   });
   return out;
 }
 
-var autoLast=[], autoAskMove=[], autoGone=[], autoSoonT=null;
+/* ----- 정규 교시 가리기 ----- */
+function autoRegKey(name, date){ return nameKey(name)+"|"+((parseISO(date).getDay()+6)%7); }
+function autoHistPeriod(name, date){
+  var dow=parseISO(date).getDay(), k=nameKey(name), cnt={};
+  DB.records.forEach(function(r){
+    if(nameKey(r.studentName)!==k || r.type!=="정규") return;
+    if(r.date>=date) return;
+    if(parseISO(r.date).getDay()!==dow) return;
+    if(r.attendance==="보강") return;
+    if(!r.period) return;
+    cnt[r.period]=(cnt[r.period]||0)+1;
+  });
+  var best=null;
+  Object.keys(cnt).forEach(function(p){ if(best===null || cnt[p]>cnt[best]) best=p; });
+  return best;
+}
+function autoRegPeriod(name, date){
+  if(!DB.meta.regPeriod) DB.meta.regPeriod={};
+  var saved=DB.meta.regPeriod[autoRegKey(name,date)];
+  if(saved) return saved;                      /* "1교시" · "2교시" · "both" */
+  return autoHistPeriod(name, date);
+}
+
+var autoLast=[], autoAskMove=[], autoAskReg=[], autoGone=[], autoMkSkip=[],
+    autoMissSeen={}, autoSoonT=null;
 
 function autoSoon(){
   if(autoCfg().mode!=="on") return;
@@ -4289,9 +4320,28 @@ function autoSoon(){
   autoSoonT=setTimeout(function(){ autoSoonT=null; try{ autoSync(false); }catch(e){ console.warn(e); } }, 150);
 }
 function autoOnOpen(){
-  var m=autoCfg().mode;
-  if(m==="off") return;
+  if(autoCfg().mode==="off") return;
   try{ autoSync(false); }catch(e){ console.warn(e); }
+}
+
+/* 카드 한 장 넣기 · 교시 맞추기 */
+function autoPut(name, r, have, added, missing, moved){
+  var k=nameKey(name), pname=autoPeriodName(r.p), d=have[k];
+  if(d){
+    if(d.period!==pname){
+      if(autoUntouched(d)){ d.period=pname; d.autoSig=autoSig(d); moved.push(d.studentName+" → "+pname); }
+      else if(d.keepPeriod!==pname) autoAskMove.push({key:d.key, name:d.studentName, to:pname});
+    }
+    return;
+  }
+  var stu=DB.students.filter(function(s){ return nameKey(s.name)===k; })[0];
+  if(!stu){ if(!autoMissSeen[curDate+"|"+k]) missing.push(name); return; }
+  if(stu.active===false) return;
+  var nd=newDraft(stu, pname);
+  try{ prefillFromAtt(nd, false, r.p); }catch(e){}    /* 고른 자리의 출결 · 과제율로 맞춥니다 */
+  nd.period=pname;
+  nd.fromAtt=true; nd.autoSig=autoSig(nd);
+  drafts.push(nd); have[k]=nd; added.push(nd);
 }
 
 function autoSync(manual){
@@ -4300,32 +4350,41 @@ function autoSync(manual){
   if(!manual && c.regularOnly && curType!=="정규"){ autoClear(); return; }
 
   var roster=attRoster(curDate);
-  if(!roster){
-    if(manual) toast("이 날짜의 출석부가 없습니다");
-    return;
-  }
-  var have={}, inAtt={};
-  drafts.forEach(function(x){ have[nameKey(x.studentName)]=x; });
+  if(!roster){ if(manual) toast("이 날짜의 출석부가 없습니다"); return; }
 
-  var added=[], missing=[], moved=[];
-  autoAskMove=[];
+  var have={}, inAtt={}, byName={};
+  drafts.forEach(function(x){ have[nameKey(x.studentName)]=x; });
   roster.forEach(function(r){
     var k=nameKey(r.n); inAtt[k]=1;
-    var pname=autoPeriodName(r.p);
-    var d=have[k];
-    if(d){
-      if(d.period!==pname){
-        if(autoUntouched(d)){ d.period=pname; d.autoSig=autoSig(d); moved.push(d.studentName+" → "+pname); }
-        else autoAskMove.push({key:d.key, name:d.studentName, to:pname});
+    if(!byName[k]) byName[k]={ name:r.n, rows:[] };
+    byName[k].rows.push(r);
+  });
+
+  var added=[], missing=[], moved=[];
+  autoAskMove=[]; autoAskReg=[]; autoMkSkip=[];
+
+  Object.keys(byName).forEach(function(k){
+    var g=byName[k];
+    var real=g.rows.filter(function(r){ return !r.mk; });
+    g.rows.forEach(function(r){ if(r.mk) autoMkSkip.push(g.name+"("+autoPeriodName(r.p)+")"); });
+    if(!real.length) return;                       /* 전부 보강이면 카드를 만들지 않습니다 */
+
+    var use=real;
+    if(real.length>1){
+      var reg=autoRegPeriod(g.name, curDate);
+      if(!reg){
+        autoAskReg.push({ name:g.name, ps:real.map(function(r){ return autoPeriodName(r.p); }) });
+        return;                                     /* 물어본 뒤에 넣습니다 */
       }
-      return;
+      if(reg!=="both"){
+        var m=real.filter(function(r){ return autoPeriodName(r.p)===reg; });
+        if(m.length){
+          real.forEach(function(r){ if(autoPeriodName(r.p)!==reg) autoMkSkip.push(g.name+"("+autoPeriodName(r.p)+")"); });
+          use=m;
+        }
+      }
     }
-    var stu=DB.students.filter(function(s){ return nameKey(s.name)===k; })[0];
-    if(!stu){ missing.push(r.n); return; }
-    if(stu.active===false) return;
-    var nd=newDraft(stu, pname);
-    nd.fromAtt=true; nd.autoSig=autoSig(nd);
-    drafts.push(nd); have[k]=nd; added.push(nd);
+    use.forEach(function(r){ autoPut(g.name, r, have, added, missing, moved); });
   });
 
   /* 출석부에서 빠졌는데 아직 손대지 않은 카드 */
@@ -4336,7 +4395,8 @@ function autoSync(manual){
   if(added.length || moved.length){ renderEntries(); updateSticky(); }
   autoLast = added.map(function(d){ return d.key; });
 
-  if(manual && !added.length && !moved.length && !missing.length && !autoAskMove.length && !autoGone.length){
+  if(manual && !added.length && !moved.length && !missing.length
+     && !autoAskMove.length && !autoAskReg.length && !autoGone.length){
     toast("출석부와 이미 똑같습니다");
   }
   autoShow(added, missing, moved);
@@ -4357,29 +4417,37 @@ function autoClear(){ var h=$("#autoBar"); if(h) h.innerHTML=""; }
 function autoShow(added, missing, moved){
   var h=autoHost(); if(!h) return;
   var out="";
+  var mk = autoMkSkip.length? '<br>보강 자리는 건너뛰었습니다 — '+autoMkSkip.map(esc).join(' · ') : '';
   if(added.length){
     out+='<div class="atbar ok"><span class="aic">✓</span><div class="atx">'
        + '출석부에서 <b>'+added.length+'명</b>이 들어왔습니다 — '
        + added.map(function(d){ return '<b>'+esc(d.studentName)+'</b>('+esc(d.period)+')'; }).join(' · ')
-       + (moved.length? '<br>교시를 맞췄습니다 — '+moved.map(esc).join(' · ') : '')
+       + (moved.length? '<br>교시를 맞췄습니다 — '+moved.map(esc).join(' · ') : '') + mk
        + '</div><div class="aac"><button type="button" class="btn sm" data-at="undo">되돌리기</button>'
        + '<button type="button" class="btn sm ghost" data-at="x">닫기</button></div></div>';
   }else if(moved.length){
     out+='<div class="atbar info"><span class="aic">i</span><div class="atx">'
-       + '출석부에 맞춰 교시를 바꿨습니다 — '+moved.map(esc).join(' · ')
+       + '출석부에 맞춰 교시를 바꿨습니다 — '+moved.map(esc).join(' · ') + mk
        + '</div><div class="aac"><button type="button" class="btn sm ghost" data-at="x">닫기</button></div></div>';
   }
   if(missing.length){
     out+='<div class="atbar warn"><span class="aic">!</span><div class="atx">'
        + '<b>'+missing.length+'명</b>은 넣지 못했습니다 — <b>'+missing.map(esc).join('</b>, <b>')+'</b> 은(는) 학생 관리에 없는 이름입니다.'
        + '</div><div class="aac"><button type="button" class="btn sm" data-at="stu">학생 등록하기</button>'
-       + '<button type="button" class="btn sm ghost" data-at="x">닫기</button></div></div>';
+       + '<button type="button" class="btn sm ghost" data-at="miss" data-n="'+esc(missing.join("\u0001"))+'">닫기</button></div></div>';
   }
+  autoAskReg.forEach(function(q, i){
+    out+='<div class="atbar info"><span class="aic">i</span><div class="atx">'
+       + '<b>'+esc(q.name)+'</b> 은(는) '+q.ps.map(esc).join('와 ')+'에 모두 있습니다. 지난 수업 기록이 없어 어느 쪽이 정규인지 알 수 없습니다.'
+       + '</div><div class="aac">'
+       + q.ps.map(function(p){ return '<button type="button" class="btn sm" data-at="reg" data-i="'+i+'" data-p="'+esc(p)+'">'+esc(p)+'</button>'; }).join('')
+       + '<button type="button" class="btn sm ghost" data-at="reg" data-i="'+i+'" data-p="both">둘 다 만들기</button></div></div>';
+  });
   autoAskMove.forEach(function(m, i){
     out+='<div class="atbar info"><span class="aic">i</span><div class="atx">'
        + '<b>'+esc(m.name)+'</b> 은(는) 출석부에서 <b>'+esc(m.to)+'</b>로 바뀌었습니다. 입력한 내용이 있어 그대로 두었습니다.'
        + '</div><div class="aac"><button type="button" class="btn sm" data-at="move" data-i="'+i+'">'+esc(m.to)+'로 옮기기</button>'
-       + '<button type="button" class="btn sm ghost" data-at="x">그대로 두기</button></div></div>';
+       + '<button type="button" class="btn sm ghost" data-at="keepp" data-i="'+i+'">그대로 두기</button></div></div>';
   });
   if(autoGone.length){
     out+='<div class="atbar warn"><span class="aic">!</span><div class="atx">'
@@ -4389,14 +4457,25 @@ function autoShow(added, missing, moved){
        + '</div><div class="aac"><button type="button" class="btn sm" data-at="del">카드 지우기</button>'
        + '<button type="button" class="btn sm ghost" data-at="keep">그대로 두기</button></div></div>';
   }
+  if(!out && autoMkSkip.length && added.length===0 && moved.length===0){ out=""; }  /* 조용히 */
   h.innerHTML=out;
 }
 
 document.addEventListener("click", function(e){
   var b=e.target.closest? e.target.closest("[data-at]") : null;
-  if(!b || !$("#autoBar") || !$("#autoBar").contains(b)) return;
+  var host=$("#autoBar");
+  if(!b || !host || !host.contains(b)) return;
   var a=b.getAttribute("data-at");
-  if(a==="x"){ var bar=b.closest(".atbar"); if(bar) bar.parentNode.removeChild(bar); return; }
+  var bar=b.closest(".atbar");
+  function dropBar(){ if(bar && bar.parentNode) bar.parentNode.removeChild(bar); }
+
+  if(a==="x"){ dropBar(); return; }
+  if(a==="miss"){                                    /* 그날은 다시 알리지 않습니다 */
+    (b.getAttribute("data-n")||"").split("\u0001").forEach(function(n){
+      if(n) autoMissSeen[curDate+"|"+nameKey(n)]=1;
+    });
+    dropBar(); return;
+  }
   if(a==="undo"){
     if(!autoLast.length){ autoClear(); return; }
     var keep={}; autoLast.forEach(function(k){ keep[k]=1; });
@@ -4405,24 +4484,33 @@ document.addEventListener("click", function(e){
     return;
   }
   if(a==="stu"){ autoClear(); switchView("students"); return; }
+  if(a==="reg"){
+    var q=autoAskReg[+b.getAttribute("data-i")]; if(!q) return;
+    if(!DB.meta.regPeriod) DB.meta.regPeriod={};
+    DB.meta.regPeriod[autoRegKey(q.name, curDate)]=b.getAttribute("data-p");
+    save(); dropBar(); autoSync(false);
+    return;
+  }
   if(a==="move"){
     var m=autoAskMove[+b.getAttribute("data-i")]; if(!m) return;
-    drafts.forEach(function(d){ if(d.key===m.key) d.period=m.to; });
-    var bar2=b.closest(".atbar"); if(bar2) bar2.parentNode.removeChild(bar2);
-    renderEntries(); toast(m.name+" 학생을 "+m.to+"로 옮겼습니다");
+    drafts.forEach(function(d){ if(d.key===m.key){ d.period=m.to; d.keepPeriod=null; } });
+    dropBar(); renderEntries(); toast(m.name+" 학생을 "+m.to+"로 옮겼습니다");
     return;
+  }
+  if(a==="keepp"){                                   /* 그 학생 · 그 교시는 다시 묻지 않습니다 */
+    var m2=autoAskMove[+b.getAttribute("data-i")]; if(!m2){ dropBar(); return; }
+    drafts.forEach(function(d){ if(d.key===m2.key) d.keepPeriod=m2.to; });
+    dropBar(); return;
   }
   if(a==="del"){
     var gone={}; autoGone.forEach(function(d){ gone[d.key]=1; });
     drafts = drafts.filter(function(d){ return !(gone[d.key] && autoUntouched(d)); });
-    autoGone=[]; var bar3=b.closest(".atbar"); if(bar3) bar3.parentNode.removeChild(bar3);
-    renderEntries(); toast("출석부에서 빠진 카드를 지웠습니다");
+    autoGone=[]; dropBar(); renderEntries(); toast("출석부에서 빠진 카드를 지웠습니다");
     return;
   }
   if(a==="keep"){
-    autoGone.forEach(function(d){ d.fromAtt=false; });   /* 다시 묻지 않습니다 */
-    autoGone=[]; var bar4=b.closest(".atbar"); if(bar4) bar4.parentNode.removeChild(bar4);
-    return;
+    autoGone.forEach(function(d){ d.fromAtt=false; });
+    autoGone=[]; dropBar(); return;
   }
 });
 
@@ -4434,7 +4522,8 @@ function renderAutoBox(){
              ["open","오늘 수업 탭을 열 때만","입력 중에는 끼어들지 않습니다"],
              ["off","끄기","지금처럼 단추로만"]];
   var h='<div class="small muted mb">출석부에 이름을 적으면 그 날짜의 오늘 수업에 카드가 저절로 생깁니다. '
-       +'1교시 · 2교시 자리를 그대로 따라가고, 이미 만든 카드는 건드리지 않습니다.</div>';
+       +'1교시 · 2교시 자리를 그대로 따라가고, 이미 만든 카드는 건드리지 않습니다. '
+       +'과제 칸에 <b>보강</b>이 적힌 자리는 건너뜁니다.</div>';
   h+='<div class="atpick">';
   MODES.forEach(function(m){
     h+='<label class="'+(c.mode===m[0]?"on":"")+'"><input type="radio" name="atMode" value="'+m[0]+'"'
@@ -4445,7 +4534,10 @@ function renderAutoBox(){
     +'정규 수업에만 (특강에는 자동으로 넣지 않습니다)</label>';
   h+='<label class="atchk"><input type="checkbox" id="atRm"'+(c.askRemove?" checked":"")+'> '
     +'출석부에서 이름이 빠지면 물어보기 (입력한 내용이 있는 카드는 절대 지우지 않습니다)</label>';
-  h+='<div class="row mt" style="gap:8px"><button class="btn sm" id="atNow">지금 맞추기</button></div>';
+  var nReg=Object.keys(DB.meta.regPeriod||{}).length;
+  h+='<div class="row mt" style="gap:8px;flex-wrap:wrap"><button class="btn sm" id="atNow">지금 맞추기</button>'
+    + (nReg? '<button class="btn sm ghost" id="atForget">정규 교시 기억 지우기 ('+nReg+'건)</button>' : '')
+    + '</div>';
   box.innerHTML=h;
   box.addEventListener("change", function(e){
     var c2=autoCfg();
@@ -4457,6 +4549,10 @@ function renderAutoBox(){
     else if(e.target.id==="atRm"){ c2.askRemove=e.target.checked; save(); }
   });
   $("#atNow").addEventListener("click", function(){ switchView("today"); setTimeout(function(){ autoSync(true); },60); });
+  var f=$("#atForget");
+  if(f) f.addEventListener("click", function(){
+    DB.meta.regPeriod={}; save(); renderAutoBox(); toast("정규 교시 기억을 지웠습니다");
+  });
 }
 
 /* ----- 모달 열기 ----- */
@@ -6904,12 +7000,13 @@ function applyToCell(cell, r, d, p){
 
 /* 날짜 · 이름으로 출석부 칸 찾기 */
 function attWeekKey(date){ var dt=parseISO(date); var wd=(dt.getDay()+6)%7; dt.setDate(dt.getDate()-wd); return ymdOf(dt); }
-function attCellFor(date, name){
+function attCellFor(date, name, prefP){
   if(!DB.att || !DB.att.weeks) return null;
   var dt=parseISO(date), d=(dt.getDay()+6)%7; if(d>5) return null;
   var W=DB.att.weeks[attWeekKey(date)]; if(!W || !W.w || !W.w.days || !W.w.days[d]) return null;
   var key=nameKey(name), day=W.w.days[d];
   for(var p=0;p<(day.p||[]).length;p++){
+    if(prefP!=null && p!==prefP) continue;          /* 고른 교시의 자리만 봅니다 */
     var rows=day.p[p]||[];
     for(var r=0;r<rows.length;r++) if(rows[r] && nameKey(rows[r].n)===key) return {W:W, cell:rows[r], d:d, p:p};
   }
@@ -6917,8 +7014,8 @@ function attCellFor(date, name){
 }
 
 /* 새 카드 : 출석부 칸에서 채웁니다 */
-function prefillFromAtt(dr, rateOnly){
-  var f=attCellFor(curDate, dr.studentName); if(!f) return;
+function prefillFromAtt(dr, rateOnly, prefP){
+  var f=attCellFor(curDate, dr.studentName, prefP); if(!f) return;
   var cv=valsFromCell(cellInfo(f.cell.a, f.cell.h), f.d, f.p);
   if(!rateOnly){
     dr.period = f.p===0? "1교시" : f.p===1? "2교시" : dr.period;
@@ -7033,7 +7130,7 @@ document.addEventListener("click", function(e){ if(e.target && e.target.id==="bt
 /* =========================================================
    앱 버전 · 새 버전 자동 적용
    ========================================================= */
-var APP_VERSION="v28";
+var APP_VERSION="v30";
 var swReg=null, swReloading=false;
 var hadController=!!(navigator.serviceWorker && navigator.serviceWorker.controller);
 function checkUpdate(){ try{ if(swReg) swReg.update(); }catch(e){} }
