@@ -7341,7 +7341,7 @@ document.addEventListener("click", function(e){ if(e.target && e.target.id==="bt
 /* =========================================================
    앱 버전 · 새 버전 자동 적용
    ========================================================= */
-var APP_VERSION="v38";
+var APP_VERSION="v39";
 var swReg=null, swReloading=false;
 var hadController=!!(navigator.serviceWorker && navigator.serviceWorker.controller);
 function checkUpdate(){ try{ if(swReg) swReg.update(); }catch(e){} }
@@ -7631,15 +7631,13 @@ function attTextLine(rec){
 }
 
 /* =========================================================
-   선생님과 함께 쓰기
-   · 원장님 : 선생님 관리 · 새 선생님 시작 파일 · 학생 넘기기 · 교재·문구 보내기
+   선생님과 함께 쓰기 (Firebase · Google 로그인)
+   · 원장님 : 선생님 관리 · 새 선생님 등록과 초대 링크 · 학생 넘기기 · 교재·문구 보내기
              선생님 기록 보기(읽기 전용) · 넘긴 학생 기록을 내 기록으로 가져오기
-   · 선생님 : 시작 파일로 연결 · 원장님이 보낸 학생·교재 받기
-   · 선생님 기록은 선생님마다 따로 만든 비공개 저장소에 저장됩니다.
-   · 원장님 기록의 모양은 바꾸지 않습니다 (예전 판으로 되돌려도 그대로 읽힘).
+   · 선생님 : 초대 링크 → Google 계정으로 로그인 → 기록은 Firebase에 자동 저장
+   · 원장님 기록은 지금처럼 GitHub에 그대로 둡니다 (모양도 바꾸지 않음).
    ========================================================= */
 var TEAM_FRESH = !rawGet();                 // 이 기기에서 처음 여는지
-var TEAM_INBOX = "원장님_보낸것.json";
 var TEAM_COLORS = ["#2a7f8f","#9a6a1c","#6b4fb3","#b0456b","#3d7a3a","#1f5fa8","#a8552a"];
 var TEAM_HAND_MONTHS = 3;                   // 넘길 때 함께 보내는 지난 기록 (개월)
 var VIEW = null, ME = null;
@@ -7647,14 +7645,12 @@ var teamCache = {};                         // 선생님 id → {db, at, err, bu
 
 function isTeacher(){ return !!(DB && DB.meta && DB.meta.role==="teacher"); }
 function meDB(){ return VIEW? ME : DB; }
-function teamList(){ return ((meDB().meta||{}).teachers||[]).filter(function(t){ return !t.removed; }); }
+function teamList(){ return ((meDB().meta||{}).teachers||[]).filter(function(t){ return !t.removed && t.email; }); }
 function teamById(id){ return ((meDB().meta||{}).teachers||[]).filter(function(t){ return t.id===id; })[0]||null; }
 function teamColor(t){
   var i=((meDB().meta||{}).teachers||[]).indexOf(t);
   return TEAM_COLORS[(i<0?0:i)%TEAM_COLORS.length];
 }
-function cleanRepo(r){ return String(r||"").trim().replace(/^https?:\/\/github\.com\//,"").replace(/\.git$/,"").replace(/^\/|\/$/g,""); }
-function myOwner(){ var r=cleanRepo(syncCfg.repo); return r.indexOf("/")>0? r.split("/")[0] : ""; }
 function teamAgo(iso){
   var t=Date.parse(iso||0); if(!t) return "";
   var m=Math.max(0,Math.round((Date.now()-t)/60000));
@@ -7662,56 +7658,165 @@ function teamAgo(iso){
   var h=Math.round(m/60); if(h<24) return h+"시간 전";
   return Math.round(h/24)+"일 전";
 }
+/* ---------- Firebase : 로그인 · 선생님 기록 보관 ----------
+   teachers/{메일}            : 원장님이 등록한 선생님 (이름 · 메일)
+   teacherData/{메일}         : 선생님 기록 머리 (조각 수 · 판 번호)
+   teacherData/{메일}/chunks  : 선생님 기록 본문 (큰 글을 조각으로)
+   teacherInbox/{메일}/items  : 원장님이 보낸 학생 · 교재
+   읽고 쓰는 권한은 Firestore 규칙이 정합니다 (원장 계정 · 본인 · 등록 여부). */
+var OWNER_EMAIL = "ilmvm66@gmail.com";
+var FBS_KEY = "dailyreport.fbsync";        // 이 기기가 선생님으로 쓰는 메일
+var JOIN_KEY = "dailyreport.join";         // 초대 링크로 받은 정보
+var TD="teacherData", TT="teachers", TI="teacherInbox", CHUNK_LEN=300000;
+var fsCache = {};                          // 메일 → {rev, obj}
+var fbAuthOK = false;
 
-/* ---------- 선생님 저장소 읽기 · 쓰기 (선생님 열쇠로) ---------- */
-function tgHead(token, raw){
-  return {"Authorization":"Bearer "+token,
-          "Accept": raw? "application/vnd.github.raw" : "application/vnd.github+json",
-          "X-GitHub-Api-Version":"2022-11-28"};
+/* 링크용 익명 로그인이 Google 로그인을 밀어내지 않도록, 원래 로그인 상태를 먼저 기다립니다 */
+fbReady = function(){
+  if(fbDB && fbAuthOK) return Promise.resolve(fbDB);
+  if(fbP) return fbP;
+  if(!fbOn()) return Promise.reject(new Error("no-config"));
+  var V="https://www.gstatic.com/firebasejs/10.12.2/";
+  fbP = (window.firebase && firebase.firestore && firebase.auth ? Promise.resolve()
+        : loadScript(V+"firebase-app-compat.js").then(function(){ return loadScript(V+"firebase-firestore-compat.js"); })
+          .then(function(){ return loadScript(V+"firebase-auth-compat.js"); }))
+    .then(function(){
+      var c=fbCfg();
+      if(!firebase.apps.length){
+        firebase.initializeApp({apiKey:c.apiKey, authDomain:c.authDomain, projectId:c.projectId, appId:c.appId});
+      }
+      var db=firebase.firestore();
+      return new Promise(function(res){
+        var un=firebase.auth().onAuthStateChanged(function(u){ un(); res(u); });
+      }).then(function(u){
+        if(!u) return firebase.auth().signInAnonymously().catch(function(e){ console.warn("익명 로그인 실패", e); });
+      }).then(function(){ fbDB=db; fbAuthOK=true; return db; });
+    })
+    .catch(function(e){ fbP=null; throw e; });
+  return fbP;
+};
+function googleEmail(){
+  try{
+    var u=window.firebase && firebase.auth && firebase.apps.length && firebase.auth().currentUser;
+    return (u && !u.isAnonymous && u.email)? String(u.email).toLowerCase() : "";
+  }catch(e){ return ""; }
 }
-function tgUrl(repo, path){ return "https://api.github.com/repos/"+cleanRepo(repo)+"/contents/"+encodeURIComponent(path); }
-function tgErr(st, what){
-  if(st===401) return new Error("열쇠가 올바르지 않거나 지워졌습니다.");
-  if(st===403) return new Error("열쇠 권한이 부족합니다. Contents를 Read and write로 맞춰 주세요.");
-  if(st===404) return new Error("저장소를 찾을 수 없습니다. 저장소 이름과 열쇠의 저장소 선택을 확인해 주세요.");
-  return new Error((what||"불러오기")+" 실패 ("+st+")");
+/* 반드시 단추를 누른 그 순간에 부릅니다 (팝업 막힘 방지) */
+function googleLogin(hint){
+  var p=new firebase.auth.GoogleAuthProvider();
+  var cp={prompt:"select_account"}; if(hint) cp.login_hint=hint;
+  p.setCustomParameters(cp);
+  return firebase.auth().signInWithPopup(p).then(function(){ return googleEmail(); });
 }
-function tgRepo(repo, token){
-  return fetch("https://api.github.com/repos/"+cleanRepo(repo)+"?t="+Date.now(), {headers:tgHead(token), cache:"no-store"})
-    .then(function(r){ if(!r.ok) throw tgErr(r.status,"확인"); return r.json(); });
+function fbErr(e){
+  var c=(e && e.code)||"";
+  if(/permission-denied/.test(c)) return new Error("권한이 없습니다. 원장님 등록이 해제되었거나 다른 계정으로 로그인되어 있습니다.");
+  if(/unavailable|network/.test(c)) return new Error("인터넷 연결을 확인해 주세요.");
+  if(/popup-blocked/.test(c)) return new Error("팝업이 막혔습니다. 다시 눌러 주세요.");
+  if(/popup-closed|cancelled-popup/.test(c)) return new Error("로그인 창을 닫았습니다.");
+  if(/unauthorized-domain/.test(c)) return new Error("Firebase에 이 앱 주소가 승인되지 않았습니다 (승인된 도메인 확인).");
+  if(/operation-not-allowed/.test(c)) return new Error("Firebase에서 Google 로그인이 아직 켜져 있지 않습니다.");
+  return (e instanceof Error)? e : new Error(String(e||"알 수 없는 오류"));
 }
-function tgRead(repo, token, path){
-  return fetch(tgUrl(repo,path)+"?t="+Date.now(), {headers:tgHead(token), cache:"no-store"})
-    .then(function(res){
-      if(res.status===404) return {sha:null, data:null};
-      if(!res.ok) throw tgErr(res.status);
-      return res.json().then(function(j){
-        if(j.content && j.encoding==="base64"){
-          try{ return {sha:j.sha, data:JSON.parse(b64decode(j.content))}; }
-          catch(e){ throw new Error("저장소의 파일을 읽을 수 없습니다."); }
-        }
-        return fetch(tgUrl(repo,path)+"?t="+Date.now(), {headers:tgHead(token,true), cache:"no-store"})
-          .then(function(r){ if(!r.ok) throw tgErr(r.status); return r.text(); })
-          .then(function(t){ return {sha:j.sha, data:JSON.parse(t)}; });
+function b64url(obj){ return b64encode(JSON.stringify(obj)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
+function unb64url(s){ s=String(s).replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4) s+="="; return JSON.parse(b64decode(s)); }
+
+function tdRef(email){ return fbDB.collection(TD).doc(email); }
+function fsReadFor(email, useCache){
+  return fbReady().then(function(){
+    return tdRef(email).get();
+  }).then(function(snap){
+    if(!snap.exists) return {rev:null, obj:null};
+    var m=snap.data()||{}, c=fsCache[email];
+    if(useCache && c && c.rev===m.rev) return {rev:m.rev, obj:jcopy(c.obj), updatedAt:m.updatedAt};
+    var jobs=[]; for(var i=0;i<(m.n||0);i++) jobs.push(tdRef(email).collection("chunks").doc("c"+i).get());
+    return Promise.all(jobs).then(function(ss){
+      var text=ss.map(function(s){ return s.exists? (s.data().d||"") : ""; }).join("");
+      var obj=null; try{ obj=JSON.parse(text); }catch(e){ throw new Error("선생님 기록을 읽을 수 없습니다."); }
+      fsCache[email]={rev:m.rev, obj:jcopy(obj)};
+      return {rev:m.rev, obj:obj, updatedAt:m.updatedAt};
+    });
+  }).catch(function(e){ throw fbErr(e); });
+}
+/* expectRev 와 지금 판이 다르면 "conflict" (다른 기기가 먼저 올림) */
+function fsWriteFor(email, obj, expectRev, force){
+  var text=JSON.stringify(obj), parts=[];
+  for(var i=0;i<text.length;i+=CHUNK_LEN) parts.push(text.slice(i, i+CHUNK_LEN));
+  if(!parts.length) parts.push("");
+  return fbReady().then(function(db){
+    var ref=tdRef(email);
+    return db.runTransaction(function(tx){
+      return tx.get(ref).then(function(snap){
+        var cur=snap.exists? (snap.data().rev||null) : null, oldN=snap.exists? (snap.data().n||0) : 0;
+        if(!force && cur!==(expectRev||null)) return "conflict";
+        var rev=uid();
+        parts.forEach(function(p,k){ tx.set(ref.collection("chunks").doc("c"+k), {d:p}); });
+        for(var k=parts.length;k<oldN;k++) tx["delete"](ref.collection("chunks").doc("c"+k));
+        tx.set(ref, {n:parts.length, rev:rev, updatedAt:new Date().toISOString(),
+                     name:(obj.meta||{}).teacher||"", by:googleEmail()});
+        return rev;
       });
     });
+  }).then(function(r){
+    if(r!=="conflict") fsCache[email]={rev:r, obj:jcopy(obj)};
+    return r;
+  }).catch(function(e){ throw fbErr(e); });
 }
-function tgWrite(repo, token, path, obj, sha, msg){
-  var body={message:(msg||"데일리리포트")+" "+localStamp(), content:b64encode(JSON.stringify(obj,null,1))};
-  if(sha) body.sha=sha;
-  return fetch(tgUrl(repo,path), {method:"PUT", headers:tgHead(token), body:JSON.stringify(body)})
-    .then(function(res){
-      if(res.status===409||res.status===422) return "conflict";
-      if(!res.ok) throw tgErr(res.status,"올리기");
-      return "ok";
+
+/* ---------- 선생님 기기 : 기기 간 맞추기를 GitHub 대신 Firebase로 ---------- */
+function fbsEmail(){ try{ return (JSON.parse(lsGet(FBS_KEY)||"{}").email)||""; }catch(e){ return ""; } }
+function fbsOn(){ return isTeacher() && !!fbsEmail(); }
+(function(){
+  var _on=syncOn, _rd=ghRead, _wr=ghWrite, _box=renderSyncBox;
+  syncOn=function(){ if(fbsOn()) return fbAuthOK && googleEmail()===fbsEmail(); return _on(); };
+  ghRead=function(){
+    if(!fbsOn()) return _rd();
+    return fsReadFor(fbsEmail(), true).then(function(r){ syncSha=r.rev; return r.obj? jcopy(r.obj) : null; });
+  };
+  ghWrite=function(obj){
+    if(!fbsOn()) return _wr(obj);
+    return fsWriteFor(fbsEmail(), obj, syncSha).then(function(r){
+      if(r==="conflict") return "conflict";
+      syncSha=r; return "ok";
     });
+  };
+  renderSyncBox=function(){
+    if(!fbsOn()) return _box.apply(this, arguments);
+    var box=$("#syncBox"); if(!box) return;
+    var ok=syncOn();
+    box.innerHTML= ok
+      ? '<div class="banner ok" style="display:flex"><span>✓</span><div>Google 계정 <b>'+esc(fbsEmail())+'</b> 로 원장님 데이터베이스에 저장하고 있습니다.'
+        +(DB.meta.syncedAt? ' 마지막으로 맞춘 시각 '+new Date(DB.meta.syncedAt).toLocaleString("ko-KR"):'')
+        +(syncMsg? '<div class="tiny" style="margin-top:3px;color:var(--low)">'+esc(syncMsg)+'</div>':'')+'</div></div>'
+      : '<div class="banner warn" style="display:flex"><span>⚠</span><div><b>'+esc(fbsEmail())+'</b> 로 다시 로그인해야 기록이 올라갑니다. '
+        +'<button class="btn sm primary" data-tm2="relogin" style="margin-left:6px">Google로 로그인</button></div></div>';
+  };
+  document.addEventListener("click", function(e){
+    var b=e.target.closest("[data-tm2=relogin]"); if(!b) return;
+    if(!window.firebase || !firebase.auth){ toast("잠시 뒤 다시 눌러 주세요"); fbReady().catch(function(){}); return; }
+    googleLogin(fbsEmail()).then(function(em){
+      if(em!==fbsEmail()){ toast(fbsEmail()+" 계정으로 로그인해 주세요"); return; }
+      setSyncStatus(""); renderSettings(); syncNow(false);
+    }).catch(function(e2){ toast(fbErr(e2).message); });
+  });
+})();
+/* 선생님 기기는 열 때 로그인 상태를 확인하고 맞추기를 시작합니다 */
+function teacherAuthStart(){
+  if(!fbsOn()) return;
+  fbReady().then(function(){
+    if(googleEmail()===fbsEmail()){ setSyncStatus(""); syncNow(true); }
+    else { setSyncStatus("로그인 필요"); if($("#view-settings").classList.contains("on")) renderSettings(); }
+  }).catch(function(e){ console.warn(e); setSyncStatus("연결 확인 필요"); });
 }
+
 function teamFetch(t, force){
   var c=teamCache[t.id]||(teamCache[t.id]={});
   if(c.busy) return c.busy;
   if(!force && c.db && Date.now()-c.at<120000) return Promise.resolve(c);
-  c.busy=tgRead(t.repo, t.token, t.path||syncCfg.path).then(function(r){
-    c.busy=null; c.db=r.data; c.at=Date.now(); c.err=""; return c;
+  if(googleEmail()!==OWNER_EMAIL){ c.err=""; c.need=true; return Promise.resolve(c); }
+  c.need=false;
+  c.busy=fsReadFor(t.email, true).then(function(r){
+    c.busy=null; c.db=r.obj; c.at=Date.now(); c.err=""; return c;
   }).catch(function(e){
     c.busy=null; c.err=e.message||"불러오지 못했습니다"; c.at=Date.now(); return c;
   });
@@ -7751,15 +7856,6 @@ function teacherStartDB(name, tid, ids, withRec){
            records: withRec? handRecords(ids) : [], links:[],
            att:{meta:teamAttMeta(name), mt:Date.now(), weeks:{}} };
 }
-function startFileOf(t){
-  return { kind:"dailyreport-start", v:1, name:t.name, repo:cleanRepo(t.repo), token:t.token,
-           path:t.path||syncCfg.path, academy:(meDB().meta||{}).academy||"", at:new Date().toISOString() };
-}
-function downloadStart(t){
-  var blob=new Blob([JSON.stringify(startFileOf(t),null,1)],{type:"application/json"});
-  downloadBlob(blob, "데일리리포트_시작파일_"+t.name+".json");
-}
-
 /* ---------- 원장 기록에 선생님 목록 저장 (지워도 흔적을 남겨 다른 기기와 맞춤) ---------- */
 function teamSaveList(list){
   if(VIEW) exitView(true);
@@ -7841,29 +7937,156 @@ mergeDB=function(local, remote){
     return _ub.apply(this, arguments);
   };
 })();
-
 /* =========================================================
    선생님 쪽 : 원장님이 보낸 것 받기
    ========================================================= */
 var inboxAt=0;
 function inboxSoon(force){
-  if(!isTeacher() || !syncOn()) return;
+  if(!fbsOn() || !syncOn()) return;
   if(!force && Date.now()-inboxAt<5*60000) return;
   inboxAt=Date.now();
-  tgRead(syncCfg.repo, syncToken(), TEAM_INBOX).then(function(r){
-    var items=(r.data && r.data.items)||[];
-    var done=DB.meta.inboxDone||[];
-    var fresh=items.filter(function(it){ return it && it.id && done.indexOf(it.id)<0; });
-    if(!fresh.length){ if(force) toast("원장님이 새로 보낸 것이 없습니다"); return; }
-    var msg=[];
-    fresh.forEach(function(it){ var m=inboxApply(it); if(m) msg.push(m); });
-    DB.meta.inboxDone=done.concat(fresh.map(function(it){ return it.id; })).slice(-200);
-    save(); refreshPickers();
-    try{ loadDay(); }catch(e){}
-    if($("#view-settings").classList.contains("on")) renderSettings();
-    toast("원장님이 보낸 "+msg.join(" · ")+" 을(를) 받았습니다");
-  }).catch(function(e){ console.warn(e); if(force) toast(e.message||"확인하지 못했습니다"); });
+  var email=fbsEmail(), col;
+  fbReady().then(function(db){
+    col=db.collection(TI).doc(email).collection("items");
+    return col.get();
+  }).then(function(qs){
+    var done=DB.meta.inboxDone||[], fresh=[], docs=[];
+    qs.forEach(function(d){
+      docs.push(d.id);
+      var it=null; try{ it=JSON.parse(d.data().p||"null"); }catch(e){}
+      if(it && it.id && done.indexOf(it.id)<0) fresh.push(it);
+    });
+    fresh.sort(function(a,b){ return String(a.at)<String(b.at)? -1 : 1; });
+    if(fresh.length){
+      var msg=[];
+      fresh.forEach(function(it){ var m=inboxApply(it); if(m) msg.push(m); });
+      DB.meta.inboxDone=done.concat(fresh.map(function(it){ return it.id; })).slice(-200);
+      save(); refreshPickers();
+      try{ loadDay(); }catch(e){}
+      if($("#view-settings").classList.contains("on")) renderSettings();
+      toast("원장님이 보낸 "+msg.join(" · ")+" 을(를) 받았습니다");
+    }else if(force) toast("원장님이 새로 보낸 것이 없습니다");
+    docs.forEach(function(id){ col.doc(id)["delete"]().catch(function(){}); });   // 받은 것은 비웁니다
+  }).catch(function(e){ console.warn(e); if(force) toast(fbErr(e).message); });
 }
+
+/* =========================================================
+   선생님 쪽 : Google 계정으로 시작하기
+   ========================================================= */
+/* 초대 링크(#join=…)로 열렸으면 정보를 받아 두고 주소에서 지웁니다 */
+(function(){
+  var m=location.hash.match(/[#&]join=([A-Za-z0-9_-]+)/);
+  if(!m) return;
+  try{ var j=unb64url(m[1]); if(j && j.fb) lsSet(JOIN_KEY, JSON.stringify(j)); }catch(e){ console.warn(e); }
+  try{ history.replaceState(null, "", location.pathname+location.search); }catch(e){}
+})();
+function joinInfo(){ try{ return JSON.parse(lsGet(JOIN_KEY)||"null"); }catch(e){ return null; } }
+/* 초대 링크 없이 열었을 때는 r.html 에 넣어 둔 Firebase 설정을 빌려 옵니다 */
+function fbCfgFromViewer(){
+  return fetch("r.html?t="+Date.now(), {cache:"no-store"}).then(function(r){ return r.text(); }).then(function(t){
+    var m=t.match(/var\s+FB\s*=\s*\{([\s\S]*?)\}/); if(!m) return null;
+    var o={};
+    ["apiKey","authDomain","projectId","appId"].forEach(function(k){
+      var mm=m[1].match(new RegExp(k+'\\s*:\\s*["\\\']([^"\\\']+)["\\\']')); if(mm) o[k]=mm[1];
+    });
+    return (o.apiKey && !/^여기에/.test(o.apiKey) && o.projectId && o.appId)? o : null;
+  }).catch(function(){ return null; });
+}
+function ensureFbCfg(){
+  if(fbOn()) return Promise.resolve(true);
+  var j=joinInfo();
+  var get = (j && j.fb)? Promise.resolve(j.fb) : fbCfgFromViewer();
+  return get.then(function(c){
+    if(!c) return false;
+    DB.meta.fb={apiKey:c.apiKey, authDomain:c.authDomain, projectId:c.projectId, appId:c.appId};
+    return true;
+  });
+}
+function openTeacherLogin(){
+  var j=joinInfo();
+  var h='<div class="small" style="line-height:1.85">'
+    +(j && j.name? '<b>'+esc(j.name)+' 선생님</b>, 반갑습니다.<br>' : '')
+    +'원장님께 등록된 <b>Google 계정</b>'+(j && j.email? '(<b>'+esc(j.email)+'</b>)' : '')+'으로 로그인하면 맡은 학생과 기록이 바로 들어옵니다.'
+    +'<div class="muted" style="margin-top:6px">원장님 기기라면 \'이대로 시작\'을 눌러 주세요.</div></div>'
+    +'<div class="tm-msg" id="tjMsg">준비하는 중…</div>';
+  openDialog("데일리 리포트 시작하기", h, [
+    ["Google 계정으로 로그인","primary", teacherLoginClick],
+    ["이대로 시작","ghost", function(){ lsSet("dailyreport.welcomed","1"); lsDel(JOIN_KEY); closeDlg(); }]
+  ]);
+  var btn=$("#dlgFoot .btn.primary"); if(btn) btn.disabled=true;
+  ensureFbCfg().then(function(ok){
+    if(!ok) throw new Error("Firebase 설정을 찾지 못했습니다. 원장님께 초대 링크를 다시 받아 주세요.");
+    return fbReady();
+  }).then(function(){
+    var m=$("#tjMsg"); if(m) m.textContent="";
+    if(btn) btn.disabled=false;
+  }).catch(function(e){
+    var m=$("#tjMsg"); if(m){ m.textContent=fbErr(e).message; m.style.color="var(--low)"; }
+  });
+}
+function teacherLoginClick(){
+  var j=joinInfo(), m=$("#tjMsg");
+  function say(t,bad){ if(m){ m.textContent=t; m.style.color=bad? "var(--low)" : "var(--ink-2)"; } }
+  if(!window.firebase || !firebase.auth){ say("잠시 뒤 다시 눌러 주세요",1); return; }
+  googleLogin(j && j.email).then(function(email){
+    if(!email) throw new Error("로그인하지 못했습니다.");
+    say(email+" 계정을 확인하는 중…");
+    return fbDB.collection(TT).doc(email).get().then(function(s){
+      if(!s.exists) throw {code:"not-registered", email:email};
+      return teacherJoin(email, s.data()||{});
+    });
+  }).catch(function(e){
+    if(e && (e.code==="not-registered" || /permission-denied/.test(e.code||""))){
+      say((e.email||googleEmail())+" 은(는) 아직 등록되지 않은 계정입니다. 원장님께 이 메일 주소를 알려 주시거나, 다른 계정으로 다시 로그인해 주세요.",1);
+      return;
+    }
+    say(fbErr(e).message,1);
+  });
+}
+function teacherJoin(email, info){
+  if(!isTeacher() && DB.records.length && !TEAM_FRESH){
+    if(!confirm("이 기기에 있는 수업 기록 "+DB.records.length+"건을 내려두고 "+(info.name||email)+" 선생님 기록으로 바꿉니다.\n(원장님 기록이라면 취소하세요)\n계속할까요?")) return;
+  }
+  var cfg=jcopy(DB.meta.fb);
+  return fsReadFor(email, false).then(function(r){
+    var db=(r.obj && r.obj.students && r.obj.records)? r.obj : null;
+    if(!db){ db=freshDB(); db.students=[]; db.records=[]; db.meta.academy=(joinInfo()||{}).academy||""; }
+    db.meta.role="teacher"; db.meta.teacher=info.name||db.meta.teacher||"";
+    if(!db.meta.fb) db.meta.fb=cfg;
+    keepRestorePoint();
+    /* 이 기기는 이제 선생님 기기 : GitHub 맞추기는 끄고 Firebase로 */
+    lsSet(FBS_KEY, JSON.stringify({email:email}));
+    syncCfg.repo=""; saveSyncCfg(); lsDel(TOKEN_KEY);
+    lsDel(BASE_KEY); lsDel(ATT_BASE_KEY); lsDel("dailyreport.dirty");
+    try{ if(attFrame){ attFrame.src="about:blank"; } }catch(e){}
+    try{
+      var del=[];
+      for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k && k.indexOf("att:")===0) del.push(k); }
+      del.forEach(function(k){ localStorage.removeItem(k); });
+    }catch(e){}
+    DB=db;
+    attWriteLocal();
+    lsSet("att:clsblank","1");
+    rawSet(JSON.stringify(DB));
+    saveBase(DB);
+    syncSha=r.rev;
+    lsDel(JOIN_KEY); lsSet("dailyreport.welcomed","1");
+    openDialog((info.name||"")+" 선생님, 환영합니다", '<div class="small" style="line-height:1.8">원장님께 받은 <b>학생 '+DB.students.length+'명</b>'
+      +(DB.records.length? '과 지난 수업 <b>'+DB.records.length+'건</b>':'')+'을 불러왔습니다.<br>'
+      +'이제부터 저장하는 기록은 원장님 데이터베이스의 선생님 칸에 자동으로 올라갑니다. '
+      +'휴대폰·아이패드에서도 같은 링크를 열고 같은 Google 계정으로 로그인하면 이어서 쓸 수 있습니다.</div>',
+      [["시작하기","primary",function(){ location.reload(); }]]);
+  });
+}
+
+/* ---------- 처음 여는 기기 · 초대 링크 ---------- */
+function teamWelcome(){
+  if(isTeacher()){ teacherAuthStart(); return; }
+  var j=joinInfo();
+  if(!j && (!TEAM_FRESH || lsGet("dailyreport.welcomed"))) return;
+  setTimeout(openTeacherLogin, 400);
+}
+
 function inboxApply(it){
   if(it.kind==="students"){
     var n=0, rn=0;
@@ -7903,78 +8126,6 @@ function inboxApply(it){
   }
   return "";
 }
-
-/* ---------- 선생님 : 시작 파일 열기 ---------- */
-function pickStartFile(){
-  var inp=document.createElement("input");
-  inp.type="file"; inp.accept=".json,application/json";
-  inp.addEventListener("change", function(){
-    var f=inp.files[0]; if(!f) return;
-    var fr=new FileReader();
-    fr.onload=function(){
-      var o=null; try{ o=JSON.parse(fr.result); }catch(e){}
-      if(!o || o.kind!=="dailyreport-start" || !o.repo || !o.token){
-        openDialog("시작 파일이 아닙니다", '<div class="small">원장님께 받은 <b>데일리리포트_시작파일_이름.json</b> 파일을 골라 주세요.</div>', [["닫기","primary",closeDlg]]);
-        return;
-      }
-      applyStart(o);
-    };
-    fr.readAsText(f);
-  });
-  inp.click();
-}
-function applyStart(o){
-  if(!isTeacher() && DB.records.length && !TEAM_FRESH){
-    if(!confirm("이 기기에 있는 수업 기록 "+DB.records.length+"건을 내려두고 "+o.name+" 선생님 기록으로 바꿉니다.\n(원장님 기록이라면 취소하세요)\n계속할까요?")) return;
-  }
-  keepRestorePoint();
-  syncCfg.repo=cleanRepo(o.repo); syncCfg.path=o.path||syncCfg.path; syncCfg.auto=true; saveSyncCfg();
-  lsSet(TOKEN_KEY, o.token);
-  lsDel(BASE_KEY); lsDel(ATT_BASE_KEY); lsDel("dailyreport.dirty");
-  syncSha=null;
-  toast("원장님 저장소에서 선생님 기록을 받는 중…");
-  ghRead().then(function(remote){
-    var db = (remote && remote.students && remote.records)? remote : null;
-    if(!db){
-      db=freshDB(); db.students=[]; db.records=[];
-      db.meta.teacher=o.name; db.meta.academy=o.academy||"";
-    }
-    db.meta.role="teacher"; db.meta.teacher=o.name;
-    /* 출석부 칸을 비우고 선생님 것으로 */
-    try{ if(attFrame){ attFrame.src="about:blank"; } }catch(e){}
-    try{
-      var del=[];
-      for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k && k.indexOf("att:")===0) del.push(k); }
-      del.forEach(function(k){ localStorage.removeItem(k); });
-    }catch(e){}
-    DB=db;
-    attWriteLocal();
-    lsSet("att:clsblank","1");
-    rawSet(JSON.stringify(DB));
-    saveBase(DB);
-    lsSet("dailyreport.welcomed","1");
-    openDialog(o.name+" 선생님, 환영합니다", '<div class="small" style="line-height:1.8">원장님께 받은 <b>학생 '+DB.students.length+'명</b>'
-      +(DB.records.length? '과 지난 수업 <b>'+DB.records.length+'건</b>':'')+'을 불러왔습니다.<br>'
-      +'이제부터 저장하는 기록은 선생님 저장소에 자동으로 올라갑니다. 휴대폰·아이패드에서도 같은 시작 파일을 열면 이어서 쓸 수 있습니다.</div>',
-      [["시작하기","primary",function(){ location.reload(); }]]);
-  }).catch(function(e){
-    lsDel(TOKEN_KEY); syncCfg.repo=""; saveSyncCfg();
-    openDialog("연결하지 못했습니다", '<div class="small">'+esc(e.message||"")+'<br><br>원장님께 시작 파일을 다시 받아 주세요.</div>', [["닫기","primary",closeDlg]]);
-  });
-}
-
-/* ---------- 처음 여는 기기 ---------- */
-function teamWelcome(){
-  if(!TEAM_FRESH || lsGet("dailyreport.welcomed")) return;
-  lsSet("dailyreport.welcomed","1");
-  setTimeout(function(){
-    openDialog("데일리 리포트를 처음 여셨네요",
-      '<div class="small" style="line-height:1.8">원장님께 <b>시작 파일</b>을 받은 선생님이라면 그 파일을 열어 주세요. 맡은 학생과 교재가 바로 들어옵니다.<br>'
-      +'<span class="muted">원장님 기기라면 \'이대로 시작\'을 누르고, 설정 · 백업에서 기기 간 동기화를 연결해 주세요.</span></div>',
-      [["시작 파일 열기","primary",function(){ closeDlg(); pickStartFile(); }],["이대로 시작","ghost",closeDlg]]);
-  }, 400);
-}
-
 /* =========================================================
    원장 쪽 화면
    ========================================================= */
@@ -8080,7 +8231,8 @@ function teamWelcome(){
     else if(a==="view") enterView(id);
     else if(a==="imp") openImport(id);
     else if(a==="more") openMore(id);
-    else if(a==="start") pickStartFile();
+    else if(a==="tlogin") openTeacherLogin();
+    else if(a==="ologin") ownerLogin();
     else if(a==="inbox") inboxSoon(true);
   });
 })();
@@ -8095,27 +8247,40 @@ function renderTm(){
   if(isTeacher()){
     card.innerHTML='<div class="row" style="align-items:center"><h3 style="margin:0">'+esc(DB.meta.teacher||"")+' 선생님</h3><div style="flex:1"></div>'
       +'<button class="btn" data-tm="inbox">원장님이 보낸 것 확인</button></div>'
-      +'<div class="small muted" style="margin-top:6px">기록은 원장님이 만들어 둔 선생님 저장소(<b>'+esc(syncCfg.repo||"연결 안 됨")+'</b>)에 자동으로 올라갑니다. '
+      +'<div class="small muted" style="margin-top:6px">Google 계정 <b>'+esc(fbsEmail()||"—")+'</b> 로 로그인해 원장님 데이터베이스의 선생님 칸에 자동으로 저장합니다. '
       +'원장님이 학생이나 교재를 보내면 앱을 열 때 저절로 들어옵니다.</div>';
     return;
   }
-  var list=teamList();
+  var list=teamList(), me=googleEmail(), owner=(me===OWNER_EMAIL);
   var h='<div class="row" style="align-items:center;flex-wrap:wrap;gap:6px"><h3 style="margin:0">선생님 관리</h3><div style="flex:1"></div>'
-    +(list.length? '<button class="btn" data-tm="give">학생 넘기기</button><button class="btn" data-tm="kit">교재 · 문구 보내기</button>':'')
+    +(list.length && owner? '<button class="btn" data-tm="give">학생 넘기기</button><button class="btn" data-tm="kit">교재 · 문구 보내기</button>':'')
     +'<button class="btn primary" data-tm="new">＋ 새 선생님</button></div>'
-    +'<div class="small muted" style="margin-top:6px">선생님 기록은 선생님마다 따로 만든 저장소에 저장됩니다. 원장님은 여기서 <b>읽기만</b> 할 수 있고, 넘긴 학생의 기록은 <b>가져오기</b>로 내 기록에 합칠 수 있습니다.</div>';
+    +'<div class="small muted" style="margin-top:6px">선생님 기록은 원장님 Firebase 데이터베이스에 선생님마다 따로 저장됩니다. 선생님은 자기 Google 계정으로만 자기 기록을 열 수 있고, '
+    +'원장님은 원장 계정(<b>'+esc(OWNER_EMAIL)+'</b>)으로 로그인해 모두 <b>읽을</b> 수 있습니다.</div>';
+  if(!fbOn()){
+    h+='<div class="banner warn mt" style="display:flex"><span>⚠</span><div>먼저 아래 <b>링크로 보내기</b> 칸에 Firebase 설정을 넣어 주세요. 선생님 기록도 같은 곳을 씁니다.</div></div>';
+  }else if(!owner){
+    h+='<div class="banner warn mt" style="display:flex;align-items:center"><span>🔑</span><div style="flex:1">'
+      +(me? '지금 <b>'+esc(me)+'</b> 로 로그인되어 있습니다. ' : '')
+      +'선생님을 등록하고 기록을 보려면 원장 계정 <b>'+esc(OWNER_EMAIL)+'</b> 로 로그인해 주세요.</div>'
+      +'<button class="btn sm primary" data-tm="ologin" '+(fbAuthOK? '' : 'disabled')+'>Google 로그인</button></div>';
+    if(!fbAuthOK) fbReady().then(function(){ if(!VIEW && $("#view-settings").classList.contains("on")) renderTm(); }).catch(function(){});
+  }
   h+='<div class="tm-list">';
   if(!list.length){
-    h+='<div class="tm-empty">아직 연결한 선생님이 없습니다. <b>＋ 새 선생님</b>으로 시작 파일을 만들어 보세요. '
-      +'선생님께 받은 시작 파일로 이 기기를 연결하려면 <a href="#" data-tm="start">시작 파일 열기</a>.</div>';
+    h+='<div class="tm-empty">아직 등록한 선생님이 없습니다. <b>＋ 새 선생님</b>으로 이름과 Google 메일을 등록하고 초대 링크를 보내 주세요. '
+      +'<span class="muted">이 기기가 선생님 기기라면 <a href="#" data-tm="tlogin">선생님으로 로그인</a>.</span></div>';
   }
   list.forEach(function(t){
     var c=teamCache[t.id]||{}, db=c.db;
     h+='<div class="tm-row"><span class="tm-av" style="background:'+(db? teamColor(t) : "#a9b6c3")+'">'+esc(t.name.charAt(0))+'</span><span class="tm-nm">'+esc(t.name)+'T</span><span class="tm-meta">';
     if(c.err){
-      h+='<span class="tm-bad">⚠ '+esc(c.err)+'</span><br>'+esc(cleanRepo(t.repo));
+      h+='<span class="tm-bad">⚠ '+esc(c.err)+'</span><br>'+esc(t.email);
+    }else if(c.need || !owner){
+      h+='원장 계정으로 로그인하면 보입니다<br><span class="tm-none">'+esc(t.email)+'</span>';
     }else if(!db){
-      h+=(c.busy||!c.at? '불러오는 중…' : '아직 저장 기록 없음')+'<br><span class="tm-none">'+esc(cleanRepo(t.repo))+' · 시작 '+esc(fmtShort((t.at||"").slice(0,10)))+'</span>';
+      h+=(c.busy||!c.at? '불러오는 중…' : '아직 기록 칸이 없습니다')
+        +'<br><span class="tm-none">'+esc(t.email)+' · 등록 '+esc(fmtShort((t.at||"").slice(0,10)))+' · 넘긴 학생 '+(t.students||[]).length+'명</span>';
     }else{
       var u=(db.meta||{}).updatedAt, age=Date.now()-ts(u);
       var stu=(db.students||[]).filter(function(s){ return s.active!==false; }).length;
@@ -8126,19 +8291,21 @@ function renderTm(){
         +'<span class="'+(age<3*86400000?"tm-ok":"tm-old")+'">● '+esc(teamAgo(u)||"—")+' 저장</span> · 넘긴 학생 '+(t.students||[]).length+'명';
     }
     h+='</span><span class="tm-sp"></span><span class="tm-btns">'
-      +(db? '<button class="btn sm" data-tm="view" data-id="'+esc(t.id)+'">기록 보기</button><button class="btn sm" data-tm="imp" data-id="'+esc(t.id)+'">내 기록으로 가져오기</button>' : '')
+      +(db && owner? '<button class="btn sm" data-tm="view" data-id="'+esc(t.id)+'">기록 보기</button><button class="btn sm" data-tm="imp" data-id="'+esc(t.id)+'">내 기록으로 가져오기</button>' : '')
       +'<button class="btn sm ghost" data-tm="more" data-id="'+esc(t.id)+'">⋯</button></span></div>';
   });
   h+='</div>';
   card.innerHTML=h;
 }
-var teamLoading=false;
 function teamRefresh(force){
   if(isTeacher() || VIEW) return;
   var list=teamList(); if(!list.length) return;
-  Promise.all(list.map(function(t){ return teamFetch(t, force); })).then(function(){
+  if(!fbOn()) return;
+  fbReady().then(function(){
+    return Promise.all(list.map(function(t){ return teamFetch(t, force); }));
+  }).then(function(){
     if($("#view-settings").classList.contains("on") && !VIEW) renderTm(); else paintSw();
-  });
+  }).catch(function(e){ console.warn(e); });
 }
 var _teamRS=renderSettings;
 renderSettings=function(){
@@ -8146,6 +8313,19 @@ renderSettings=function(){
   try{ renderTm(); teamRefresh(false); }catch(e){ console.warn(e); }
   return r;
 };
+function ownerLogin(){
+  if(!window.firebase || !firebase.auth){ toast("잠시 뒤 다시 눌러 주세요"); return; }
+  googleLogin(OWNER_EMAIL).then(function(em){
+    if(em!==OWNER_EMAIL) toast(em+" 로 로그인했습니다. 원장 계정은 "+OWNER_EMAIL+" 입니다");
+    else toast("원장 계정으로 로그인했습니다");
+    teamCache={}; renderSettings(); teamRefresh(true);
+  }).catch(function(e){ toast(fbErr(e).message); });
+}
+function needOwner(){
+  if(googleEmail()===OWNER_EMAIL) return true;
+  toast("먼저 원장 계정("+OWNER_EMAIL+")으로 로그인해 주세요");
+  return false;
+}
 
 /* ---------- 학생 고르기 목록 ---------- */
 function stuPickHTML(id, pre, extra){
@@ -8174,116 +8354,111 @@ function stuPickWire(id, cntId){
 }
 function stuPicked(id){ return $$("#"+id+" input:checked").map(function(i){ return i.value; }); }
 
-/* ---------- ＋ 새 선생님 ---------- */
-function openNewTeacher(){
-  var owner=myOwner();
-  var h='<div class="tm-lab" style="margin-top:0">선생님 이름</div>'
-    +'<input type="text" id="ntName" placeholder="예: 김민지" style="max-width:220px">'
-    +'<div class="tm-lab">맡길 학생 · <span id="ntCnt">0</span>명 고름</div>'+stuPickHTML("ntList",[])
-    +'<label class="tm-chk"><input type="checkbox" id="ntRec" checked><span>맡길 학생의 <b>최근 '+TEAM_HAND_MONTHS+'개월 수업 기록</b>을 함께 넘기기<small>지난 과제 · 진도 · 이번 달 출결을 그대로 이어받습니다</small></span></label>'
-    +'<label class="tm-chk"><input type="checkbox" id="ntRest" checked><span>넘긴 학생은 내 명단에서 <b>쉬게 두기</b><small>지우는 것이 아니라 숨김입니다. 함께 맡는 학생이면 체크를 빼 주세요</small></span></label>'
-    +'<div class="tm-key"><b>① 선생님 저장소 만들기</b> — <a href="https://github.com/new" target="_blank" rel="noopener">GitHub 새 저장소</a>에서 이름(예: <b>daily-report-kim</b>)을 적고 <b>Private</b>을 골라 만듭니다.<br>'
-    +'<b>② 열쇠 만들기</b><ol><li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Fine-grained token 만들기</a> → 이름 <b>daily-report-선생님이름</b>, Expiration <b>No expiration</b></li>'
-    +'<li>Repository access는 <b>Only select repositories</b> → ①에서 만든 저장소 <b>하나만</b></li>'
-    +'<li>Permissions에서 <b>Contents</b>를 <b>Read and write</b>로 → Generate token → <b>github_pat_…</b> 복사</li></ol></div>'
-    +'<div class="tm-lab">선생님 저장소 이름</div>'
-    +'<input type="text" id="ntRepo" placeholder="'+(owner? owner+'/daily-report-kim' : '계정/저장소 (예: Hongs-sudo/daily-report-kim)')+'">'
-    +'<div class="tm-lab">열쇠 (github_pat_…)</div>'
-    +'<input type="password" id="ntKey" placeholder="github_pat_로 시작하는 긴 글자" autocomplete="off">'
-    +'<div class="tm-msg" id="ntMsg"></div>';
-  openDialog("새 선생님 시작 파일", h, [
-    ["확인하고 시작 파일 만들기","primary", createTeacher],
-    ["닫기","ghost", closeDlg]
-  ]);
-  stuPickWire("ntList","ntCnt");
+/* ---------- 초대 링크 ---------- */
+function inviteLink(t){
+  var c=fbCfg();
+  var base=location.href.replace(/[#?].*$/,"");
+  return base+"#join="+b64url({fb:{apiKey:c.apiKey, authDomain:c.authDomain, projectId:c.projectId, appId:c.appId},
+                              name:t.name, email:t.email, academy:(meDB().meta||{}).academy||""});
 }
-function repoFull(v){
-  v=cleanRepo(v);
-  if(v && v.indexOf("/")<0 && myOwner()) v=myOwner()+"/"+v;
-  return v;
+function inviteText(t){
+  return t.name+" 선생님, 데일리 리포트 앱 초대 링크입니다.\n"
+    +"아래 링크를 열고 'Google 계정으로 로그인'에서 "+t.email+" 계정을 고르시면 됩니다.\n"+inviteLink(t);
 }
-function createTeacher(){
-  var name=$("#ntName").value.trim().replace(/T$/,"").replace(/\s*선생님$/,"");
-  var repo=repoFull($("#ntRepo").value), key=$("#ntKey").value.trim();
-  var ids=stuPicked("ntList"), withRec=$("#ntRec").checked, rest=$("#ntRest").checked;
-  var msg=$("#ntMsg");
-  function say(t,bad){ msg.textContent=t; msg.style.color=bad? "var(--low)" : "var(--ink-2)"; }
-  if(!name){ say("선생님 이름을 적어 주세요",1); return; }
-  if(!repo || repo.indexOf("/")<0){ say("저장소 이름을 '계정/저장소' 모양으로 적어 주세요",1); return; }
-  if(cleanRepo(repo)===cleanRepo(syncCfg.repo)){ say("원장님 저장소와 다른, 선생님용 새 저장소를 적어 주세요",1); return; }
-  if(!/^(github_pat_|ghp_)/.test(key)){ say("열쇠는 github_pat_로 시작합니다",1); return; }
-  var path=syncCfg.path||"데일리리포트_데이터.json";
-  say("저장소와 열쇠를 확인하는 중…");
-  var tid="t"+uid();
-  tgRepo(repo, key).then(function(){
-    return tgRead(repo, key, path);
-  }).then(function(r){
-    if(r.data && r.data.records){
-      if(!confirm("이 저장소에는 이미 선생님 기록 "+r.data.records.length+"건이 있습니다.\n기록은 그대로 두고 시작 파일만 다시 만들까요?")) throw new Error("취소했습니다");
-      return "keep";
-    }
-    say("선생님 기록 칸을 만드는 중…");
-    return tgWrite(repo, key, path, teacherStartDB(name, tid, ids, withRec), r.sha, "선생님 시작 · "+name).then(function(w){
-      if(w==="conflict") throw new Error("저장소가 바뀌는 중입니다. 잠시 뒤 다시 눌러 주세요.");
-      return "new";
-    });
-  }).then(function(){
-    var t={id:tid, name:name, repo:repo, token:key, path:path, students:ids, at:new Date().toISOString()};
-    if(rest) meDB().students.forEach(function(s){ if(ids.indexOf(s.id)>=0) s.active=false; });
-    teamUpsert(t);
-    downloadStart(t);
-    closeDlg();
-    renderSettings(); teamRefresh(true);
-    openDialog("시작 파일을 만들었습니다",
-      '<div class="small" style="line-height:1.85"><b>데일리리포트_시작파일_'+esc(name)+'.json</b> 이 내려받아졌습니다.<br>'
-      +'① 선생님께 <b>앱 주소</b>와 이 <b>파일</b>을 1:1로 보내 주세요.<br>'
-      +'② 선생님은 앱을 처음 열 때 나오는 <b>시작 파일 열기</b>로 이 파일을 고르면 끝입니다.<br>'
-      +'<span class="muted">파일 안에 열쇠가 들어 있으니 단톡방에는 올리지 마시고, 받은 뒤 대화에서 지워 달라고 해 주세요.</span></div>',
-      [["확인","primary",closeDlg]]);
-  }).catch(function(e){ say(e.message||"만들지 못했습니다",1); });
-}
-
-/* ---------- ⋯ : 시작 파일 다시 받기 · 열쇠 바꾸기 · 목록에서 빼기 ---------- */
-function openMore(id){
-  var t=teamById(id); if(!t) return;
-  openDialog(t.name+" 선생님",
-    '<div class="small muted" style="margin-bottom:10px">'+esc(cleanRepo(t.repo))+' · 시작 '+esc((t.at||"").slice(0,10))+'</div>'
-    +'<div class="tm-lab" style="margin-top:0">새 열쇠 (열쇠를 다시 만들었을 때만)</div>'
-    +'<input type="password" id="mkKey" placeholder="github_pat_…" autocomplete="off"><div class="tm-msg" id="mkMsg"></div>',
-    [["시작 파일 다시 받기","",function(){ downloadStart(t); toast("시작 파일을 다시 내려받았습니다"); }],
-     ["새 열쇠 저장","primary",function(){
-        var k=$("#mkKey").value.trim(), m=$("#mkMsg");
-        if(!/^(github_pat_|ghp_)/.test(k)){ m.textContent="열쇠는 github_pat_로 시작합니다"; m.style.color="var(--low)"; return; }
-        m.textContent="확인하는 중…"; m.style.color="var(--ink-2)";
-        tgRepo(t.repo, k).then(function(){
-          var n=jcopy(t); n.token=k; teamUpsert(n); delete teamCache[t.id];
-          closeDlg(); renderSettings(); teamRefresh(true);
-          openDialog("열쇠를 바꿨습니다",'<div class="small">선생님께 <b>시작 파일 다시 받기</b>로 새 파일을 보내 주세요. 선생님 기록은 그대로입니다.</div>',[["시작 파일 받기","primary",function(){ downloadStart(n); closeDlg(); }],["닫기","ghost",closeDlg]]);
-        }).catch(function(e){ m.textContent=e.message; m.style.color="var(--low)"; });
-      }],
-     ["목록에서 빼기","ghost",function(){
-        if(!confirm(t.name+" 선생님을 목록에서 뺍니다.\n선생님 저장소의 기록은 지워지지 않습니다.\n그만두셨다면 GitHub에서 이 선생님 열쇠도 지워 주세요.\n계속할까요?")) return;
-        var n=jcopy(t); n.removed=true; teamUpsert(n); delete teamCache[t.id];
-        closeDlg(); renderSettings(); toast(t.name+" 선생님을 목록에서 뺐습니다");
+function showInvite(t, title){
+  openDialog(title||"초대 링크", '<div class="small" style="line-height:1.85"><b>'+esc(t.name)+' 선생님</b>께 아래 글을 카톡으로 보내 주세요. '
+    +'선생님은 링크를 열고 <b>'+esc(t.email)+'</b> 계정으로 로그인하면 바로 시작합니다.</div>'
+    +'<div class="lkmsg" style="margin-top:10px;white-space:pre-wrap;font-size:12.5px;word-break:break-all">'+esc(inviteText(t))+'</div>'
+    +'<div class="small muted" style="margin-top:8px">링크에는 비밀번호가 들어 있지 않습니다. 등록한 메일 계정이 아니면 로그인해도 열리지 않습니다.</div>',
+    [["글과 링크 복사","primary",function(){ copyText(inviteText(t), "초대 글을 복사했습니다"); }],
+     ["카톡·문자로 보내기","",function(){
+        if(navigator.share) navigator.share({title:"데일리 리포트 초대", text:inviteText(t)}).catch(function(){});
+        else copyText(inviteText(t), "복사했습니다. 카톡에 붙여넣어 주세요");
       }],
      ["닫기","ghost",closeDlg]]);
 }
 
-/* ---------- 선생님 저장소의 '받은 것' 파일에 하나 더하기 ---------- */
+/* ---------- ＋ 새 선생님 ---------- */
+function openNewTeacher(){
+  if(!fbOn()){ toast("먼저 링크로 보내기 칸에 Firebase 설정을 넣어 주세요"); return; }
+  if(!needOwner()) return;
+  var h='<div class="row" style="gap:10px;flex-wrap:wrap"><div style="flex:1;min-width:140px"><div class="tm-lab" style="margin-top:0">선생님 이름</div>'
+    +'<input type="text" id="ntName" placeholder="예: 김선애"></div>'
+    +'<div style="flex:2;min-width:220px"><div class="tm-lab" style="margin-top:0">Google 메일 (로그인에 씁니다)</div>'
+    +'<input type="email" id="ntMail" placeholder="예: someone@gmail.com" autocomplete="off"></div></div>'
+    +'<div class="tm-lab">맡길 학생 · <span id="ntCnt">0</span>명 고름</div>'+stuPickHTML("ntList",[])
+    +'<label class="tm-chk"><input type="checkbox" id="ntRec" checked><span>맡길 학생의 <b>최근 '+TEAM_HAND_MONTHS+'개월 수업 기록</b>을 함께 넘기기<small>지난 과제 · 진도 · 이번 달 출결을 그대로 이어받습니다</small></span></label>'
+    +'<label class="tm-chk"><input type="checkbox" id="ntRest" checked><span>넘긴 학생은 내 명단에서 <b>쉬게 두기</b><small>지우는 것이 아니라 숨김입니다. 함께 맡는 학생이면 체크를 빼 주세요</small></span></label>'
+    +'<div class="small muted" style="margin-top:10px">학생은 나중에 \'학생 넘기기\'로 더 보낼 수 있습니다. 아무도 고르지 않고 등록만 해도 됩니다.</div>'
+    +'<div class="tm-msg" id="ntMsg"></div>';
+  openDialog("새 선생님 등록", h, [
+    ["등록하고 초대 링크 만들기","primary", createTeacher],
+    ["닫기","ghost", closeDlg]
+  ]);
+  stuPickWire("ntList","ntCnt");
+}
+function createTeacher(){
+  var name=$("#ntName").value.trim().replace(/T$/,"").replace(/\s*선생님$/,"");
+  var email=$("#ntMail").value.trim().toLowerCase();
+  var ids=stuPicked("ntList"), withRec=$("#ntRec").checked, rest=$("#ntRest").checked;
+  var msg=$("#ntMsg");
+  function say(t,bad){ msg.textContent=t; msg.style.color=bad? "var(--low)" : "var(--ink-2)"; }
+  if(!name){ say("선생님 이름을 적어 주세요",1); return; }
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ say("메일 주소를 확인해 주세요",1); return; }
+  if(email===OWNER_EMAIL){ say("원장님 계정과 다른 선생님 메일을 적어 주세요",1); return; }
+  if(teamList().some(function(t){ return t.email===email; })){ say("이미 등록된 메일입니다",1); return; }
+  if(!needOwner()) return;
+  say("등록하는 중…");
+  var t={id:email, email:email, name:name, students:ids, at:new Date().toISOString()};
+  fbReady().then(function(db){
+    return db.collection(TT).doc(email).set({name:name, email:email, createdAt:new Date().toISOString(), by:googleEmail()});
+  }).then(function(){
+    return fsReadFor(email, false);
+  }).then(function(r){
+    if(r.obj && r.obj.records){
+      if(!confirm(name+" 선생님 기록이 이미 "+r.obj.records.length+"건 있습니다.\n기록은 그대로 두고 등록만 다시 할까요?")) throw new Error("취소했습니다");
+      return "keep";
+    }
+    say("선생님 기록 칸을 만드는 중…");
+    return fsWriteFor(email, teacherStartDB(name, email, ids, withRec), null, true);
+  }).then(function(){
+    if(rest) meDB().students.forEach(function(s){ if(ids.indexOf(s.id)>=0) s.active=false; });
+    teamUpsert(t);
+    closeDlg(); renderSettings(); teamRefresh(true); refreshPickers();
+    showInvite(t, name+" 선생님을 등록했습니다");
+  }).catch(function(e){ say(fbErr(e).message,1); });
+}
+
+/* ---------- ⋯ : 초대 링크 · 목록에서 빼기 ---------- */
+function openMore(id){
+  var t=teamById(id); if(!t) return;
+  openDialog(t.name+" 선생님",
+    '<div class="small muted">'+esc(t.email)+' · 등록 '+esc((t.at||"").slice(0,10))+' · 넘긴 학생 '+(t.students||[]).length+'명</div>'
+    +'<div class="small" style="margin-top:10px;line-height:1.75"><b>목록에서 빼기</b>를 하면 이 선생님 계정은 더 이상 기록을 열거나 저장할 수 없습니다. '
+    +'그동안의 기록은 지워지지 않고 남아 있어서, 빼기 전에 <b>내 기록으로 가져오기</b>를 해 두시면 됩니다.</div>',
+    [["초대 링크 다시 보기","primary",function(){ showInvite(t); }],
+     ["목록에서 빼기","",function(){
+        if(!needOwner()) return;
+        if(!confirm(t.name+" 선생님을 목록에서 빼고 접근을 막습니다.\n선생님 기록은 지워지지 않습니다.\n계속할까요?")) return;
+        fbReady().then(function(db){ return db.collection(TT).doc(t.email)["delete"](); }).then(function(){
+          var n=jcopy(t); n.removed=true; teamUpsert(n); delete teamCache[t.id];
+          closeDlg(); renderSettings(); toast(t.name+" 선생님을 목록에서 뺐습니다");
+        }).catch(function(e){ toast(fbErr(e).message); });
+      }],
+     ["닫기","ghost",closeDlg]]);
+}
+
+/* ---------- 선생님 받은 편지함에 하나 넣기 ---------- */
 function inboxPush(t, item){
-  return tgRead(t.repo, t.token, TEAM_INBOX).then(function(r){
-    var box=(r.data && r.data.items)? r.data : {v:1, items:[]};
-    box.items.push(item);
-    if(box.items.length>40) box.items=box.items.slice(-40);
-    return tgWrite(t.repo, t.token, TEAM_INBOX, box, r.sha, "원장님이 보냄").then(function(w){
-      if(w==="conflict") return inboxPush(t, item);
-      return w;
-    });
-  });
+  return fbReady().then(function(db){
+    return db.collection(TI).doc(t.email).collection("items").doc(item.id)
+      .set({at:item.at, kind:item.kind, p:JSON.stringify(item)});
+  }).catch(function(e){ throw fbErr(e); });
 }
 
 /* ---------- 학생 넘기기 ---------- */
 function openGive(){
+  if(!needOwner()) return;
   var list=teamList();
   var h='<div class="tm-lab" style="margin-top:0">받을 선생님</div><select id="gvT">'
     +list.map(function(t){ return '<option value="'+esc(t.id)+'">'+esc(t.name)+'T</option>'; }).join("")+'</select>'
@@ -8309,6 +8484,7 @@ function openGive(){
 
 /* ---------- 교재 · 문구 보내기 ---------- */
 function openKit(){
+  if(!needOwner()) return;
   var list=teamList();
   var h='<div class="small muted">지금 원장님 앱의 <b>교재·단원</b>, <b>리포팅 빠른 문구</b>, <b>학원 이름·문의 연락처·맺음말</b>, <b>출석부 안내 문구·교시 시간</b>을 보냅니다. 선생님이 직접 고친 교재는 덮어쓰지 않습니다.</div>'
     +'<div class="tm-lab">받을 선생님</div><div class="stu-pick" id="kitT">'
@@ -8335,7 +8511,7 @@ function enterView(id, view, force){
   var t=teamById(id); if(!t) return;
   toast(t.name+" 선생님 기록을 불러오는 중…");
   teamFetch(t, !!force).then(function(c){
-    if(c.err || !c.db){ toast(c.err || "아직 저장된 기록이 없습니다"); return; }
+    if(c.err || !c.db){ toast(c.err || (c.need? "원장 계정("+OWNER_EMAIL+")으로 로그인해 주세요" : "아직 저장된 기록이 없습니다")); return; }
     try{ var cw=attFrame && attLoaded? attFrame.contentWindow : null; if(cw && typeof cw.saveAll==="function") cw.saveAll(); }catch(e){}
     if(!VIEW){ attFlush(); ME=DB; }
     VIEW={id:t.id, name:t.name};
@@ -8406,7 +8582,7 @@ function openImport(id){
   var t=teamById(id); if(!t) return;
   toast(t.name+" 선생님 기록을 확인하는 중…");
   teamFetch(t, true).then(function(c){
-    if(c.err || !c.db){ toast(c.err || "아직 저장된 기록이 없습니다"); return; }
+    if(c.err || !c.db){ toast(c.err || (c.need? "원장 계정("+OWNER_EMAIL+")으로 로그인해 주세요" : "아직 저장된 기록이 없습니다")); return; }
     var plan=importPlan(t, c.db);
     if(!plan.length){
       openDialog("가져올 기록이 없습니다", '<div class="small">'+esc(t.name)+' 선생님 기록 가운데 아직 가져오지 않은 수업 기록이 없습니다.</div>', [["닫기","primary",closeDlg]]);
@@ -8460,7 +8636,7 @@ function doImport(t, groups, wake){
   return n;
 }
 
-teamWelcome();
+setTimeout(teamWelcome, 0);
 
 /* =========================================================
    링크 보내기 · 리포트 창 단추 손보기
