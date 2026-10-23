@@ -220,6 +220,25 @@ select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=
 .cpop button.on{box-shadow:0 0 0 2px var(--ink)}
 .rptcolor{align-self:flex-start;margin:4px 4px 0 0;flex:none}
 .rptcolor .cpop{left:0;right:auto}
+/* 16색 · 최근 · 형광펜 팝업 */
+.cpop.cpop2{display:block;width:252px;max-width:calc(100vw - 24px);padding:9px 10px 10px;border-radius:12px}
+.cpop .cptabs{display:flex;background:var(--wash,#f4f6f9);border-radius:8px;padding:3px;margin-bottom:9px}
+.cpop .cptabs button{flex:1;width:auto;height:auto;border:0;border-radius:6px;box-shadow:none;background:transparent;
+  padding:5px 0;font:inherit;font-size:12px;font-weight:800;color:var(--ink-3);cursor:pointer}
+.cpop .cptabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(21,34,51,.14)}
+.cpop .cprow{display:grid;grid-template-columns:52px repeat(4,1fr);gap:6px;align-items:center;margin-bottom:6px}
+.cpop .cprow:last-child{margin-bottom:0}
+.cpop .cprow em{font-style:normal;font-size:10.5px;font-weight:700;color:var(--ink-3);white-space:nowrap}
+.cpop .cprow button{justify-self:center;width:24px;height:24px}
+.cpop .cprec{padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--line-2,#eef2f6)}
+.cpop .cprec button{width:21px;height:21px}
+.cpop .cphl{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.cpop .cphl button{width:36px;height:24px;border-radius:7px;justify-self:center}
+.cpop .cpclr{display:block;width:auto;height:auto;border:0;box-shadow:none;background:transparent;border-radius:6px;
+  margin-top:9px;padding:4px 2px;font:inherit;font-size:12px;font-weight:700;color:var(--ink-3);cursor:pointer}
+.cpop .cpclr:hover{color:var(--ink)}
+.cpop .cphint{font-size:11px;color:var(--ink-3);margin-top:4px;line-height:1.5}
+.cpop [hidden]{display:none!important}
 
 /* ---------- 학생 카드 구획 (B-2) ---------- */
 body{background:#e9edf2}
@@ -2145,8 +2164,14 @@ function rgbToHex(c){
   return ("#"+h(m[1])+h(m[2])+h(m[3])).toLowerCase();
 }
 function allowedColor(c){
-  var hex=rgbToHex(c);
+  var hex=rgbToHex(c); if(!hex) return "";
   for(var i=0;i<TEXT_COLORS.length;i++) if(TEXT_COLORS[i][1].toLowerCase()===hex) return TEXT_COLORS[i][1];
+  for(var j=0;j<OLD_COLORS.length;j++) if(OLD_COLORS[j]===hex) return OLD_COLORS[j];   // 예전에 칠한 글자
+  return "";
+}
+function allowedHL(c){
+  var hex=rgbToHex(c); if(!hex) return "";
+  for(var i=0;i<HL_COLORS.length;i++) if(HL_COLORS[i][1].toLowerCase()===hex) return HL_COLORS[i][1];
   return "";
 }
 /* 허용한 것만 남깁니다 : 색 입힌 span 과 줄바꿈 */
@@ -2162,9 +2187,10 @@ function sanitizeRich(html){
       walk(c);
       if(tag==="span"){
         var col=allowedColor(c.style && c.style.color);
-        if(col){
+        var hlc=allowedHL(c.style && c.style.backgroundColor);
+        if(col || hlc){
           var keep=document.createElement("span");
-          keep.setAttribute("style","color:"+col);
+          keep.setAttribute("style","color:"+(col||"inherit")+(hlc? ";background-color:"+hlc : ""));
           while(c.firstChild) keep.appendChild(c.firstChild);
           c.parentNode.replaceChild(keep,c);
           return;
@@ -2229,18 +2255,70 @@ function richField(kind, key, val, ph, extra){
 }
 
 /* ---------- 글자 색 ---------- */
-var TEXT_COLORS=[["검정","#152233"],["파랑","#1565c0"],["빨강","#d32f2f"],["초록","#2e7d32"],["주황","#e07b00"]];
+var TEXT_COLORS=[
+  ["검정","#111111","기본"],["진회색","#545b66","기본"],["갈색","#a3441c","기본"],["학원 딥그린","#0a4844","기본"],
+  ["남색","#2a2fd8","파랑·초록"],["파랑","#006dfc","파랑·초록"],["청록","#00857c","파랑·초록"],["초록","#008a29","파랑·초록"],
+  ["연두","#388700","노랑·주황"],["황금","#966e00","노랑·주황"],["주황","#e06400","노랑·주황"],["진주황","#d64000","노랑·주황"],
+  ["빨강","#ed0000","빨강·보라"],["분홍","#e8006c","빨강·보라"],["자주","#c8009f","빨강·보라"],["보라","#8a1cf0","빨강·보라"]];
+/* 예전 팔레트 — 새로 고를 수는 없지만, 이미 칠해 둔 글자는 그대로 보입니다 */
+var OLD_COLORS=["#152233","#1565c0","#d32f2f","#2e7d32","#e07b00"];
+var HL_COLORS=[["노랑","#ffef70"],["분홍","#ffc2dc"],["하늘","#bfe6ff"],["연두","#cdf5a8"],["보라","#e2cbff"]];
+function colorName(c){
+  c=String(c||"").toLowerCase();
+  for(var i=0;i<TEXT_COLORS.length;i++) if(TEXT_COLORS[i][1].toLowerCase()===c) return TEXT_COLORS[i][0];
+  return c;
+}
+/* 최근 쓴 색 (이 기기에 4개까지) */
+function recentColors(){
+  var a=[]; try{ a=JSON.parse(lsGet("dailyreport.recentColors")||"[]"); }catch(e){ a=[]; }
+  return (Array.isArray(a)? a : []).filter(function(c){ return !!allowedColor(c); }).slice(0,4);
+}
+function pushRecent(c){
+  var a=recentColors().filter(function(x){ return x.toLowerCase()!==String(c).toLowerCase(); });
+  a.unshift(c); lsSet("dailyreport.recentColors", JSON.stringify(a.slice(0,4)));
+}
+/* 고른 부분에 형광펜 (color 가 없으면 지우기) */
+function paintHighlight(el, color){
+  if(!el) return false;
+  el.focus();
+  if(!restoreSel(el)) return false;
+  try{ document.execCommand("styleWithCSS", false, true); }catch(e){}
+  var v=color||"transparent", ok=false;
+  try{ ok=document.execCommand("hiliteColor", false, v); }catch(e){ ok=false; }
+  if(!ok){ try{ ok=document.execCommand("backColor", false, v); }catch(e){ ok=false; } }
+  if(!ok) return false;
+  el.dispatchEvent(new Event("input",{bubbles:true}));
+  return true;
+}
 function colorBtn(kind, i, cur){
   var c=cur||TEXT_COLORS[0][1];
   return '<button type="button" class="cbtn" data-act="color" data-ck="'+kind+'" data-i="'+i+'"'
-    +' title="글자 색" style="background:'+esc(c)+'"></button>';
+    +' title="글자 색 · 형광펜" style="background:'+esc(c)+'"></button>';
 }
 function colorPopHTML(kind, i, cur){
-  var h='<div class="cpop">';
-  TEXT_COLORS.forEach(function(c){
-    h+='<button type="button" data-pick="'+esc(c[1])+'" title="'+esc(c[0])+'" style="background:'+esc(c[1])+'"'
-      +((cur||TEXT_COLORS[0][1])===c[1]? ' class="on"':'')+'></button>';
+  var on=String(cur||TEXT_COLORS[0][1]).toLowerCase();
+  function sw(c, title){
+    return '<button type="button" data-pick="'+esc(c)+'" title="'+esc(title)+'" style="background:'+esc(c)+'"'
+      +(String(c).toLowerCase()===on? ' class="on"':'')+'></button>';
+  }
+  var h='<div class="cpop cpop2">';
+  h+='<div class="cptabs"><button type="button" data-tab="fg" class="on">글자 색</button>'
+    +'<button type="button" data-tab="hl">형광펜</button></div>';
+  h+='<div data-pane="fg">';
+  var rec=recentColors();
+  if(rec.length) h+='<div class="cprow cprec"><em>최근</em>'+rec.map(function(c){ return sw(c, colorName(c)); }).join("")+'</div>';
+  var groups=[];
+  TEXT_COLORS.forEach(function(c){ if(groups.indexOf(c[2])<0) groups.push(c[2]); });
+  groups.forEach(function(g){
+    h+='<div class="cprow"><em>'+esc(g)+'</em>'
+      + TEXT_COLORS.filter(function(c){ return c[2]===g; }).map(function(c){ return sw(c[1], c[0]); }).join("")
+      + '</div>';
   });
+  h+='</div>';
+  h+='<div data-pane="hl" hidden><div class="cphl">'
+    + HL_COLORS.map(function(c){ return '<button type="button" data-hl="'+esc(c[1])+'" title="'+esc(c[0])+'" style="background:'+esc(c[1])+'"></button>'; }).join("")
+    + '</div><button type="button" class="cpclr" data-hl="none">✕ 형광펜 지우기</button>'
+    + '<div class="cphint">칠할 글자를 먼저 드래그한 뒤 고르세요.</div></div>';
   return h+'</div>';
 }
 
@@ -2552,8 +2630,26 @@ $("#entries").addEventListener("click", function(e){
     var fld=row? row.querySelector('[data-rich]') : null;
     pop.addEventListener("pointerdown", function(ev){ ev.preventDefault(); });
     pop.addEventListener("click", function(ev){
+      var tb=ev.target.closest("[data-tab]");
+      if(tb){                                   // 글자 색 ↔ 형광펜
+        var t=tb.getAttribute("data-tab");
+        $$("[data-tab]", pop).forEach(function(x){ x.classList.toggle("on", x===tb); });
+        $$("[data-pane]", pop).forEach(function(x){ x.hidden = x.getAttribute("data-pane")!==t; });
+        return;
+      }
+      var hb=ev.target.closest("[data-hl]");
+      if(hb){
+        var hv=hb.getAttribute("data-hl");
+        pop.remove();
+        if(fld && paintHighlight(fld, hv==="none"? null : hv)){
+          markDirty(d3);
+          toast(hv==="none"? "형광펜을 지웠습니다" : "고른 부분에 형광펜을 칠했습니다");
+        }else toast("형광펜은 칠할 글자를 먼저 드래그해 주세요");
+        return;
+      }
       var sw=ev.target.closest("[data-pick]"); if(!sw) return;
       var c=sw.getAttribute("data-pick");
+      pushRecent(c);
       pop.remove();
       if(fld && paintSelection(fld, c)){        // 블록으로 고른 부분만 칠합니다
         markDirty(d3);
@@ -4341,7 +4437,7 @@ function mkLine(row){
   return "※ "+label+" · "+autoPeriodName(row.p)+(att? " "+att : "")+t+(memo? " · "+memo : "");
 }
 function mkHTML(lines){
-  return lines.map(function(t){ return '<span style="color:#1565c0">'+esc(t)+'</span>'; }).join('<br>');
+  return lines.map(function(t){ return '<span style="color:#006dfc">'+esc(t)+'</span>'; }).join('<br>');
 }
 function mkTexts(html){
   var box=document.createElement("div"); box.innerHTML=String(html||"");
@@ -7245,7 +7341,7 @@ document.addEventListener("click", function(e){ if(e.target && e.target.id==="bt
 /* =========================================================
    앱 버전 · 새 버전 자동 적용
    ========================================================= */
-var APP_VERSION="v33";
+var APP_VERSION="v34";
 var swReg=null, swReloading=false;
 var hadController=!!(navigator.serviceWorker && navigator.serviceWorker.controller);
 function checkUpdate(){ try{ if(swReg) swReg.update(); }catch(e){} }
