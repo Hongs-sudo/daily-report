@@ -404,6 +404,7 @@
     <div class="grp">
       <button class="b" id="sortNow" title="학년 → 학생명 순으로 정리">학년·이름순 정리</button>
       <button class="b" id="autoSortBtn" title="칸에서 손을 떼면 스스로 정리합니다">자동 정렬</button>
+      <button class="b" id="satCarryBtn" title="켜 두면 토요일 명단도 다음 주로 이어집니다">토요일 명단 이어가기</button>
     </div>
     <span class="fname off" id="fname">파일 미연결</span>
     <div class="status" id="status">불러오는 중…</div>
@@ -589,29 +590,44 @@ const CARRY = {weekdays:true, plain:true};
  *  토요일 : 각 교시 1~10번째 줄 전부 빈 칸
  *  반 이름 : 모든 요일 그대로 가져옵니다
  *  특이사항 : 모든 요일 비웁니다 */
-/** 다음 주로 따라올 줄 수 : 월~금은 1~10번째 줄 전부, 토요일은 따라오지 않습니다. */
-function carryRows(di, pi){
-  return di === 5 ? 0 : Infinity;
+/* 2026-10-26(월) 주차부터 바뀐 규칙
+ *  · 월~금은 다음 주로 1~10번째 줄 명단이 이어집니다 (토요일은 '토요일 명단 이어가기'를 켰을 때만)
+ *  · 1~10번째 줄을 한 묶음으로 정렬합니다
+ *  · 기본 글자색은 10줄 모두 검정입니다
+ *  그 전 주차는 예전 규칙 그대로 둡니다. */
+const RULE_FROM = '2026-10-26';
+function newRule(k){
+  if (k === undefined) k = (typeof week !== 'undefined' && week) ? week.key : '';
+  return String(k || '') >= RULE_FROM;
+}
+/** 다음 주로 따라올 줄 수 : 월~금은 1~10번째 줄 전부.
+ *  토요일은 '토요일 명단 이어가기'를 켠 출석부만 10/26 주차부터 따라옵니다.
+ *  (선생님 출석부는 켜진 채로 시작 · 원장님 출석부는 꺼진 채로 — 버튼으로 바꿀 수 있습니다) */
+function carryRows(di, pi, k){
+  if (di === 5) return (newRule(k) && meta && meta.satCarry) ? Infinity : 0;
+  return Infinity;
 }
 
 /** 1~6번째 줄과 7~10번째 줄을 나누지 않고 한 묶음으로 다루는 칸.
  *  금요일 2교시와 토요일이 여기 해당합니다. */
 function oneGroup(di, pi){
+  if (newRule()) return true;
   return di === 5 || (di === 4 && pi === 1);
 }
 /** 기본 글자색이 파랑인 칸인지. 금요일 2교시는 전부 검정입니다. */
 function defaultBlue(di, pi, ri){
+  if (newRule()) return false;
   if (di === 4 && pi === 1) return false;
   if (di === 5) return true;
   return ri >= SPLIT_ROW;
 }
-function carryOver(days){
+function carryOver(days, k){
   return (days || []).map((d, di) => ({
     cls:   (d.cls || []).slice(),
     clsSt: (d.clsSt || []).slice(),
     note: '', noteSt: '', noteH: 0,
     p: (d.p || []).map((list, pi) => list.map((c, ri) => (
-      ri < carryRows(di, pi)
+      ri < carryRows(di, pi, k)
         ? {n: c.n, s: c.s, g: c.g, h: '', a: '', st: {}}
         : {n: '',  s: '',  g: '',  h: '', a: '', st: {}}
     )))
@@ -971,9 +987,9 @@ async function goWeek(k, opts = {}){
     if (!src) {
       // 새 주차는 바로 이전 주차의 명단을 이어받습니다
       const prev = await findPrevWeek(k);
-      if (prev) { src = carryOver(prev.days); periods = prev.periods; fromPrev = true; }
+      if (prev) { src = carryOver(prev.days, k); periods = prev.periods; fromPrev = true; }
     }
-    if (!src && meta.template) src = carryOver(meta.template);
+    if (!src && meta.template) src = carryOver(meta.template, k);
 
     w = blankWeek(k);
     if (periods && periods.length) {
@@ -1269,10 +1285,18 @@ document.getElementById('szNum').addEventListener('change', e => {
 document.getElementById('szReset').addEventListener('mousedown', e => { e.preventDefault(); editStyle(() => []); });
 function paintAutoSort(){
   document.getElementById('autoSortBtn').classList.toggle('on', meta.autoSort !== false);
+  const sc = document.getElementById('satCarryBtn');
+  if (sc) sc.classList.toggle('on', !!meta.satCarry);
 }
 document.getElementById('sortNow').onclick = () => {
   if (sortBlocks()) { render(); markDirty(); setStatus('학년·이름 순으로 정리했습니다'); }
   else setStatus('이미 정렬되어 있습니다');
+};
+document.getElementById('satCarryBtn').onclick = async () => {
+  meta.satCarry = !meta.satCarry;
+  paintAutoSort();
+  try { await Store.set('att:meta', JSON.stringify(meta)); } catch(e){}
+  setStatus(meta.satCarry ? '토요일 명단도 다음 주로 이어집니다 (새로 만드는 주차부터)' : '토요일은 다음 주에 빈 칸으로 시작합니다');
 };
 document.getElementById('autoSortBtn').onclick = () => {
   meta.autoSort = meta.autoSort === false;
@@ -1315,9 +1339,9 @@ document.getElementById('delWeek').onclick = async () => {
 document.getElementById('copyPrev').onclick = async () => {
   const prev = await loadWeek(key(addDays(parseKey(week.key), -7)));
   if (!prev) { setStatus('지난주 기록이 없습니다'); return; }
-  applyCarry(week, carryOver(prev.days));
+  applyCarry(week, carryOver(prev.days, week.key));
   if (meta.autoSort !== false) sortBlocks();
-  render(); markDirty(); setStatus('지난주 명단(월~금 1~6번째 줄)과 반 이름을 가져왔습니다');
+  render(); markDirty(); setStatus('지난주 명단과 반 이름을 가져왔습니다');
 };
 document.getElementById('saveTpl').onclick = async () => {
   meta.template = rosterFrom(week.days);

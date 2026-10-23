@@ -7341,7 +7341,7 @@ document.addEventListener("click", function(e){ if(e.target && e.target.id==="bt
 /* =========================================================
    앱 버전 · 새 버전 자동 적용
    ========================================================= */
-var APP_VERSION="v34";
+var APP_VERSION="v38";
 var swReg=null, swReloading=false;
 var hadController=!!(navigator.serviceWorker && navigator.serviceWorker.controller);
 function checkUpdate(){ try{ if(swReg) swReg.update(); }catch(e){} }
@@ -7629,6 +7629,999 @@ function attTextLine(rec){
   var title= A.cfg.months===1? (e.getMonth()+1)+"월 출결" : "최근 "+A.cfg.months+"개월 출결";
   return "◈ "+title+" : 출석 "+S.ok+" · 지각 "+S.late+" · 결석 "+S.abs+" · 보강 "+S.mk+" · 출석률 "+pctTxt(S.pct);
 }
+
+/* =========================================================
+   선생님과 함께 쓰기
+   · 원장님 : 선생님 관리 · 새 선생님 시작 파일 · 학생 넘기기 · 교재·문구 보내기
+             선생님 기록 보기(읽기 전용) · 넘긴 학생 기록을 내 기록으로 가져오기
+   · 선생님 : 시작 파일로 연결 · 원장님이 보낸 학생·교재 받기
+   · 선생님 기록은 선생님마다 따로 만든 비공개 저장소에 저장됩니다.
+   · 원장님 기록의 모양은 바꾸지 않습니다 (예전 판으로 되돌려도 그대로 읽힘).
+   ========================================================= */
+var TEAM_FRESH = !rawGet();                 // 이 기기에서 처음 여는지
+var TEAM_INBOX = "원장님_보낸것.json";
+var TEAM_COLORS = ["#2a7f8f","#9a6a1c","#6b4fb3","#b0456b","#3d7a3a","#1f5fa8","#a8552a"];
+var TEAM_HAND_MONTHS = 3;                   // 넘길 때 함께 보내는 지난 기록 (개월)
+var VIEW = null, ME = null;
+var teamCache = {};                         // 선생님 id → {db, at, err, busy}
+
+function isTeacher(){ return !!(DB && DB.meta && DB.meta.role==="teacher"); }
+function meDB(){ return VIEW? ME : DB; }
+function teamList(){ return ((meDB().meta||{}).teachers||[]).filter(function(t){ return !t.removed; }); }
+function teamById(id){ return ((meDB().meta||{}).teachers||[]).filter(function(t){ return t.id===id; })[0]||null; }
+function teamColor(t){
+  var i=((meDB().meta||{}).teachers||[]).indexOf(t);
+  return TEAM_COLORS[(i<0?0:i)%TEAM_COLORS.length];
+}
+function cleanRepo(r){ return String(r||"").trim().replace(/^https?:\/\/github\.com\//,"").replace(/\.git$/,"").replace(/^\/|\/$/g,""); }
+function myOwner(){ var r=cleanRepo(syncCfg.repo); return r.indexOf("/")>0? r.split("/")[0] : ""; }
+function teamAgo(iso){
+  var t=Date.parse(iso||0); if(!t) return "";
+  var m=Math.max(0,Math.round((Date.now()-t)/60000));
+  if(m<1) return "방금"; if(m<60) return m+"분 전";
+  var h=Math.round(m/60); if(h<24) return h+"시간 전";
+  return Math.round(h/24)+"일 전";
+}
+
+/* ---------- 선생님 저장소 읽기 · 쓰기 (선생님 열쇠로) ---------- */
+function tgHead(token, raw){
+  return {"Authorization":"Bearer "+token,
+          "Accept": raw? "application/vnd.github.raw" : "application/vnd.github+json",
+          "X-GitHub-Api-Version":"2022-11-28"};
+}
+function tgUrl(repo, path){ return "https://api.github.com/repos/"+cleanRepo(repo)+"/contents/"+encodeURIComponent(path); }
+function tgErr(st, what){
+  if(st===401) return new Error("열쇠가 올바르지 않거나 지워졌습니다.");
+  if(st===403) return new Error("열쇠 권한이 부족합니다. Contents를 Read and write로 맞춰 주세요.");
+  if(st===404) return new Error("저장소를 찾을 수 없습니다. 저장소 이름과 열쇠의 저장소 선택을 확인해 주세요.");
+  return new Error((what||"불러오기")+" 실패 ("+st+")");
+}
+function tgRepo(repo, token){
+  return fetch("https://api.github.com/repos/"+cleanRepo(repo)+"?t="+Date.now(), {headers:tgHead(token), cache:"no-store"})
+    .then(function(r){ if(!r.ok) throw tgErr(r.status,"확인"); return r.json(); });
+}
+function tgRead(repo, token, path){
+  return fetch(tgUrl(repo,path)+"?t="+Date.now(), {headers:tgHead(token), cache:"no-store"})
+    .then(function(res){
+      if(res.status===404) return {sha:null, data:null};
+      if(!res.ok) throw tgErr(res.status);
+      return res.json().then(function(j){
+        if(j.content && j.encoding==="base64"){
+          try{ return {sha:j.sha, data:JSON.parse(b64decode(j.content))}; }
+          catch(e){ throw new Error("저장소의 파일을 읽을 수 없습니다."); }
+        }
+        return fetch(tgUrl(repo,path)+"?t="+Date.now(), {headers:tgHead(token,true), cache:"no-store"})
+          .then(function(r){ if(!r.ok) throw tgErr(r.status); return r.text(); })
+          .then(function(t){ return {sha:j.sha, data:JSON.parse(t)}; });
+      });
+    });
+}
+function tgWrite(repo, token, path, obj, sha, msg){
+  var body={message:(msg||"데일리리포트")+" "+localStamp(), content:b64encode(JSON.stringify(obj,null,1))};
+  if(sha) body.sha=sha;
+  return fetch(tgUrl(repo,path), {method:"PUT", headers:tgHead(token), body:JSON.stringify(body)})
+    .then(function(res){
+      if(res.status===409||res.status===422) return "conflict";
+      if(!res.ok) throw tgErr(res.status,"올리기");
+      return "ok";
+    });
+}
+function teamFetch(t, force){
+  var c=teamCache[t.id]||(teamCache[t.id]={});
+  if(c.busy) return c.busy;
+  if(!force && c.db && Date.now()-c.at<120000) return Promise.resolve(c);
+  c.busy=tgRead(t.repo, t.token, t.path||syncCfg.path).then(function(r){
+    c.busy=null; c.db=r.data; c.at=Date.now(); c.err=""; return c;
+  }).catch(function(e){
+    c.busy=null; c.err=e.message||"불러오지 못했습니다"; c.at=Date.now(); return c;
+  });
+  return c.busy;
+}
+
+/* ---------- 선생님에게 줄 내용 만들기 ---------- */
+var TEAM_META_SKIP=["teacher","teachers","role","teamId","updatedAt","syncedAt","lastBackup","lastFileWrite","lastSnapshot","mkSkip","inboxDone","startedAt"];
+function teamMetaFor(name, tid){
+  var m=jcopy(meDB().meta||{});
+  TEAM_META_SKIP.forEach(function(k){ delete m[k]; });
+  m.teacher=name; m.role="teacher"; m.teamId=tid; m.startedAt=new Date().toISOString();
+  m.updatedAt=new Date().toISOString();
+  return m;
+}
+function teamAttMeta(name){
+  var src=(meDB().att && meDB().att.meta)? jcopy(meDB().att.meta) : {};
+  src.teacher=name+"T"; src.template=null; src.weeks=[];
+  src.satCarry=true;                        // 선생님 출석부는 토요일 명단도 이어갑니다
+  return src;
+}
+function handRecords(ids){
+  var set={}; ids.forEach(function(id){ set[id]=1; });
+  var names={}; meDB().students.forEach(function(s){ if(set[s.id]) names[nameKey(s.name)]=s.id; });
+  var from=new Date(); from.setMonth(from.getMonth()-TEAM_HAND_MONTHS); from.setDate(1);
+  var fromIso=ymdOf(from);
+  return meDB().records.filter(function(r){
+    return r.date>=fromIso && (set[r.studentId] || names[nameKey(r.studentName)]);
+  }).map(function(r){ var o=jcopy(r); o.from="원장"; if(names[nameKey(r.studentName)]) o.studentId=names[nameKey(r.studentName)]; return o; });
+}
+function handStudents(ids){
+  return meDB().students.filter(function(s){ return ids.indexOf(s.id)>=0; })
+    .map(function(s){ var o=jcopy(s); o.active=true; return o; });
+}
+function teacherStartDB(name, tid, ids, withRec){
+  return { v:1, meta:teamMetaFor(name, tid), students:handStudents(ids), books:jcopy(meDB().books),
+           records: withRec? handRecords(ids) : [], links:[],
+           att:{meta:teamAttMeta(name), mt:Date.now(), weeks:{}} };
+}
+function startFileOf(t){
+  return { kind:"dailyreport-start", v:1, name:t.name, repo:cleanRepo(t.repo), token:t.token,
+           path:t.path||syncCfg.path, academy:(meDB().meta||{}).academy||"", at:new Date().toISOString() };
+}
+function downloadStart(t){
+  var blob=new Blob([JSON.stringify(startFileOf(t),null,1)],{type:"application/json"});
+  downloadBlob(blob, "데일리리포트_시작파일_"+t.name+".json");
+}
+
+/* ---------- 원장 기록에 선생님 목록 저장 (지워도 흔적을 남겨 다른 기기와 맞춤) ---------- */
+function teamSaveList(list){
+  if(VIEW) exitView(true);
+  DB.meta.teachers=list;
+  save();
+}
+function teamUpsert(t){
+  var list=(meDB().meta.teachers||[]).slice(), i=-1;
+  list.forEach(function(x,k){ if(x.id===t.id) i=k; });
+  t.t=new Date().toISOString();
+  if(i<0) list.push(t); else list[i]=t;
+  teamSaveList(list);
+}
+function mergeTeachers(a,b){
+  var m={}, out=[];
+  (a||[]).concat(b||[]).forEach(function(x){
+    if(!x||!x.id) return;
+    var o=m[x.id];
+    if(!o || ts(x.t)>ts(o.t)) m[x.id]=x;
+  });
+  Object.keys(m).forEach(function(k){ out.push(m[k]); });
+  out.sort(function(x,y){ return ts(x.at)-ts(y.at); });
+  return out;
+}
+function mergeLinks(a,b){
+  if(!a && !b) return undefined;
+  var m={};
+  (a||[]).concat(b||[]).forEach(function(x){
+    if(!x||!x.key) return;
+    var o=m[x.key];
+    if(!o){ m[x.key]=x; return; }
+    var n=Object.assign({}, o, x);
+    ["readAt","gone"].forEach(function(f){ if(o[f] && !x[f]) n[f]=o[f]; });
+    m[x.key]=n;
+  });
+  var out=Object.keys(m).map(function(k){ return m[k]; });
+  out.sort(function(x,y){ return String(y.createdAt||"")<String(x.createdAt||"")? -1 : 1; });
+  if(out.length>400) out.length=400;
+  return out;
+}
+var _teamMergeDB=mergeDB;
+mergeDB=function(local, remote){
+  var o=_teamMergeDB(local, remote);
+  var lm=(local&&local.meta)||{}, rm=(remote&&remote.meta)||{};
+  if(lm.teachers||rm.teachers) o.meta.teachers=mergeTeachers(lm.teachers, rm.teachers);
+  if(lm.inboxDone||rm.inboxDone){
+    var u={}; (lm.inboxDone||[]).concat(rm.inboxDone||[]).forEach(function(x){ u[x]=1; });
+    o.meta.inboxDone=Object.keys(u).slice(-200);
+  }
+  var lk=mergeLinks(local&&local.links, remote&&remote.links);   // 보낸 링크 목록도 함께 맞춥니다
+  if(lk) o.links=lk;
+  return o;
+};
+
+/* ---------- 보는 동안에는 아무것도 저장하지 않습니다 ---------- */
+(function(){
+  function guard(fn, ret){ return function(){ if(VIEW) return (typeof ret==="function")? ret() : ret; return fn.apply(this, arguments); }; }
+  rawSet=guard(rawSet);
+  save=guard(save);
+  scheduleSync=guard(scheduleSync);
+  scheduleFileWrite=guard(scheduleFileWrite);
+  fsWriteNow=guard(fsWriteNow, function(){ return Promise.resolve(false); });
+  attWriteLocal=guard(attWriteLocal, false);
+  attCapture=guard(attCapture, false);
+  attRefreshFrame=guard(attRefreshFrame);
+  attFlush=guard(attFlush);
+  autoOnOpen=guard(autoOnOpen);
+  linkSoon=guard(linkSoon);
+  linkRun=guard(linkRun);
+  var _sn=syncNow;
+  syncNow=function(silent, force){
+    if(VIEW) return Promise.resolve(false);
+    return _sn(silent, force).then(function(ok){ if(ok && isTeacher()) inboxSoon(); return ok; });
+  };
+  var _ub=updateFileBanner;
+  updateFileBanner=function(){
+    var b=$("#fileBanner");
+    if(b && isTeacher() && syncOn()){ b.style.display="none"; return; }
+    return _ub.apply(this, arguments);
+  };
+})();
+
+/* =========================================================
+   선생님 쪽 : 원장님이 보낸 것 받기
+   ========================================================= */
+var inboxAt=0;
+function inboxSoon(force){
+  if(!isTeacher() || !syncOn()) return;
+  if(!force && Date.now()-inboxAt<5*60000) return;
+  inboxAt=Date.now();
+  tgRead(syncCfg.repo, syncToken(), TEAM_INBOX).then(function(r){
+    var items=(r.data && r.data.items)||[];
+    var done=DB.meta.inboxDone||[];
+    var fresh=items.filter(function(it){ return it && it.id && done.indexOf(it.id)<0; });
+    if(!fresh.length){ if(force) toast("원장님이 새로 보낸 것이 없습니다"); return; }
+    var msg=[];
+    fresh.forEach(function(it){ var m=inboxApply(it); if(m) msg.push(m); });
+    DB.meta.inboxDone=done.concat(fresh.map(function(it){ return it.id; })).slice(-200);
+    save(); refreshPickers();
+    try{ loadDay(); }catch(e){}
+    if($("#view-settings").classList.contains("on")) renderSettings();
+    toast("원장님이 보낸 "+msg.join(" · ")+" 을(를) 받았습니다");
+  }).catch(function(e){ console.warn(e); if(force) toast(e.message||"확인하지 못했습니다"); });
+}
+function inboxApply(it){
+  if(it.kind==="students"){
+    var n=0, rn=0;
+    (it.students||[]).forEach(function(s){
+      var ex=DB.students.filter(function(x){ return x.id===s.id || nameKey(x.name)===nameKey(s.name); })[0];
+      if(ex){ if(ex.active===false){ ex.active=true; n++; } return; }
+      DB.students.push(jcopy(s)); n++;
+    });
+    var have={}; DB.records.forEach(function(r){ have[r.id]=1; });
+    (it.records||[]).forEach(function(r){ if(!have[r.id]){ DB.records.push(jcopy(r)); rn++; } });
+    DB.records.sort(function(a,b){ return a.date<b.date? -1 : a.date>b.date? 1 : 0; });
+    return "학생 "+n+"명"+(rn? "(지난 기록 "+rn+"건)":"");
+  }
+  if(it.kind==="kit"){
+    var byName={}; DB.books.forEach(function(b){ byName[nameKey(b.name)]=b; });
+    var add=0;
+    (it.books||[]).forEach(function(b){
+      var ex=byName[nameKey(b.name)];
+      if(!ex){ DB.books.push(jcopy(b)); add++; }
+      else if(!ex.edited){ ex.units=(b.units||[]).slice(); ex.level=b.level; }
+    });
+    try{ sortBooks(); }catch(e){}
+    if(it.tmpl && it.tmpl.length){
+      var mine=DB.meta.tmpl||[], labels={};
+      mine.forEach(function(x){ labels[x.label]=1; });
+      it.tmpl.forEach(function(x){ if(!labels[x.label]) mine.push({label:x.label, text:x.text}); });
+      DB.meta.tmpl=mine;
+    }
+    var mm=it.meta||{};
+    Object.keys(mm).forEach(function(k){ DB.meta[k]=jcopy(mm[k]); });
+    if(it.att && DB.att && DB.att.meta){
+      ["notice","periods","padA","padH"].forEach(function(k){ if(it.att[k]!=null) DB.att.meta[k]=jcopy(it.att[k]); });
+      DB.att.mt=Date.now();
+      attWriteLocal(); attNeedReload=true; attScheduleRefresh(400);
+    }
+    return "교재·문구"+(add? "(새 교재 "+add+"권)":"");
+  }
+  return "";
+}
+
+/* ---------- 선생님 : 시작 파일 열기 ---------- */
+function pickStartFile(){
+  var inp=document.createElement("input");
+  inp.type="file"; inp.accept=".json,application/json";
+  inp.addEventListener("change", function(){
+    var f=inp.files[0]; if(!f) return;
+    var fr=new FileReader();
+    fr.onload=function(){
+      var o=null; try{ o=JSON.parse(fr.result); }catch(e){}
+      if(!o || o.kind!=="dailyreport-start" || !o.repo || !o.token){
+        openDialog("시작 파일이 아닙니다", '<div class="small">원장님께 받은 <b>데일리리포트_시작파일_이름.json</b> 파일을 골라 주세요.</div>', [["닫기","primary",closeDlg]]);
+        return;
+      }
+      applyStart(o);
+    };
+    fr.readAsText(f);
+  });
+  inp.click();
+}
+function applyStart(o){
+  if(!isTeacher() && DB.records.length && !TEAM_FRESH){
+    if(!confirm("이 기기에 있는 수업 기록 "+DB.records.length+"건을 내려두고 "+o.name+" 선생님 기록으로 바꿉니다.\n(원장님 기록이라면 취소하세요)\n계속할까요?")) return;
+  }
+  keepRestorePoint();
+  syncCfg.repo=cleanRepo(o.repo); syncCfg.path=o.path||syncCfg.path; syncCfg.auto=true; saveSyncCfg();
+  lsSet(TOKEN_KEY, o.token);
+  lsDel(BASE_KEY); lsDel(ATT_BASE_KEY); lsDel("dailyreport.dirty");
+  syncSha=null;
+  toast("원장님 저장소에서 선생님 기록을 받는 중…");
+  ghRead().then(function(remote){
+    var db = (remote && remote.students && remote.records)? remote : null;
+    if(!db){
+      db=freshDB(); db.students=[]; db.records=[];
+      db.meta.teacher=o.name; db.meta.academy=o.academy||"";
+    }
+    db.meta.role="teacher"; db.meta.teacher=o.name;
+    /* 출석부 칸을 비우고 선생님 것으로 */
+    try{ if(attFrame){ attFrame.src="about:blank"; } }catch(e){}
+    try{
+      var del=[];
+      for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k && k.indexOf("att:")===0) del.push(k); }
+      del.forEach(function(k){ localStorage.removeItem(k); });
+    }catch(e){}
+    DB=db;
+    attWriteLocal();
+    lsSet("att:clsblank","1");
+    rawSet(JSON.stringify(DB));
+    saveBase(DB);
+    lsSet("dailyreport.welcomed","1");
+    openDialog(o.name+" 선생님, 환영합니다", '<div class="small" style="line-height:1.8">원장님께 받은 <b>학생 '+DB.students.length+'명</b>'
+      +(DB.records.length? '과 지난 수업 <b>'+DB.records.length+'건</b>':'')+'을 불러왔습니다.<br>'
+      +'이제부터 저장하는 기록은 선생님 저장소에 자동으로 올라갑니다. 휴대폰·아이패드에서도 같은 시작 파일을 열면 이어서 쓸 수 있습니다.</div>',
+      [["시작하기","primary",function(){ location.reload(); }]]);
+  }).catch(function(e){
+    lsDel(TOKEN_KEY); syncCfg.repo=""; saveSyncCfg();
+    openDialog("연결하지 못했습니다", '<div class="small">'+esc(e.message||"")+'<br><br>원장님께 시작 파일을 다시 받아 주세요.</div>', [["닫기","primary",closeDlg]]);
+  });
+}
+
+/* ---------- 처음 여는 기기 ---------- */
+function teamWelcome(){
+  if(!TEAM_FRESH || lsGet("dailyreport.welcomed")) return;
+  lsSet("dailyreport.welcomed","1");
+  setTimeout(function(){
+    openDialog("데일리 리포트를 처음 여셨네요",
+      '<div class="small" style="line-height:1.8">원장님께 <b>시작 파일</b>을 받은 선생님이라면 그 파일을 열어 주세요. 맡은 학생과 교재가 바로 들어옵니다.<br>'
+      +'<span class="muted">원장님 기기라면 \'이대로 시작\'을 누르고, 설정 · 백업에서 기기 간 동기화를 연결해 주세요.</span></div>',
+      [["시작 파일 열기","primary",function(){ closeDlg(); pickStartFile(); }],["이대로 시작","ghost",closeDlg]]);
+  }, 400);
+}
+
+/* =========================================================
+   원장 쪽 화면
+   ========================================================= */
+(function(){
+  var css=document.createElement("style");
+  css.textContent=
+  ".tm-list{border:1px solid var(--line);border-radius:11px;overflow:hidden;margin-top:10px}"
+  +".tm-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line-2);background:#fff;flex-wrap:wrap}"
+  +".tm-row:last-child{border-bottom:0}"
+  +".tm-av{width:34px;height:34px;border-radius:50%;color:#fff;font-weight:800;font-size:13.5px;display:flex;align-items:center;justify-content:center;flex:none}"
+  +".tm-nm{font-size:14.5px;font-weight:800;min-width:80px;letter-spacing:-.02em}"
+  +".tm-meta{font-size:12.3px;color:var(--ink-3);font-weight:600;line-height:1.6}"
+  +".tm-meta b{color:var(--ink-2)}"
+  +".tm-ok{color:var(--good);font-weight:700}.tm-old{color:#b07a10;font-weight:700}.tm-none{color:var(--ink-3)}.tm-bad{color:var(--low);font-weight:700}"
+  +".tm-sp{flex:1}.tm-btns{display:flex;gap:6px;flex-wrap:wrap}"
+  +".tm-empty{padding:16px;font-size:13px;color:var(--ink-3);background:#fff}"
+  +".vsw{display:none;align-items:center;gap:7px;background:#ffffff14;border:1px solid #ffffff38;border-radius:999px;padding:5px 8px 5px 13px;font-size:12.5px;font-weight:700;color:#fff;cursor:pointer;margin-right:8px;position:relative}"
+  +".vsw.on{display:inline-flex}"
+  +".vsw b{background:#FFD66B;color:#3b2c00;border-radius:999px;padding:2px 10px;font-size:12px}"
+  +".vsw .me{background:#ffffff26;color:#fff}"
+  +".vmenu{position:absolute;right:0;top:36px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 34px -10px rgba(21,34,51,.4);padding:6px;min-width:230px;z-index:300;color:var(--ink)}"
+  +".vmenu div{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13px;font-weight:700}"
+  +".vmenu div:hover,.vmenu div.on{background:var(--brand-wash)}"
+  +".vmenu small{margin-left:auto;font-size:11.5px;color:var(--ink-3);font-weight:600}"
+  +".vmenu hr{border:0;border-top:1px solid var(--line-2);margin:5px 4px}"
+  +".vbar{display:none;align-items:center;gap:10px;background:#FFF4CC;border-bottom:1px solid #EBD58A;padding:9px 22px;font-size:13.5px;font-weight:700;color:#5e4404;flex-wrap:wrap}"
+  +"body.viewing .vbar{display:flex}"
+  +".vbar .sp{flex:1}.vbar .btn{padding:6px 12px;font-size:12.5px}"
+  +".vbar .btn.dark{background:#5e4404;border-color:#5e4404;color:#fff}"
+  +"body.viewing nav.tabs button[data-view=att],body.viewing nav.tabs button[data-view=students],body.viewing nav.tabs button[data-view=books],body.viewing nav.tabs button[data-view=settings]{opacity:.3;pointer-events:none}"
+  +"body.viewing #view-today .daybar .row,body.viewing .daybar .fld:has(#dPeriod),body.viewing #autoBar,body.viewing #fileBanner,body.viewing #btnSaveAll,body.viewing #syncState{display:none!important}"
+  +"body.viewing #entries input,body.viewing #entries select,body.viewing #entries textarea,body.viewing #entries [contenteditable],body.viewing #entries .seg,body.viewing #entries .stars,"
+  +"body.viewing #entries button:not([data-act=report]):not([data-act=fold]){pointer-events:none}"
+  +"body.viewing #entries [data-act=save],body.viewing #entries [data-act=remove],body.viewing #entries [data-act=color],body.viewing #entries .tmplrow{display:none!important}"
+  +".stu-pick{border:1px solid var(--line);border-radius:10px;background:#fff;max-height:260px;overflow:auto}"
+  +".stu-pick label{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line-2);font-size:13px;cursor:pointer}"
+  +".stu-pick label:last-child{border-bottom:0}.stu-pick label.on{background:var(--brand-wash)}"
+  +".stu-pick input{width:16px;height:16px;accent-color:var(--brand)}"
+  +".stu-pick .n{font-weight:800;min-width:58px}.stu-pick .g{font-size:12px;color:var(--ink-3);font-weight:600}"
+  +".stu-pick .r{margin-left:auto;font-size:11.5px;color:var(--ink-3);font-weight:600;text-align:right}"
+  +".tm-chk{display:flex;align-items:flex-start;gap:8px;font-size:12.8px;font-weight:600;color:var(--ink-2);margin-top:10px;line-height:1.5;cursor:pointer}"
+  +".tm-chk input{width:15px;height:15px;accent-color:var(--brand);margin-top:2px;flex:none}"
+  +".tm-chk small{display:block;font-size:11.5px;color:var(--ink-3);font-weight:600}"
+  +".tm-key{border:1px solid #c8dce6;background:#eef6fa;border-radius:10px;padding:11px 13px;margin-top:12px;font-size:12.5px;line-height:1.75;color:#1a4e66}"
+  +".tm-key ol{padding-left:18px;margin:4px 0 0}"
+  +".tm-lab{font-size:12px;font-weight:800;color:var(--ink-3);margin:12px 0 5px}"
+  +".tm-msg{font-size:12.5px;font-weight:700;margin-top:8px;min-height:18px}"
+  +"@media (max-width:700px){.vsw.on{display:none}.vbar{padding:8px 12px;font-size:12.5px}}";
+  document.head.appendChild(css);
+
+  /* 위쪽 : 보는 사람 고르기 */
+  var tb=$("#teacherBtn");
+  var sw=document.createElement("span"); sw.className="vsw"; sw.id="vsw";
+  tb.parentNode.insertBefore(sw, tb);
+  window.paintSw=function(){
+    var on=!isTeacher() && teamList().length>0;
+    if(VIEW) on=true;
+    sw.classList.toggle("on", on);
+    sw.innerHTML='보는 중 '+(VIEW? '<b>'+esc(VIEW.name)+'T</b>' : '<b class="me">내 기록</b>')+' ▾';
+  };
+  sw.addEventListener("click", function(e){
+    e.stopPropagation();
+    var old=$(".vmenu"); if(old){ old.remove(); return; }
+    var m=document.createElement("div"); m.className="vmenu";
+    var h='<div data-v="" class="'+(VIEW?"":"on")+'">내 기록 <small>'+esc((meDB().meta||{}).teacher||"")+'T</small></div><hr>';
+    teamList().forEach(function(t){
+      var c=teamCache[t.id];
+      h+='<div data-v="'+esc(t.id)+'" class="'+(VIEW&&VIEW.id===t.id?"on":"")+'"><span class="tm-av" style="width:24px;height:24px;font-size:11px;background:'+teamColor(t)+'">'+esc(t.name.charAt(0))+'</span>'
+        +esc(t.name)+'T <small>'+(c&&c.db&&c.db.meta? esc(teamAgo(c.db.meta.updatedAt))+' 저장' : '')+'</small></div>';
+    });
+    m.innerHTML=h; sw.appendChild(m);
+    m.addEventListener("click", function(ev){
+      var d=ev.target.closest("[data-v]"); if(!d) return;
+      ev.stopPropagation();
+      var v=d.getAttribute("data-v"); m.remove();
+      if(v==="") exitView(); else enterView(v);
+    });
+  });
+  document.addEventListener("click", function(){ var m=$(".vmenu"); if(m) m.remove(); });
+
+  /* 노란 띠 */
+  var bar=document.createElement("div"); bar.className="vbar"; bar.id="vbar";
+  var nav=document.querySelector("nav.tabs"); nav.parentNode.insertBefore(bar, nav);
+  bar.addEventListener("click", function(e){
+    var b=e.target.closest("[data-vb]"); if(!b) return;
+    var a=b.getAttribute("data-vb");
+    if(a==="me") exitView();
+    else if(a==="re" && VIEW){ var id=VIEW.id, v=currentView(); enterView(id, v, true); }
+    else if(a==="imp" && VIEW){ var id2=VIEW.id; exitView(); openImport(id2); }
+  });
+
+  /* 설정 탭 맨 위 카드 */
+  var sec=$("#view-settings");
+  var card=document.createElement("div"); card.className="card pad mb"; card.id="tmCard";
+  sec.insertBefore(card, sec.firstChild);
+  card.addEventListener("click", function(e){
+    var b=e.target.closest("[data-tm]"); if(!b) return;
+    e.preventDefault();
+    var a=b.getAttribute("data-tm"), id=b.getAttribute("data-id");
+    if(a==="new") openNewTeacher();
+    else if(a==="give") openGive();
+    else if(a==="kit") openKit();
+    else if(a==="view") enterView(id);
+    else if(a==="imp") openImport(id);
+    else if(a==="more") openMore(id);
+    else if(a==="start") pickStartFile();
+    else if(a==="inbox") inboxSoon(true);
+  });
+})();
+
+function currentView(){
+  var on=document.querySelector(".view.on"); return on? on.id.replace("view-","") : "today";
+}
+
+function renderTm(){
+  var card=$("#tmCard"); if(!card) return;
+  paintSw();
+  if(isTeacher()){
+    card.innerHTML='<div class="row" style="align-items:center"><h3 style="margin:0">'+esc(DB.meta.teacher||"")+' 선생님</h3><div style="flex:1"></div>'
+      +'<button class="btn" data-tm="inbox">원장님이 보낸 것 확인</button></div>'
+      +'<div class="small muted" style="margin-top:6px">기록은 원장님이 만들어 둔 선생님 저장소(<b>'+esc(syncCfg.repo||"연결 안 됨")+'</b>)에 자동으로 올라갑니다. '
+      +'원장님이 학생이나 교재를 보내면 앱을 열 때 저절로 들어옵니다.</div>';
+    return;
+  }
+  var list=teamList();
+  var h='<div class="row" style="align-items:center;flex-wrap:wrap;gap:6px"><h3 style="margin:0">선생님 관리</h3><div style="flex:1"></div>'
+    +(list.length? '<button class="btn" data-tm="give">학생 넘기기</button><button class="btn" data-tm="kit">교재 · 문구 보내기</button>':'')
+    +'<button class="btn primary" data-tm="new">＋ 새 선생님</button></div>'
+    +'<div class="small muted" style="margin-top:6px">선생님 기록은 선생님마다 따로 만든 저장소에 저장됩니다. 원장님은 여기서 <b>읽기만</b> 할 수 있고, 넘긴 학생의 기록은 <b>가져오기</b>로 내 기록에 합칠 수 있습니다.</div>';
+  h+='<div class="tm-list">';
+  if(!list.length){
+    h+='<div class="tm-empty">아직 연결한 선생님이 없습니다. <b>＋ 새 선생님</b>으로 시작 파일을 만들어 보세요. '
+      +'선생님께 받은 시작 파일로 이 기기를 연결하려면 <a href="#" data-tm="start">시작 파일 열기</a>.</div>';
+  }
+  list.forEach(function(t){
+    var c=teamCache[t.id]||{}, db=c.db;
+    h+='<div class="tm-row"><span class="tm-av" style="background:'+(db? teamColor(t) : "#a9b6c3")+'">'+esc(t.name.charAt(0))+'</span><span class="tm-nm">'+esc(t.name)+'T</span><span class="tm-meta">';
+    if(c.err){
+      h+='<span class="tm-bad">⚠ '+esc(c.err)+'</span><br>'+esc(cleanRepo(t.repo));
+    }else if(!db){
+      h+=(c.busy||!c.at? '불러오는 중…' : '아직 저장 기록 없음')+'<br><span class="tm-none">'+esc(cleanRepo(t.repo))+' · 시작 '+esc(fmtShort((t.at||"").slice(0,10)))+'</span>';
+    }else{
+      var u=(db.meta||{}).updatedAt, age=Date.now()-ts(u);
+      var stu=(db.students||[]).filter(function(s){ return s.active!==false; }).length;
+      var mon=attWeekKey(todayISO());
+      var wk=(db.records||[]).filter(function(r){ return r.date>=mon && r.from!=="원장"; }).length;
+      var own=(db.records||[]).filter(function(r){ return r.from!=="원장"; }).length;
+      h+='<b>학생 '+stu+'명</b> · 선생님 수업 기록 '+own+'건 · 이번 주 '+wk+'건<br>'
+        +'<span class="'+(age<3*86400000?"tm-ok":"tm-old")+'">● '+esc(teamAgo(u)||"—")+' 저장</span> · 넘긴 학생 '+(t.students||[]).length+'명';
+    }
+    h+='</span><span class="tm-sp"></span><span class="tm-btns">'
+      +(db? '<button class="btn sm" data-tm="view" data-id="'+esc(t.id)+'">기록 보기</button><button class="btn sm" data-tm="imp" data-id="'+esc(t.id)+'">내 기록으로 가져오기</button>' : '')
+      +'<button class="btn sm ghost" data-tm="more" data-id="'+esc(t.id)+'">⋯</button></span></div>';
+  });
+  h+='</div>';
+  card.innerHTML=h;
+}
+var teamLoading=false;
+function teamRefresh(force){
+  if(isTeacher() || VIEW) return;
+  var list=teamList(); if(!list.length) return;
+  Promise.all(list.map(function(t){ return teamFetch(t, force); })).then(function(){
+    if($("#view-settings").classList.contains("on") && !VIEW) renderTm(); else paintSw();
+  });
+}
+var _teamRS=renderSettings;
+renderSettings=function(){
+  var r=_teamRS.apply(this, arguments);
+  try{ renderTm(); teamRefresh(false); }catch(e){ console.warn(e); }
+  return r;
+};
+
+/* ---------- 학생 고르기 목록 ---------- */
+function stuPickHTML(id, pre, extra){
+  var last={};
+  meDB().records.forEach(function(r){ var k=nameKey(r.studentName); if(!last[k] || r.date>last[k]) last[k]=r.date; });
+  var given={};
+  teamList().forEach(function(t){ (t.students||[]).forEach(function(sid){ (given[sid]=given[sid]||[]).push(t.name); }); });
+  var h='<div class="stu-pick" id="'+id+'">';
+  meDB().students.slice().sort(cmpStudent).forEach(function(s){
+    var on=(pre||[]).indexOf(s.id)>=0;
+    var note=[];
+    if(given[s.id]) note.push(given[s.id].join("·")+"T 맡음");
+    if(s.active===false) note.push("쉬는 중");
+    if(last[nameKey(s.name)]) note.push("최근 "+fmtShort(last[nameKey(s.name)]));
+    h+='<label class="'+(on?"on":"")+'"><input type="checkbox" value="'+esc(s.id)+'"'+(on?" checked":"")+'><span class="n">'+esc(s.name)+'</span><span class="g">'+esc(s.grade||"")+'</span>'
+      +'<span class="r">'+esc(note.join(" · "))+'</span></label>';
+  });
+  return h+'</div>';
+}
+function stuPickWire(id, cntId){
+  var box=$("#"+id); if(!box) return;
+  box.addEventListener("change", function(){
+    $$("#"+id+" label").forEach(function(l){ l.classList.toggle("on", l.querySelector("input").checked); });
+    if(cntId) $("#"+cntId).textContent=$$("#"+id+" input:checked").length;
+  });
+}
+function stuPicked(id){ return $$("#"+id+" input:checked").map(function(i){ return i.value; }); }
+
+/* ---------- ＋ 새 선생님 ---------- */
+function openNewTeacher(){
+  var owner=myOwner();
+  var h='<div class="tm-lab" style="margin-top:0">선생님 이름</div>'
+    +'<input type="text" id="ntName" placeholder="예: 김민지" style="max-width:220px">'
+    +'<div class="tm-lab">맡길 학생 · <span id="ntCnt">0</span>명 고름</div>'+stuPickHTML("ntList",[])
+    +'<label class="tm-chk"><input type="checkbox" id="ntRec" checked><span>맡길 학생의 <b>최근 '+TEAM_HAND_MONTHS+'개월 수업 기록</b>을 함께 넘기기<small>지난 과제 · 진도 · 이번 달 출결을 그대로 이어받습니다</small></span></label>'
+    +'<label class="tm-chk"><input type="checkbox" id="ntRest" checked><span>넘긴 학생은 내 명단에서 <b>쉬게 두기</b><small>지우는 것이 아니라 숨김입니다. 함께 맡는 학생이면 체크를 빼 주세요</small></span></label>'
+    +'<div class="tm-key"><b>① 선생님 저장소 만들기</b> — <a href="https://github.com/new" target="_blank" rel="noopener">GitHub 새 저장소</a>에서 이름(예: <b>daily-report-kim</b>)을 적고 <b>Private</b>을 골라 만듭니다.<br>'
+    +'<b>② 열쇠 만들기</b><ol><li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Fine-grained token 만들기</a> → 이름 <b>daily-report-선생님이름</b>, Expiration <b>No expiration</b></li>'
+    +'<li>Repository access는 <b>Only select repositories</b> → ①에서 만든 저장소 <b>하나만</b></li>'
+    +'<li>Permissions에서 <b>Contents</b>를 <b>Read and write</b>로 → Generate token → <b>github_pat_…</b> 복사</li></ol></div>'
+    +'<div class="tm-lab">선생님 저장소 이름</div>'
+    +'<input type="text" id="ntRepo" placeholder="'+(owner? owner+'/daily-report-kim' : '계정/저장소 (예: Hongs-sudo/daily-report-kim)')+'">'
+    +'<div class="tm-lab">열쇠 (github_pat_…)</div>'
+    +'<input type="password" id="ntKey" placeholder="github_pat_로 시작하는 긴 글자" autocomplete="off">'
+    +'<div class="tm-msg" id="ntMsg"></div>';
+  openDialog("새 선생님 시작 파일", h, [
+    ["확인하고 시작 파일 만들기","primary", createTeacher],
+    ["닫기","ghost", closeDlg]
+  ]);
+  stuPickWire("ntList","ntCnt");
+}
+function repoFull(v){
+  v=cleanRepo(v);
+  if(v && v.indexOf("/")<0 && myOwner()) v=myOwner()+"/"+v;
+  return v;
+}
+function createTeacher(){
+  var name=$("#ntName").value.trim().replace(/T$/,"").replace(/\s*선생님$/,"");
+  var repo=repoFull($("#ntRepo").value), key=$("#ntKey").value.trim();
+  var ids=stuPicked("ntList"), withRec=$("#ntRec").checked, rest=$("#ntRest").checked;
+  var msg=$("#ntMsg");
+  function say(t,bad){ msg.textContent=t; msg.style.color=bad? "var(--low)" : "var(--ink-2)"; }
+  if(!name){ say("선생님 이름을 적어 주세요",1); return; }
+  if(!repo || repo.indexOf("/")<0){ say("저장소 이름을 '계정/저장소' 모양으로 적어 주세요",1); return; }
+  if(cleanRepo(repo)===cleanRepo(syncCfg.repo)){ say("원장님 저장소와 다른, 선생님용 새 저장소를 적어 주세요",1); return; }
+  if(!/^(github_pat_|ghp_)/.test(key)){ say("열쇠는 github_pat_로 시작합니다",1); return; }
+  var path=syncCfg.path||"데일리리포트_데이터.json";
+  say("저장소와 열쇠를 확인하는 중…");
+  var tid="t"+uid();
+  tgRepo(repo, key).then(function(){
+    return tgRead(repo, key, path);
+  }).then(function(r){
+    if(r.data && r.data.records){
+      if(!confirm("이 저장소에는 이미 선생님 기록 "+r.data.records.length+"건이 있습니다.\n기록은 그대로 두고 시작 파일만 다시 만들까요?")) throw new Error("취소했습니다");
+      return "keep";
+    }
+    say("선생님 기록 칸을 만드는 중…");
+    return tgWrite(repo, key, path, teacherStartDB(name, tid, ids, withRec), r.sha, "선생님 시작 · "+name).then(function(w){
+      if(w==="conflict") throw new Error("저장소가 바뀌는 중입니다. 잠시 뒤 다시 눌러 주세요.");
+      return "new";
+    });
+  }).then(function(){
+    var t={id:tid, name:name, repo:repo, token:key, path:path, students:ids, at:new Date().toISOString()};
+    if(rest) meDB().students.forEach(function(s){ if(ids.indexOf(s.id)>=0) s.active=false; });
+    teamUpsert(t);
+    downloadStart(t);
+    closeDlg();
+    renderSettings(); teamRefresh(true);
+    openDialog("시작 파일을 만들었습니다",
+      '<div class="small" style="line-height:1.85"><b>데일리리포트_시작파일_'+esc(name)+'.json</b> 이 내려받아졌습니다.<br>'
+      +'① 선생님께 <b>앱 주소</b>와 이 <b>파일</b>을 1:1로 보내 주세요.<br>'
+      +'② 선생님은 앱을 처음 열 때 나오는 <b>시작 파일 열기</b>로 이 파일을 고르면 끝입니다.<br>'
+      +'<span class="muted">파일 안에 열쇠가 들어 있으니 단톡방에는 올리지 마시고, 받은 뒤 대화에서 지워 달라고 해 주세요.</span></div>',
+      [["확인","primary",closeDlg]]);
+  }).catch(function(e){ say(e.message||"만들지 못했습니다",1); });
+}
+
+/* ---------- ⋯ : 시작 파일 다시 받기 · 열쇠 바꾸기 · 목록에서 빼기 ---------- */
+function openMore(id){
+  var t=teamById(id); if(!t) return;
+  openDialog(t.name+" 선생님",
+    '<div class="small muted" style="margin-bottom:10px">'+esc(cleanRepo(t.repo))+' · 시작 '+esc((t.at||"").slice(0,10))+'</div>'
+    +'<div class="tm-lab" style="margin-top:0">새 열쇠 (열쇠를 다시 만들었을 때만)</div>'
+    +'<input type="password" id="mkKey" placeholder="github_pat_…" autocomplete="off"><div class="tm-msg" id="mkMsg"></div>',
+    [["시작 파일 다시 받기","",function(){ downloadStart(t); toast("시작 파일을 다시 내려받았습니다"); }],
+     ["새 열쇠 저장","primary",function(){
+        var k=$("#mkKey").value.trim(), m=$("#mkMsg");
+        if(!/^(github_pat_|ghp_)/.test(k)){ m.textContent="열쇠는 github_pat_로 시작합니다"; m.style.color="var(--low)"; return; }
+        m.textContent="확인하는 중…"; m.style.color="var(--ink-2)";
+        tgRepo(t.repo, k).then(function(){
+          var n=jcopy(t); n.token=k; teamUpsert(n); delete teamCache[t.id];
+          closeDlg(); renderSettings(); teamRefresh(true);
+          openDialog("열쇠를 바꿨습니다",'<div class="small">선생님께 <b>시작 파일 다시 받기</b>로 새 파일을 보내 주세요. 선생님 기록은 그대로입니다.</div>',[["시작 파일 받기","primary",function(){ downloadStart(n); closeDlg(); }],["닫기","ghost",closeDlg]]);
+        }).catch(function(e){ m.textContent=e.message; m.style.color="var(--low)"; });
+      }],
+     ["목록에서 빼기","ghost",function(){
+        if(!confirm(t.name+" 선생님을 목록에서 뺍니다.\n선생님 저장소의 기록은 지워지지 않습니다.\n그만두셨다면 GitHub에서 이 선생님 열쇠도 지워 주세요.\n계속할까요?")) return;
+        var n=jcopy(t); n.removed=true; teamUpsert(n); delete teamCache[t.id];
+        closeDlg(); renderSettings(); toast(t.name+" 선생님을 목록에서 뺐습니다");
+      }],
+     ["닫기","ghost",closeDlg]]);
+}
+
+/* ---------- 선생님 저장소의 '받은 것' 파일에 하나 더하기 ---------- */
+function inboxPush(t, item){
+  return tgRead(t.repo, t.token, TEAM_INBOX).then(function(r){
+    var box=(r.data && r.data.items)? r.data : {v:1, items:[]};
+    box.items.push(item);
+    if(box.items.length>40) box.items=box.items.slice(-40);
+    return tgWrite(t.repo, t.token, TEAM_INBOX, box, r.sha, "원장님이 보냄").then(function(w){
+      if(w==="conflict") return inboxPush(t, item);
+      return w;
+    });
+  });
+}
+
+/* ---------- 학생 넘기기 ---------- */
+function openGive(){
+  var list=teamList();
+  var h='<div class="tm-lab" style="margin-top:0">받을 선생님</div><select id="gvT">'
+    +list.map(function(t){ return '<option value="'+esc(t.id)+'">'+esc(t.name)+'T</option>'; }).join("")+'</select>'
+    +'<div class="tm-lab">넘길 학생 · <span id="gvCnt">0</span>명 고름</div>'+stuPickHTML("gvList",[])
+    +'<label class="tm-chk"><input type="checkbox" id="gvRec" checked><span>최근 '+TEAM_HAND_MONTHS+'개월 수업 기록 함께 넘기기</span></label>'
+    +'<label class="tm-chk"><input type="checkbox" id="gvRest" checked><span>넘긴 학생은 내 명단에서 <b>쉬게 두기</b><small>함께 맡는 학생이면 체크를 빼 주세요</small></span></label>'
+    +'<div class="tm-msg" id="gvMsg"></div>';
+  openDialog("학생 넘기기", h, [["넘기기","primary",function(){
+      var t=teamById($("#gvT").value), ids=stuPicked("gvList"), m=$("#gvMsg");
+      if(!ids.length){ m.textContent="학생을 골라 주세요"; m.style.color="var(--low)"; return; }
+      m.textContent="보내는 중…"; m.style.color="var(--ink-2)";
+      var rest=$("#gvRest").checked;
+      inboxPush(t, {id:uid(), at:new Date().toISOString(), kind:"students", students:handStudents(ids), records:$("#gvRec").checked? handRecords(ids):[]})
+        .then(function(){
+          var n=jcopy(t), u={}; (n.students||[]).concat(ids).forEach(function(x){ u[x]=1; }); n.students=Object.keys(u);
+          if(rest) meDB().students.forEach(function(s){ if(ids.indexOf(s.id)>=0) s.active=false; });
+          teamUpsert(n); closeDlg(); renderSettings(); refreshPickers();
+          toast(t.name+" 선생님께 학생 "+ids.length+"명을 보냈습니다. 선생님이 앱을 열면 들어갑니다");
+        }).catch(function(e){ m.textContent=e.message; m.style.color="var(--low)"; });
+    }],["닫기","ghost",closeDlg]]);
+  stuPickWire("gvList","gvCnt");
+}
+
+/* ---------- 교재 · 문구 보내기 ---------- */
+function openKit(){
+  var list=teamList();
+  var h='<div class="small muted">지금 원장님 앱의 <b>교재·단원</b>, <b>리포팅 빠른 문구</b>, <b>학원 이름·문의 연락처·맺음말</b>, <b>출석부 안내 문구·교시 시간</b>을 보냅니다. 선생님이 직접 고친 교재는 덮어쓰지 않습니다.</div>'
+    +'<div class="tm-lab">받을 선생님</div><div class="stu-pick" id="kitT">'
+    +list.map(function(t){ return '<label class="on"><input type="checkbox" value="'+esc(t.id)+'" checked><span class="n">'+esc(t.name)+'T</span></label>'; }).join("")+'</div>'
+    +'<div class="tm-msg" id="kitMsg"></div>';
+  openDialog("교재 · 문구 보내기", h, [["보내기","primary",function(){
+      var ids=stuPicked("kitT"), m=$("#kitMsg");
+      if(!ids.length){ m.textContent="선생님을 골라 주세요"; m.style.color="var(--low)"; return; }
+      var me=meDB(), mm=me.meta||{};
+      var item={id:uid(), at:new Date().toISOString(), kind:"kit", books:jcopy(me.books), tmpl:jcopy(mm.tmpl||[]),
+        meta:{academy:mm.academy||"", phone:mm.phone||"", closing:mm.closing||"", rpBtns:jcopy(mm.rpBtns||{})},
+        att: me.att && me.att.meta? {notice:me.att.meta.notice, periods:jcopy(me.att.meta.periods), padA:jcopy(me.att.meta.padA), padH:jcopy(me.att.meta.padH)} : null};
+      if(mm.fb) item.meta.fb=jcopy(mm.fb);
+      m.textContent="보내는 중…"; m.style.color="var(--ink-2)";
+      Promise.all(ids.map(function(id){ return inboxPush(teamById(id), jcopy(item)); })).then(function(){
+        closeDlg(); toast("선생님 "+ids.length+"분께 보냈습니다. 선생님이 앱을 열면 들어갑니다");
+      }).catch(function(e){ m.textContent=e.message; m.style.color="var(--low)"; });
+    }],["닫기","ghost",closeDlg]]);
+  stuPickWire("kitT");
+}
+
+/* ---------- 선생님 기록 보기 (읽기 전용) ---------- */
+function enterView(id, view, force){
+  var t=teamById(id); if(!t) return;
+  toast(t.name+" 선생님 기록을 불러오는 중…");
+  teamFetch(t, !!force).then(function(c){
+    if(c.err || !c.db){ toast(c.err || "아직 저장된 기록이 없습니다"); return; }
+    try{ var cw=attFrame && attLoaded? attFrame.contentWindow : null; if(cw && typeof cw.saveAll==="function") cw.saveAll(); }catch(e){}
+    if(!VIEW){ attFlush(); ME=DB; }
+    VIEW={id:t.id, name:t.name};
+    DB=jcopy(c.db);
+    if(!DB.meta) DB.meta={};
+    drafts=[];
+    document.body.classList.add("viewing");
+    var tm=new Date(ts(DB.meta.updatedAt)||Date.now()).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"numeric",minute:"2-digit"});
+    $("#vbar").innerHTML='👀 <span><b>'+esc(t.name)+'T</b> 선생님 기록을 보고 있습니다 · 읽기 전용 · '+esc(tm)+' 저장분</span><span class="sp"></span>'
+      +'<button class="btn" data-vb="re">새로 가져오기</button><button class="btn" data-vb="imp">내 기록으로 가져오기</button><button class="btn dark" data-vb="me">내 기록으로 돌아가기</button>';
+    paintSw();
+    $("#teacherName").textContent=DB.meta.teacher||t.name;
+    curDate=todayISO(); curType="정규";
+    $("#dDate").value=curDate;
+    refreshPickers();
+    $("#searchResult").innerHTML="";
+    loadDay();
+    var v=view||"today";
+    if(["att","students","books","settings"].indexOf(v)>=0) v="today";
+    switchView(v);
+    if(force) toast("새로 가져왔습니다");
+  });
+}
+function exitView(quiet){
+  if(!VIEW) return;
+  DB=ME; ME=null; VIEW=null; drafts=[];
+  document.body.classList.remove("viewing");
+  paintSw();
+  $("#teacherName").textContent=DB.meta.teacher||"강사";
+  refreshPickers();
+  $("#searchResult").innerHTML="";
+  loadDay();
+  if(!quiet) switchView("settings");
+}
+
+/* ---------- 넘긴 학생의 기록을 내 기록으로 가져오기 ---------- */
+function importPlan(t, db){
+  var me=meDB(), myId={}, myName={};
+  me.students.forEach(function(s){ myId[s.id]=s; myName[nameKey(s.name)]=s; });
+  var haveId={}, haveKey={};
+  me.records.forEach(function(r){
+    haveId[r.id]=r;
+    haveKey[r.date+"|"+nameKey(r.studentName)+"|"+(r.type||"")+"|"+(r.period||"")]=r;
+  });
+  var handed={}; (t.students||[]).forEach(function(x){ handed[x]=1; });
+  var by={};
+  (db.records||[]).forEach(function(r){
+    if(r.from==="원장") return;                                   // 원래 내 기록
+    var mine=haveId[r.id];
+    var upd=false;
+    if(mine){
+      if(!(mine.imp && mine.imp.t===t.id)) return;                // 같은 번호의 내 기록은 건드리지 않음
+      if(ts(r.savedAt)<=ts(mine.savedAt)) return;                 // 이미 가져온 그대로
+      upd=true;
+    }else if(haveKey[r.date+"|"+nameKey(r.studentName)+"|"+(r.type||"")+"|"+(r.period||"")]) return;   // 같은 날 같은 수업이 이미 있음
+    var stu=myId[r.studentId] || myName[nameKey(r.studentName)] || null;
+    var key=stu? stu.id : "new:"+nameKey(r.studentName);
+    var g=by[key]||(by[key]={stu:stu, name:r.studentName, recs:[], upd:0, handed:!!(stu && handed[stu.id]), tStu:null});
+    g.recs.push(r); if(upd) g.upd++;
+  });
+  Object.keys(by).forEach(function(k){
+    var g=by[k];
+    if(!g.stu) g.tStu=(db.students||[]).filter(function(s){ return nameKey(s.name)===nameKey(g.name); })[0]||null;
+  });
+  return Object.keys(by).map(function(k){ return by[k]; }).sort(function(a,b){ return (b.handed-a.handed) || cmpByName(a.name,b.name); });
+}
+function openImport(id){
+  var t=teamById(id); if(!t) return;
+  toast(t.name+" 선생님 기록을 확인하는 중…");
+  teamFetch(t, true).then(function(c){
+    if(c.err || !c.db){ toast(c.err || "아직 저장된 기록이 없습니다"); return; }
+    var plan=importPlan(t, c.db);
+    if(!plan.length){
+      openDialog("가져올 기록이 없습니다", '<div class="small">'+esc(t.name)+' 선생님 기록 가운데 아직 가져오지 않은 수업 기록이 없습니다.</div>', [["닫기","primary",closeDlg]]);
+      return;
+    }
+    var h='<div class="small muted" style="line-height:1.7">'+esc(t.name)+' 선생님이 저장한 수업 기록을 원장님 기록에 합칩니다. 원래 원장님 기록은 그대로 두고, 같은 날 같은 수업이 이미 있으면 건너뜁니다.</div>'
+      +'<div class="tm-lab">가져올 기록 · <span id="imCnt">0</span>건</div><div class="stu-pick" id="imList">';
+    plan.forEach(function(g,i){
+      var on=g.handed;
+      var dates=g.recs.map(function(r){ return r.date; }).sort();
+      h+='<label class="'+(on?"on":"")+'"><input type="checkbox" value="'+i+'"'+(on?" checked":"")+'><span class="n">'+esc(g.name)+'</span>'
+        +'<span class="g">'+(g.handed? "넘긴 학생" : g.stu? "내 명단" : "선생님이 새로 등록")+'</span>'
+        +'<span class="r">'+g.recs.length+'건'+(g.upd? ' (고친 것 '+g.upd+')':'')+' · '+esc(fmtShort(dates[0]))+(dates.length>1? ' ~ '+esc(fmtShort(dates[dates.length-1])):'')+'</span></label>';
+    });
+    var rest=meDB().students.filter(function(s){ return (t.students||[]).indexOf(s.id)>=0 && s.active===false; }).length;
+    h+='</div>'+(rest? '<label class="tm-chk"><input type="checkbox" id="imWake" checked><span>쉬게 둔 넘긴 학생 <b>'+rest+'명</b>을 다시 내 명단에 보이게<small>예전처럼 원장님이 직접 맡으실 때 켜 두세요</small></span></label>' : '')
+      +'<div class="small muted" style="margin-top:10px">가져오기 전 상태는 자동으로 남겨 둡니다. 선생님 기록은 지워지지 않습니다.</div>';
+    openDialog("내 기록으로 가져오기 · "+t.name+"T", h, [["가져오기","primary",function(){
+        var pick=stuPicked("imList").map(function(i){ return plan[+i]; });
+        if(!pick.length){ toast("학생을 골라 주세요"); return; }
+        var n=doImport(t, pick, !!($("#imWake") && $("#imWake").checked));
+        closeDlg(); renderSettings(); refreshPickers(); loadDay();
+        toast(t.name+" 선생님 기록 "+n+"건을 내 기록으로 가져왔습니다");
+      }],["닫기","ghost",closeDlg]]);
+    var cnt=function(){ $("#imCnt").textContent=stuPicked("imList").reduce(function(s,i){ return s+plan[+i].recs.length; },0); };
+    stuPickWire("imList"); $("#imList").addEventListener("change", cnt); cnt();
+  });
+}
+function doImport(t, groups, wake){
+  keepRestorePoint();
+  var me=meDB(), idx={}, n=0, now=new Date().toISOString();
+  me.records.forEach(function(r,i){ idx[r.id]=i; });
+  groups.forEach(function(g){
+    var stu=g.stu;
+    if(!stu){
+      var src=g.tStu||{name:g.name};
+      stu={id:uid(), name:src.name||g.name, grade:src.grade||"", school:src.school||"", parent:src.parent||"", phone:src.phone||"", memo:src.memo||"", active:true, days:[]};
+      me.students.push(stu);
+    }
+    g.recs.forEach(function(r){
+      var o=jcopy(r);
+      o.studentId=stu.id; o.studentName=stu.name;
+      o.imp={t:t.id, name:t.name, at:now};
+      if(idx[o.id]!=null) me.records[idx[o.id]]=o; else me.records.push(o);
+      n++;
+    });
+  });
+  if(wake) me.students.forEach(function(s){ if((t.students||[]).indexOf(s.id)>=0) s.active=true; });
+  me.records.sort(function(a,b){ return a.date<b.date? -1 : a.date>b.date? 1 : 0; });
+  save();
+  return n;
+}
+
+teamWelcome();
+
+/* =========================================================
+   링크 보내기 · 리포트 창 단추 손보기
+   1) 링크를 만든 뒤 받는 분 화면을 그대로 미리 봅니다
+   2) 닫으면 같은 학생에 머물고, 아직 안 만든 쪽(부모님/학생)이 골라져 있습니다
+   3) 리포트 창의 '이미지로 저장 · 문자 앱 열기 · 글로 복사'는 기본으로 숨기고
+      설정에서 다시 켤 수 있습니다
+   ========================================================= */
+(function(){
+  var css=document.createElement("style");
+  css.textContent=
+   ".lkstu .st2{margin-left:auto;display:flex;gap:5px}"
+  +".lkstu .ch{font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;border:1px solid var(--line);color:var(--ink-3);background:#fff;white-space:nowrap}"
+  +".lkstu .ch.sent{color:var(--brand);border-color:#bcd7e2;background:#f2f8fb}"
+  +".lkstu .ch.read{color:#fff;border-color:var(--good);background:var(--good)}"
+  +".lkpv{margin-top:12px;border:1px solid var(--line);border-radius:14px;background:#eef1f4;padding:12px;display:flex;justify-content:center}"
+  +".lkpv .ph{width:360px;max-width:100%;height:520px;border-radius:22px;border:7px solid #1b2430;background:#fff;overflow:hidden;box-shadow:0 10px 26px -12px rgba(0,0,0,.45)}"
+  +".lkpv iframe{width:100%;height:100%;border:0;display:block}"
+  +".lkpv-cap{font-size:11.5px;color:var(--ink-3);font-weight:600;text-align:center;margin-top:7px}"
+  +".lkmsg{border:1px solid var(--line);border-radius:10px;background:#fff;padding:10px 12px;font-size:13px;line-height:1.6}"
+  +".lkmsg .u{display:block;font-size:12px;color:var(--brand);word-break:break-all;margin-top:2px}"
+  +".rpb label{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:600;padding:7px 0}"
+  +".rpb input{width:16px;height:16px;accent-color:var(--brand)}"
+  +".rpb small{color:var(--ink-3);font-weight:600;font-size:12px}";
+  document.head.appendChild(css);
+})();
+
+function isStuKind(k){ return k==="comic" || k==="quest"; }
+function linkOfGroup(recId, grp){
+  var best=null;
+  (DB.links||[]).forEach(function(x){
+    if(x.recId!==recId) return;
+    if((grp==="stu")!==isStuKind(x.kind)) return;
+    if(!best || x.createdAt>best.createdAt) best=x;
+  });
+  return best;
+}
+function chipOf(recId, grp){
+  var x=linkOfGroup(recId, grp), nm= grp==="stu"? "학생" : "부모님";
+  if(!x) return '<span class="ch">'+nm+'</span>';
+  if(x.readAt) return '<span class="ch read">'+nm+' ✓확인</span>';
+  if(Date.now()>x.expireAt) return '<span class="ch">'+nm+' 기간 지남</span>';
+  return '<span class="ch sent">'+nm+' ✓보냄</span>';
+}
+linkMark=function(rec){ return '<span class="st2">'+chipOf(rec.id,"parent")+chipOf(rec.id,"stu")+'</span>'; };
+
+/* 학생용 모양은 학생마다 기억 · 부모님용은 하나 */
+function stuSkinFor(rec){
+  var s=studentByName(rec.studentName)||{};
+  if(isStuKind(s.linkSkin)) return s.linkSkin;
+  var d=lsGet("dailyreport.stuSkin"); return isStuKind(d)? d : "comic";
+}
+var lkPick=null;                     /* 이번에 골라 둘 모양 */
+linkSkinFor=function(rec){
+  if(lkPick) return lkPick;
+  if(!linkOfGroup(rec.id,"parent")) return "parent";        /* 부모님 먼저 */
+  if(!linkOfGroup(rec.id,"stu")) return stuSkinFor(rec);    /* 그다음 학생 */
+  return "parent";
+};
+
+/* 보내기 창 : '앞으로도 이 모양' → 학생용 모양만 기억 */
+var _ldh=linkDlgHTML;
+linkDlgHTML=function(){
+  var h=_ldh();
+  return h.replace(/<label class="lkchk">[\s\S]*?<\/label>/,
+    '<label class="lkchk"><input type="checkbox" id="lkRemember" checked> 학생용은 이 학생에게 앞으로도 이 모양으로</label>');
+};
+doMakeLink=function(){
+  var rec=recById(lkSel); if(!rec) return;
+  var kind=(($('input[name="lkSkin"]:checked')||{}).value)||"parent";
+  if(isStuKind(kind) && $("#lkRemember") && $("#lkRemember").checked){
+    var st=studentByName(rec.studentName);
+    if(st && st.linkSkin!==kind){ st.linkSkin=kind; save(); }
+    lsSet("dailyreport.stuSkin", kind);
+  }
+  var el=$("#lkState"); if(el) el.innerHTML='<span class="muted">만드는 중…</span>';
+  makeLink(rec, kind).then(function(url){
+    paintLinkState();
+    shareLink(url, rec, kind);
+    try{ finCheck(rec.date); }catch(e){}
+  }).catch(function(e){
+    console.warn(e);
+    var el2=$("#lkState");
+    if(el2) el2.innerHTML='<b style="color:var(--low)">만들지 못했습니다.</b> 인터넷 연결과 Firebase 설정을 확인해 주세요.';
+  });
+};
+
+/* ----- 만들어진 링크 : 보낼 글 + 받는 분 화면 미리보기 ----- */
+shareLink=function(url, rec, kind){
+  var nm=(LINK_SKINS.filter(function(k){return k[0]===kind;})[0]||["","?"])[1];
+  var line=rec.studentName+" 학생 "+fmtShort(rec.date)+" 학습 리포트입니다.";
+  var full=line+"\n"+url;
+  var pv=url.replace("#", (url.indexOf("?")>=0 && url.indexOf("?")<url.indexOf("#"))? "&pv=1#" : "?pv=1#");
+  var h='<div class="small mb"><b style="color:var(--ink-2)">'+esc(rec.studentName)+'</b> 학생 · '+esc(fmtShort(rec.date))+' · <b>'+esc(nm)+'</b></div>'
+    +'<div class="lklab">보낼 글</div>'
+    +'<div class="lkmsg" id="lkUrlBox" title="눌러서 주소만 복사">'+esc(line)+'<span class="u">'+esc(url)+'</span></div>'
+    +'<div class="lklab" style="margin-top:12px">받는 분 화면 미리보기</div>'
+    +'<div class="lkpv"><div class="ph"><iframe id="lkPv" src="'+esc(pv)+'" title="미리보기"></iframe></div></div>'
+    +'<div class="lkpv-cap">미리보기에서는 \'확인했습니다\'를 눌러도 읽음으로 바뀌지 않습니다</div>';
+  openDialog("링크가 만들어졌습니다", h, [
+    ["이름과 함께 복사","primary", function(){ copyText(full, "이름과 주소를 복사했습니다"); }],
+    ["카톡·문자로 보내기","", function(){
+      if(navigator.share) navigator.share({title:rec.studentName+" 학습 리포트", text:full}).catch(function(){});
+      else copyText(full, "복사했습니다. 카톡이나 문자에 붙여넣어 주세요");
+    }],
+    ["새 창으로 열기","", function(){ window.open(pv,"_blank","noopener"); }],
+    ["닫기","ghost", backToLinkDialog]
+  ]);
+  var box=$("#lkUrlBox");
+  if(box) box.addEventListener("click", function(){ copyText(url, "주소를 복사했습니다"); });
+};
+/* 닫으면 같은 학생 그대로 · 아직 안 만든 쪽이 골라져 있습니다 */
+/* 부모님·학생 둘 다 보낸 학생이면 그때 다음 학생으로 */
+backToLinkDialog=function(){
+  lkPick=null;
+  var rec=recById(lkSel);
+  if(rec && linkOfGroup(rec.id,"parent") && linkOfGroup(rec.id,"stu")){
+    var i=reportQueue.indexOf(lkSel), n=reportQueue.length;
+    for(var k=1;k<n;k++){                       /* 아래로 찾고, 끝이면 위에서 다시 */
+      var r=recById(reportQueue[(i+k)%n]);
+      if(r && !(linkOfGroup(r.id,"parent") && linkOfGroup(r.id,"stu"))){ lkSel=r.id; break; }
+    }
+  }
+  renderLinkDialog();
+};
+
+/* ----- 리포트 창 단추 : 기본 숨김 · 설정에서 켜기 ----- */
+var RP_BTNS=[["capture","btnCapture","이미지로 저장","리포트를 사진 파일로 내려받습니다"],
+             ["sms","btnSms","문자 앱 열기","휴대폰 문자 앱에 글을 채워 엽니다"],
+             ["text","btnCopyText","글로 복사","리포트 내용을 글자로 복사합니다"]];
+function rpBtnCfg(){ return (DB && DB.meta && DB.meta.rpBtns) || {}; }
+function paintRpBtns(){
+  var c=rpBtnCfg();
+  RP_BTNS.forEach(function(b){ var el=$("#"+b[1]); if(el) el.style.display = c[b[0]]? "" : "none"; });
+}
+function renderRpBox(){
+  var sec=$("#view-settings"); if(!sec) return;
+  var box=$("#rpBox");
+  if(!box){
+    box=document.createElement("div"); box.className="card pad mb"; box.id="rpBox";
+    var after=$("#linkBox"); after=after? after.closest(".card") : null;
+    if(after && after.nextSibling) sec.insertBefore(box, after.nextSibling); else sec.appendChild(box);
+    box.addEventListener("change", function(e){
+      var k=e.target.getAttribute("data-rp"); if(!k) return;
+      if(!DB.meta.rpBtns) DB.meta.rpBtns={};
+      DB.meta.rpBtns[k]=e.target.checked; save(); paintRpBtns();
+      toast(e.target.checked? "리포트 창에 단추를 보이게 했습니다" : "리포트 창에서 단추를 숨겼습니다");
+    });
+  }
+  var c=rpBtnCfg();
+  box.innerHTML='<h3 class="mb">리포트 창 단추</h3>'
+    +'<div class="small muted mb">자주 쓰지 않는 단추는 숨겨 두었습니다. 필요한 것만 켜 주세요. 이미지 복사 · 카톡·문자로 보내기 · 인쇄 · 링크로 보내기는 늘 보입니다.</div>'
+    +'<div class="rpb">'+RP_BTNS.map(function(b){
+      return '<label><input type="checkbox" data-rp="'+b[0]+'"'+(c[b[0]]?" checked":"")+'> '+esc(b[2])+' <small>'+esc(b[3])+'</small></label>';
+    }).join("")+'</div>';
+}
+var _rpRS=renderSettings;
+renderSettings=function(){ var r=_rpRS.apply(this, arguments); try{ renderRpBox(); }catch(e){} return r; };
+var _rpOR=openReport;
+openReport=function(){ var r=_rpOR.apply(this, arguments); paintRpBtns(); return r; };
+
 
 load();
 boot();

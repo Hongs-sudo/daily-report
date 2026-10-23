@@ -50,10 +50,10 @@ body{font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFo
    아래 FB 값만 Firebase 프로젝트 설정으로 바꾸면 됩니다.
    ========================================================= */
 var FB = {
-  apiKey: "AIzaSyCfUMZR8vJaOZVJcwjQGez8oqm2VIiiZio",
-  authDomain: "daily-report-f269b.firebaseapp.com",
-  projectId: "daily-report-f269b",
-  appId: "1:897631925166:web:243cc4b59df9afd6bf4e3f"
+  apiKey: "여기에-apiKey",
+  authDomain: "여기에-authDomain",
+  projectId: "여기에-projectId",
+  appId: "여기에-appId"
 };
 var COLL = "reports";
 
@@ -126,9 +126,11 @@ function whenText(d){
   var ap = n.getHours()<12?"오전":"오후", h=n.getHours()%12||12, mm=("0"+n.getMinutes()).slice(-2);
   return (n.getMonth()+1)+"월 "+n.getDate()+"일 "+ap+" "+h+":"+mm;
 }
+var PREVIEW = /[?&]pv=1\b/.test(location.search);   /* 선생님이 보는 미리보기 : 읽음으로 바꾸지 않습니다 */
 function bindAck(kind){
   var btn=document.getElementById("btnAck"); if(!btn) return;
   btn.addEventListener("click", function(){
+    if(PREVIEW){ document.getElementById("doneTxt").textContent="미리보기에서는 확인으로 바뀌지 않습니다"; return; }
     var b=this; b.disabled=true; b.innerHTML=b.innerHTML.replace(/확인했[^<]*/,"보내는 중…");
     var fin=function(){
       b.innerHTML='<svg width="20" height="20" viewBox="0 0 20 20"><path d="M3 10.5 L7.6 15 L17 4.6" stroke="currentColor" stroke-width="2.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg> 확인 완료';
