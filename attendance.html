@@ -159,6 +159,63 @@
   .pad button.x{color:var(--red);font-weight:700}
   .pad button.util{background:#F1F0EC;color:#6A675F}
 
+
+  /* ---------- v42 출결 선택 창 ---------- */
+  #pad.v2{padding:10px;border-radius:14px;width:292px;max-width:none}
+  #pad.v2.show{display:block}
+  #pad.v2 .pt{font-size:12px;font-weight:700;color:#5d6b7a;margin:0 2px 9px;display:flex;justify-content:space-between;gap:8px}
+  #pad.v2 .pt b{color:#1F5FA8}
+  #pad.v2 .pt .warn{color:#A8670B}
+  #pad.v2 .mk{display:flex;gap:6px;margin-bottom:8px}
+  #pad.v2 .mk button{flex:1;height:56px;font-size:22px;font-weight:800;border-radius:10px;line-height:1;position:relative;background:#fff}
+  #pad.v2 .mk button small{display:block;font-size:11px;font-weight:700;margin-top:4px}
+  #pad.v2 .mk button.o:hover{background:#E4F5E9} #pad.v2 .mk button.t:hover{background:#FFF0DC} #pad.v2 .mk button.x:hover{background:#FFE7E7}
+  #pad.v2 button.cur{box-shadow:inset 0 0 0 2px currentColor}
+  #pad.v2 .mk button.rec{background:#FFF0DC;border-color:#C46A00}
+  #pad.v2 .mk .tag{position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:#C46A00;color:#fff;font-size:10px;font-weight:800;border-radius:999px;padding:3px 7px;white-space:nowrap;line-height:1}
+  #pad.v2 .ut{display:flex;gap:5px;flex-wrap:wrap}
+  #pad.v2 .ut button{flex:1;font-size:12px;height:30px}
+  #pad.v2 .hint{font-size:11px;color:#7a8696;margin:8px 2px 0;line-height:1.45}
+  #pad.v2 .tm{display:flex;gap:6px}
+  #pad.v2 .tm input{flex:1;min-width:0;height:36px;border:1px solid #C9C7C1;border-radius:7px;padding:0 9px;font:inherit;font-size:17px;font-weight:700;color:#C46A00}
+  #pad.v2 .tm button{height:36px;padding:0 12px;font-size:13px}
+
+  /* ---------- v42 블록 선택 띠 ---------- */
+  .selbar{position:absolute;z-index:90;display:none;align-items:center;gap:7px;background:#152233;color:#fff;border-radius:12px;padding:7px 8px 7px 12px;box-shadow:0 8px 22px rgba(0,0,0,.3);font-size:13px;font-weight:700;white-space:nowrap}
+  .selbar.show{display:flex}
+  .selbar button{font:inherit;font-size:12.5px;font-weight:700;border:0;border-radius:8px;padding:7px 11px;background:#fff;color:#152233;cursor:pointer}
+  .selbar button small{font-size:10.5px;opacity:.75;font-weight:600;margin-left:2px}
+  .selbar button.del{background:#D93F3F;color:#fff}
+  .selbar button.gh{background:transparent;color:#C9D3E0;border:1px solid #4A5A70}
+
+  /* ---------- v42 칸 메모 ---------- */
+  td.has-memo{position:relative}
+  td.has-memo::after{content:"";position:absolute;right:0;top:0;border-style:solid;border-width:0 8px 8px 0;border-color:transparent #E5484D transparent transparent;pointer-events:none}
+  .memo-tip{position:absolute;z-index:120;display:none;background:#FFF9D6;border:1px solid #E6D27A;border-radius:8px;box-shadow:0 8px 20px -6px rgba(0,0,0,.3);padding:9px 11px;font-size:13px;line-height:1.5;color:#3b3200;max-width:260px;min-width:150px;white-space:normal;word-break:break-word;pointer-events:none}
+  .memo-tip.show{display:block}
+  .memo-tip b{display:block;font-size:11.5px;color:#8a7a2a;margin-bottom:3px}
+  .memo-ed{position:absolute;z-index:130;display:none;background:#fff;border:1px solid #cfd8e3;border-radius:12px;box-shadow:0 14px 30px -10px rgba(0,0,0,.35);padding:12px;width:300px;font-size:13px}
+  .memo-ed.show{display:block}
+  .memo-ed .h{font-weight:800;color:#152233;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px}
+  .memo-ed .h span{font-weight:600;color:#7a8696;font-size:12px;text-align:right}
+  .memo-ed textarea{width:100%;height:90px;border:1px solid #d5dde8;border-radius:8px;padding:8px;font:inherit;font-size:14px;line-height:1.5;resize:vertical;background:#FFFDF0;box-sizing:border-box}
+  .memo-ed .f{display:flex;gap:6px;margin-top:8px}
+  .memo-ed button{font:inherit;border-radius:8px;padding:7px 12px;font-weight:700;border:1px solid #d5dde8;background:#fff;cursor:pointer}
+  .memo-ed button.p{background:#1F4E79;color:#fff;border-color:#1F4E79}
+  .memo-ed .ft{font-size:11px;color:#8a95a3;margin-top:7px}
+  .ctx{position:absolute;z-index:125;display:none;background:#fff;border:1px solid #cfd8e3;border-radius:10px;box-shadow:0 10px 24px -8px rgba(0,0,0,.3);padding:5px;font-size:13px;font-weight:600;min-width:178px}
+  .ctx.show{display:block}
+  .ctx .it{padding:8px 10px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .ctx .it:hover{background:#eef4fb}
+  .ctx .it small{margin-left:auto;color:#7a8696;font-weight:600}
+  .ctx .it.sub{color:#5d6b7a}
+  .ctx hr{border:0;border-top:1px solid #edf0f4;margin:4px 2px}
+  .m-badge.memo{background:#FFF6CC;color:#7A6200;border-color:#EAD98A}
+  .m-mk.rec{border-color:#C46A00;background:#FFF6EA;color:#C46A00}
+  .m-memo{background:#FFFBE6;border:1px solid #EFE2A6;border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.55;color:#4a3f00}
+  .m-memo div+div{margin-top:6px;padding-top:6px;border-top:1px dashed #E9DB97}
+  .m-memo b{font-size:12px;color:#8a7a2a;margin-right:6px}
+
   /* ---------- 대화상자 ---------- */
   dialog{border:1px solid #C9C7C1;border-radius:10px;padding:0;max-width:560px;width:92vw}
   dialog::backdrop{background:rgba(30,28,24,.42)}
@@ -302,7 +359,8 @@
   @page{size:A4 landscape;margin:5mm}
   @media print{
     html,body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    .bar,.scroll,.pad,dialog,#mobile,#backToPhone{display:none!important}
+    .bar,.scroll,.pad,dialog,#mobile,#backToPhone,.selbar,.memo-tip,.memo-ed,.ctx{display:none!important}
+    td.has-memo::after{display:none!important}
     #printArea{display:block}
     .page{page-break-after:always;break-after:page;height:198mm;overflow:hidden;margin:0;padding:0}
     .page:last-child{page-break-after:auto;break-after:auto}
@@ -412,7 +470,7 @@
 
   <div class="bar-in">
     <div class="grp">
-      <button class="b" id="multiBtn" title="여러 칸을 골라 한 번에 바꿉니다">여러 칸 선택</button>
+      <button class="b" id="multiBtn" title="여러 칸을 골라 한 번에 바꿉니다 (Shift+클릭으로 네모 범위도 고를 수 있습니다)">여러 칸 선택</button>
       <button class="b" id="selClearBtn">선택 해제</button>
     </div>
     <div class="grp">
@@ -644,11 +702,11 @@ function applyCarry(target, src){
       list.forEach((c, ri) => {
         while (td.p[pi].length <= ri) td.p[pi].push(blankCell());
         const t = td.p[pi][ri];
-        t.n = c.n; t.s = c.s; t.g = c.g; t.h = ''; t.a = ''; t.st = {};
+        t.n = c.n; t.s = c.s; t.g = c.g; t.h = ''; t.a = ''; t.st = {}; delete t.mm;
       });
     });
     (sd.cls || []).forEach((v, pi) => { td.cls[pi] = v; td.clsSt[pi] = (sd.clsSt || [])[pi] || ''; });
-    td.note = ''; td.noteSt = ''; td.noteH = 0;
+    td.note = ''; td.noteSt = ''; td.noteH = 0; td.clsMm = []; td.noteMm = '';
   });
 }
 
@@ -656,8 +714,9 @@ function applyCarry(target, src){
 function clearDay(day){
   if (!day) return;
   (day.p || []).forEach(list => list.forEach(c => {
-    c.n = ''; c.s = ''; c.g = ''; c.h = ''; c.a = ''; c.st = {};
+    c.n = ''; c.s = ''; c.g = ''; c.h = ''; c.a = ''; c.st = {}; delete c.mm;
   }));
+  day.clsMm = []; day.noteMm = '';
   day.cls = (day.cls || []).map(() => '');
   day.clsSt = (day.clsSt || []).map(() => '');
   day.note = ''; day.noteSt = ''; day.noteH = 0;
@@ -918,7 +977,8 @@ function buildTable(dayIdx, edit, scale){
           const auto = (f.k === 'a') ? markClass(cell.a) : '';
           const def = defaultBlue(c.d, pi, r) ? ' d-b' : '';
           const im = (f.k === 'h' && edit) ? ' inputmode="decimal"' : '';
-          h += `<td class="${f.cls}${def}${auto}${a.cls}${fi === 0 ? ' colsep' : ''}"${a.style} data-x="cell" data-d="${c.d}" data-p="${pi}" data-r="${r}" data-f="${f.k}"${ce}${im}>${esc(cell[f.k])}</td>`;
+          const mmc = (edit && cell.mm && cell.mm[f.k]) ? ' has-memo' : '';
+          h += `<td class="${f.cls}${def}${auto}${a.cls}${mmc}${fi === 0 ? ' colsep' : ''}"${a.style} data-x="cell" data-d="${c.d}" data-p="${pi}" data-r="${r}" data-f="${f.k}"${ce}${im}>${esc(cell[f.k])}</td>`;
         });
       });
       h += `</tr>`;
@@ -930,7 +990,8 @@ function buildTable(dayIdx, edit, scale){
       const day = week.days[c.d];
       day.cls = day.cls || []; day.clsSt = day.clsSt || [];
       const a = fmtAttrs(day.clsSt[pi], scale);
-      h += `<td colspan="5" class="cls colsep${a.cls}"${a.style} data-x="cls" data-d="${c.d}" data-p="${pi}"${ce}>${esc(day.cls[pi] || '')}</td>`;
+      const mmc = (edit && (day.clsMm || [])[pi]) ? ' has-memo' : '';
+      h += `<td colspan="5" class="cls colsep${a.cls}${mmc}"${a.style} data-x="cls" data-d="${c.d}" data-p="${pi}"${ce}>${esc(day.cls[pi] || '')}</td>`;
     });
     h += `</tr>`;
   });
@@ -941,7 +1002,8 @@ function buildTable(dayIdx, edit, scale){
     if (c.t === 'lab') { h += `<td class="nlab${c.sat ? ' colsep' : ''}">특이사항</td>`; return; }
     const day = week.days[c.d];
     const a = fmtAttrs(day.noteSt, scale);
-    h += `<td colspan="5" class="note colsep${a.cls}"${a.style} data-x="note" data-d="${c.d}"${ce}>${noteHTML(day)}</td>`;
+    const mmc = (edit && day.noteMm) ? ' has-memo' : '';
+    h += `<td colspan="5" class="note colsep${a.cls}${mmc}"${a.style} data-x="note" data-d="${c.d}"${ce}>${noteHTML(day)}</td>`;
   });
   h += `</tr>`;
 
@@ -1096,55 +1158,10 @@ paper.addEventListener('click', e => {
    빠른 입력
    ============================================================ */
 const padEl = document.getElementById('pad');
-function showPad(td, f){
-  const items = (f === 'a' ? meta.padA : meta.padH).map(t => ({t, act:'set'}));
-  if (f === 'a') items.push({t:'지금 시각', act:'now', util:true});
-  items.push({t:'지우기', act:'clear', util:true});
-  items.push({t:'⚙ 항목 편집', act:'edit', util:true});
-  padEl.innerHTML = items.map((it,i) => {
-    const c = it.util ? 'util' : it.t === '○' ? 'o' : it.t === '△' ? 't' : /^x$/i.test(it.t) ? 'x' : '';
-    return `<button data-i="${i}" class="${c}">${esc(it.t)}</button>`;
-  }).join('');
-  padEl.dataset.f = f;
-  padEl._items = items;
-  padEl._td = td;
-  padEl.classList.add('show');
-  const r = td.getBoundingClientRect();
-  padEl.style.top = (r.bottom + window.scrollY + 4) + 'px';
-  let left = r.left + window.scrollX - 70;
-  left = Math.max(8, Math.min(left, window.innerWidth - padEl.offsetWidth - 12));
-  padEl.style.left = left + 'px';
-}
 function hidePad(){ padEl.classList.remove('show'); }
 
-padEl.addEventListener('mousedown', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  e.preventDefault();
-  const it = padEl._items[+b.dataset.i];
-  const f = padEl.dataset.f;
-  if (it.act === 'edit') { openPadEditor(f); return; }
-  const td = padEl._td; if (!td || !td.isConnected) return;
-  let txt = td.innerText.replace(/\u00a0/g,' ').trim();
-  const marks = meta.padA;
-
-  if (it.act === 'clear') txt = '';
-  else if (it.act === 'now') {
-    const n = new Date();
-    const keep = txt.split('\n').map(s => s.trim()).filter(s => marks.includes(s));
-    txt = [nowClock()].concat(keep).join('\n');
-  } else if (f === 'a') {
-    const rest = txt.split('\n').map(s => s.trim()).filter(Boolean).filter(s => !marks.includes(s));
-    txt = (rest.length ? rest.join('\n') + '\n' : '') + it.t;
-  } else if (f === 'h') {
-    txt = joinHw(rateOf(txt), memoOf(txt) === it.t ? '' : it.t);
-  } else txt = it.t;
-
-  td.innerText = txt;
-  td.dispatchEvent(new Event('input', {bubbles:true}));
-  caretEnd(td);
-});
 document.addEventListener('mousedown', e => {
-  if (!e.target.closest('#pad') && !e.target.closest('[data-x="cell"]')) hidePad();
+  if (e.target.isConnected && !e.target.closest('#pad') && !e.target.closest('[data-x="cell"]')) hidePad();
 });
 window.addEventListener('scroll', hidePad, true);
 
@@ -1180,7 +1197,7 @@ let multi = false, dragging = false, dragAdd = true;
 
 function selAdd(td){ if (!sel.has(td)) { sel.add(td); td.classList.add('sel'); } }
 function selDel(td){ if (sel.has(td)) { sel.delete(td); td.classList.remove('sel'); } }
-function selClear(){ sel.forEach(td => td.classList.remove('sel')); sel.clear(); }
+function selClear(){ sel.forEach(td => td.classList.remove('sel')); sel.clear(); try { paintSelBar(); } catch(e){} }
 function isSelectable(td){ return td && SELECTABLE.includes(td.dataset.x); }
 
 function applyMultiMode(){
@@ -1194,32 +1211,9 @@ function setMulti(v){
   document.getElementById('multiBtn').classList.toggle('on', v);
   applyMultiMode();
   hidePad();
-  setStatus(v ? '여러 칸 선택 중 — 칸을 눌러 고른 뒤 색·크기를 누르세요' : '선택 모드를 껐습니다');
+  setStatus(v ? '여러 칸 선택 중 — 끌어서 네모로 고르고, 색·크기를 바꾸거나 Delete로 내용을 지우세요' : '선택 모드를 껐습니다');
 }
 
-paper.addEventListener('mousedown', e => {
-  const td = e.target.closest('[data-x]');
-  if (!isSelectable(td)) return;
-  if (multi) {
-    e.preventDefault();
-    dragging = true; dragAdd = !sel.has(td);
-    dragAdd ? selAdd(td) : selDel(td);
-    syncSize();
-  } else if (e.ctrlKey || e.metaKey) {
-    e.preventDefault();
-    sel.has(td) ? selDel(td) : selAdd(td);
-    syncSize();
-  } else if (sel.size) {
-    selClear();   // 그냥 클릭하면 여러 칸 선택을 풉니다
-  }
-});
-paper.addEventListener('mouseover', e => {
-  if (!dragging) return;
-  const td = e.target.closest('[data-x]');
-  if (!isSelectable(td)) return;
-  dragAdd ? selAdd(td) : selDel(td);
-});
-document.addEventListener('mouseup', () => { if (dragging) { dragging = false; syncSize(); } });
 
 function repaint(t){
   const toks = tokens(t.get());
@@ -1760,6 +1754,7 @@ function mobMain(di){
       const sub = [c.s, c.g ? c.g + '학년' : ''].filter(Boolean).join(' · ');
       const rt = rateOf(c.h), mm = memoOf(c.h);
       const badge = (tm ? '<span class="m-badge late">' + esc(tm) + (mk === '△' ? ' 지각' : '') + '</span>' : '')
+        + ((c.mm && Object.keys(c.mm).length) ? '<span class="m-badge memo">📝 메모</span>' : '')
         + (rt !== null ? '<span class="m-badge rate' + (rt >= 85 ? '' : rt >= 60 ? ' mid' : ' low') + '">과제 ' + rt + '%</span>' : '')
         + (mm ? '<span class="m-badge hw">' + esc(mm.split('\n')[0]) + '</span>' : '');
       h += '<div class="m-row"><button class="m-open" data-m="sheet" data-p="' + pi + '" data-r="' + r + '">'
@@ -1767,7 +1762,7 @@ function mobMain(di){
          + '<span class="m-sub">' + esc(sub) + '</span>'
          + (badge ? '<span style="display:block">' + badge + '</span>' : '')
          + '</button><div class="m-marks">'
-         + MARK3.map((v, k) => '<button class="m-mk' + (mk === v ? ' on-' + ['o','t','x'][k] : '')
+         + MARK3.map((v, k) => '<button class="m-mk' + (mk === v ? ' on-' + ['o','t','x'][k] : '') + ((!mk && k === 1 && lateNow(di, pi)) ? ' rec' : '')
              + '" data-m="mark" data-p="' + pi + '" data-r="' + r + '" data-v="' + v + '" aria-label="'
              + ['출석','지각','결석'][k] + '">' + v + '</button>').join('')
          + '</div></div>';
@@ -1913,6 +1908,11 @@ function mobSheet(){
      + '<button class="m-chip" data-m="hwclear" style="border-style:dashed">지우기</button></div>'
      + '<input class="m-in" type="text" value="' + esc(mm) + '" placeholder="직접 입력" data-mi="h" aria-label="메모 직접 입력"></div>';
 
+  if (c.mm && Object.keys(c.mm).length) {
+    h += '<div class="m-field"><span class="m-label">칸 메모</span><div class="m-memo">'
+       + FIELDS.filter(f => c.mm[f.k]).map(f => '<div><b>' + esc(FIELD_LABEL[f.k]) + '</b>' + esc(c.mm[f.k]).replace(/\n/g, '<br>') + '</div>').join('')
+       + '</div></div>';
+  }
   h += '<button class="m-save" data-m="close">저장하고 닫기</button></div>';
   return h;
 }
@@ -2009,12 +2009,11 @@ mobEl.addEventListener('click', async e => {
   if (act === 'table'){ document.body.classList.add('force-table'); render(); return; }
 
   if (act === 'mark') {
-    const mc = mobCell(+b.dataset.p, +b.dataset.r);
-    if (v === '△' && markOf(mc.a) !== '△') {
-      mob.late = {p: +b.dataset.p, r: +b.dataset.r};
-      renderMobile(); focusLate(); return;
-    }
-    setMarkOn(mc, v);
+    const mp = +b.dataset.p, mr = +b.dataset.r, mc = mobCell(mp, mr);
+    const t = clockOf(mc.a), today = isTodayD(mobDay());
+    if (markOf(mc.a) === v) { mc.a = composeA('', '', textLinesOf(mc.a)); markDirty(); renderMobile(); return; }   // 한 번 더 누르면 지웁니다
+    if (v === '△' && !t && !today) { mob.late = {p: mp, r: mr}; renderMobile(); focusLate(); return; }     // 지난 날 지각은 시각 입력
+    mc.a = composeA(t || (today ? nowClock() : ''), v, textLinesOf(mc.a));                              // 누른 시각이 함께 적힙니다
     markDirty(); renderMobile(); return;
   }
   if (act === 'lateok' && mob.late) {
@@ -2033,16 +2032,19 @@ mobEl.addEventListener('click', async e => {
   }
   if (act === 'clearrow') {
     const c = mobCell(+b.dataset.p, +b.dataset.r);
-    c.n = ''; c.s = ''; c.g = ''; c.h = ''; c.a = ''; c.st = {};
+    c.n = ''; c.s = ''; c.g = ''; c.h = ''; c.a = ''; c.st = {}; delete c.mm;
     markDirty(); renderMobile(); return;
   }
   if (act === 'att' && mob.sheet) {
     const sc = mobCell(mob.sheet.p, mob.sheet.r);
-    const turnLate = v === '△' && markOf(sc.a) !== '△' && !clockOf(sc.a);
-    setMarkOn(sc, v);
-    if (turnLate) sc.a = composeA(nowClock(), '△', textLinesOf(sc.a));
+    const st = clockOf(sc.a), today = isTodayD(mobDay()), texts = textLinesOf(sc.a);
+    let focusT = false;
+    if (markOf(sc.a) === v) sc.a = composeA(st, '', texts);
+    else if (v === '휴회') sc.a = composeA('', v, texts);
+    else if (!IS_MAIN(v)) sc.a = composeA(st, v, texts);
+    else { sc.a = composeA(st || (today ? nowClock() : ''), v, texts); focusT = v === '△' && !st && !today; }
     markDirty(); renderMobile();
-    if (turnLate) { const ti = mobEl.querySelector('#mlate'); if (ti) { ti.focus(); ti.select(); } }
+    if (focusT) { const ti = mobEl.querySelector('#mlate'); if (ti) { ti.focus(); ti.select(); } }
     return;
   }
   if (act === 'now' && mob.sheet) {
@@ -2139,6 +2141,597 @@ window.addEventListener('appinstalled', () => {
   const b = document.getElementById('installBtn');
   if (b) b.style.display = 'none';
 });
+
+/* ============================================================
+   v42 : 출결 선택 창 · 블록 지우기 · 칸 메모
+   ============================================================ */
+
+/* ---------- 공통 : 칸 정보 ---------- */
+const FIELD_LABEL = {n:'학생명', s:'학교', g:'학년', h:'과제 달성률', a:'출석'};
+function dayDate(d){ return addDays(parseKey(week.key), d); }
+function isTodayD(d){ return key(dayDate(d)) === key(new Date()); }
+function shortDate(d){ const dt = dayDate(d); return (dt.getMonth()+1) + '/' + dt.getDate() + '(' + DAY_NAMES[d] + ')'; }
+function perName(d, p){
+  const per = week.periods[p] || {};
+  return String((d === 5 ? per.sat : per.wd) || '').split('\n')[0] || ((p+1) + '교시');
+}
+/** 교시 시작 시각(분). 4:20 → 16:20 처럼 오후로 읽고, 9시 이후 숫자(10:00 등)는 오전 그대로 */
+function startMin(d, p){
+  const per = week.periods[p] || {};
+  const txt = String((d === 5 ? per.sat : per.wd) || '');
+  const m = txt.match(/(\d{1,2})[:.](\d{2})\s*[-~]/) || txt.match(/(\d{1,2})[:.](\d{2})/);
+  if (!m) return null;
+  let h = +m[1]; if (h < 9) h += 12;
+  return h * 60 + (+m[2]);
+}
+/** 오늘 수업이고, 시작보다 10분 넘게 지났는지 */
+function lateNow(d, p){
+  if (!isTodayD(d)) return false;
+  const s = startMin(d, p); if (s === null) return false;
+  const n = new Date(), now = n.getHours() * 60 + n.getMinutes();
+  return now > s + 10 && now < s + 240;
+}
+function cellOf(td){ return week.days[+td.dataset.d].p[+td.dataset.p][+td.dataset.r]; }
+function tdTitle(td){
+  const x = td.dataset.x, d = +td.dataset.d;
+  if (x === 'cell') {
+    const c = cellOf(td);
+    return [c.n || '(이름 없음)', shortDate(d), FIELD_LABEL[td.dataset.f] || ''].join(' · ');
+  }
+  if (x === 'cls') return [shortDate(d), perName(d, +td.dataset.p), '반 이름'].join(' · ');
+  if (x === 'note') return [shortDate(d), '특이사항'].join(' · ');
+  return '';
+}
+const IS_MAIN = m => m === '○' || m === '△' || /^x$/i.test(m);
+
+/* ============================================================
+   1) 출석 칸 : ○ 출석 · △ 지각 · X 결석 고르기
+   ============================================================ */
+function padPlace(td){
+  const r = td.getBoundingClientRect();
+  padEl.style.top = (r.bottom + window.scrollY + 4) + 'px';
+  let left = r.left + window.scrollX - 70;
+  left = Math.max(8, Math.min(left, window.scrollX + window.innerWidth - padEl.offsetWidth - 12));
+  padEl.style.left = left + 'px';
+}
+function paintPadA(){
+  const td = padEl._td; if (!td || !td.isConnected) return;
+  const d = +td.dataset.d, p = +td.dataset.p, c = cellOf(td);
+  const cur = markOf(c.a), t = clockOf(c.a), today = isTodayD(d);
+  const head = '<div class="pt"><span>' + esc((c.n || '(이름 없음)') + ' · ' + shortDate(d) + ' ' + perName(d, p)) + '</span>'
+    + (today ? '<span>지금 <b>' + nowClock() + '</b></span>' : '<span class="warn">오늘 아님</span>') + '</div>';
+
+  if (padEl._mode === 'tm') {
+    const v = t || (today ? nowClock() : '');
+    padEl.innerHTML = head
+      + '<div class="tm"><input id="padTm" type="text" inputmode="numeric" autocomplete="off" value="' + esc(v) + '" placeholder="예: 437 → 4:37">'
+      + '<button data-k="tmok" class="o">확인</button><button data-k="tmno" class="util">취소</button></div>'
+      + '<div class="hint" id="padTmHint">숫자만 써도 됩니다 (437 → 4:37) · 비우고 확인하면 시각을 지웁니다</div>';
+    return;
+  }
+  const rec = !cur && lateNow(d, p);
+  const M = [['○','출석','o'], ['△','지각','t'], ['X','결석','x']];
+  const others = markList().filter(m => !IS_MAIN(m));
+  padEl.innerHTML = head
+    + '<div class="mk">' + M.map(m => {
+        const on = cur && (cur === m[0] || (m[0] === 'X' && /^x$/i.test(cur)));
+        return '<button data-k="mark" data-v="' + m[0] + '" class="' + m[2] + (on ? ' cur' : '') + (rec && m[0] === '△' ? ' rec' : '') + '">'
+          + (rec && m[0] === '△' ? '<span class="tag">10분 넘게 지남</span>' : '')
+          + m[0] + '<small>' + m[1] + '</small></button>';
+      }).join('') + '</div>'
+    + '<div class="ut">'
+    + others.map(m => '<button data-k="mark" data-v="' + esc(m) + '" class="util' + (cur === m ? ' cur' : '') + '">' + esc(m) + '</button>').join('')
+    + '<button data-k="tm" class="util">시각 고치기</button>'
+    + '<button data-k="clear" class="util">지우기</button>'
+    + '<button data-k="edit" class="util" title="항목 편집">⚙</button></div>'
+    + '<div class="hint">' + (t
+        ? '처음 적힌 시각 <b>' + esc(t) + '</b>은 그대로 두고 기호만 바뀝니다'
+        : today ? '고르면 지금 시각이 기호 위에 함께 적힙니다'
+                : '오늘이 아닌 날은 기호만 적힙니다 · 시각은 \'시각 고치기\'로') + '</div>';
+}
+function showPad(td, f){
+  padEl._td = td;
+  padEl.dataset.f = f;
+  if (f === 'a') {
+    padEl.classList.add('v2');
+    padEl._mode = 'mk';
+    padEl._items = null;
+    paintPadA();
+  } else {
+    padEl.classList.remove('v2');
+    const items = meta.padH.map(t => ({t, act:'set'}));
+    items.push({t:'지우기', act:'clear', util:true});
+    items.push({t:'⚙ 항목 편집', act:'edit', util:true});
+    padEl.innerHTML = items.map((it,i) => '<button data-i="' + i + '" class="' + (it.util ? 'util' : '') + '">' + esc(it.t) + '</button>').join('');
+    padEl._items = items;
+  }
+  padEl.classList.add('show');
+  padPlace(td);
+}
+/** 출석 칸 내용 바꾸기 (입력 이벤트로 저장까지) */
+function setA(td, txt){
+  td.innerText = txt;
+  td.dispatchEvent(new Event('input', {bubbles:true}));
+}
+function chooseMark(td, v){
+  const c = cellOf(td), d = +td.dataset.d;
+  const t = clockOf(c.a), texts = textLinesOf(c.a);
+  let nt;
+  if (v === '휴회') nt = '';                               // 휴회는 시각 없이
+  else if (!IS_MAIN(v)) nt = t;                           // 직접 만든 항목은 시각을 건드리지 않습니다
+  else nt = t || (isTodayD(d) ? nowClock() : '');         // 처음 시각은 그대로
+  setA(td, composeA(nt, v, texts));
+  const nm = {'○':'출석', '△':'지각', 'X':'결석', 'x':'결석'}[v] || v;
+  setStatus((c.n || '') + ' ' + nm + (nt ? ' · ' + nt : ''));
+}
+function padTmOk(){
+  const td = padEl._td; if (!td || !td.isConnected) return;
+  const el = document.getElementById('padTm');
+  const t = parseClock(el ? el.value : '');
+  if (t === null) {
+    const h = document.getElementById('padTmHint');
+    if (h) { h.textContent = '시각을 다시 확인해 주세요 (예: 437 → 4:37)'; h.style.color = 'var(--red)'; }
+    if (el) el.focus();
+    return;
+  }
+  const c = cellOf(td);
+  setA(td, composeA(t, markOf(c.a), textLinesOf(c.a)));
+  hidePad();
+  td.focus(); caretEnd(td);
+}
+
+padEl.addEventListener('mousedown', e => {
+  if (e.target.tagName === 'INPUT') return;                 // 시각 입력칸은 그대로 누를 수 있게
+  const b = e.target.closest('button'); if (!b) return;
+  e.preventDefault();
+  const f = padEl.dataset.f;
+  const td = padEl._td;
+
+  if (f === 'a') {
+    const k = b.dataset.k;
+    if (k === 'edit') { openPadEditor('a'); return; }
+    if (!td || !td.isConnected) return;
+    if (k === 'mark') { chooseMark(td, b.dataset.v); hidePad(); caretEnd(td); return; }
+    if (k === 'clear') { setA(td, ''); hidePad(); caretEnd(td); return; }
+    if (k === 'tm') {
+      padEl._mode = 'tm'; paintPadA(); padPlace(td);
+      const el = document.getElementById('padTm');
+      if (el) { el.focus(); try { el.select(); } catch(x){} }
+      return;
+    }
+    if (k === 'tmok') { padTmOk(); return; }
+    if (k === 'tmno') { padEl._mode = 'mk'; paintPadA(); td.focus(); caretEnd(td); return; }
+    return;
+  }
+
+  const it = (padEl._items || [])[+b.dataset.i]; if (!it) return;
+  if (it.act === 'edit') { openPadEditor(f); return; }
+  if (!td || !td.isConnected) return;
+  let txt = td.innerText.replace(/ /g,' ').trim();
+  if (it.act === 'clear') txt = '';
+  else txt = joinHw(rateOf(txt), memoOf(txt) === it.t ? '' : it.t);
+  td.innerText = txt;
+  td.dispatchEvent(new Event('input', {bubbles:true}));
+  caretEnd(td);
+});
+padEl.addEventListener('keydown', e => {
+  if (e.target.id !== 'padTm') return;
+  if (e.key === 'Enter') { e.preventDefault(); padTmOk(); }
+  if (e.key === 'Escape') { e.preventDefault(); const td = padEl._td; hidePad(); if (td && td.isConnected) { td.focus(); caretEnd(td); } }
+});
+/* 이미 고른 칸을 다시 누르면 창을 다시 엽니다 */
+paper.addEventListener('click', e => {
+  if (multi || e.shiftKey || e.ctrlKey || e.metaKey) return;
+  const td = e.target.closest('td[data-x="cell"]'); if (!td) return;
+  const f = td.dataset.f;
+  if ((f === 'a' || f === 'h') && !(padEl.classList.contains('show') && padEl._td === td)) showPad(td, f);
+});
+/* 1분마다 '지금' 시각을 새로 */
+setInterval(() => { if (padEl.classList.contains('show') && padEl.dataset.f === 'a' && padEl._mode === 'mk') paintPadA(); }, 30000);
+
+/* ============================================================
+   2) 블록 선택 → 내용 지우기 · 되돌리기
+   ============================================================ */
+let selAnchor = null, dragAnchor = null, dragBase = null, dragMoved = false, dragStartSel = false;
+
+function rectSel(a, b){
+  const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+  const L = Math.min(ra.left, rb.left) + 1, R = Math.max(ra.right, rb.right) - 1;
+  const T = Math.min(ra.top, rb.top) + 1,  B = Math.max(ra.bottom, rb.bottom) - 1;
+  const out = [];
+  paper.querySelectorAll('td[data-x="cell"],td[data-x="cls"],td[data-x="note"]').forEach(td => {
+    const r = td.getBoundingClientRect();
+    if (r.right > L && r.left < R && r.bottom > T && r.top < B) out.push(td);
+  });
+  return out;
+}
+function selSet(list){
+  const want = new Set(list);
+  Array.from(sel).forEach(td => { if (!want.has(td)) selDel(td); });
+  list.forEach(selAdd);
+}
+
+paper.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;                                  // 오른쪽 클릭은 메뉴
+  const td = e.target.closest('[data-x]');
+  if (!isSelectable(td)) return;
+  hideCtx();
+  if (undoBarOn) hideUndoBar();
+  if (multi) {
+    e.preventDefault();
+    if (e.shiftKey && selAnchor && selAnchor.isConnected) {
+      selSet(Array.from(sel).concat(rectSel(selAnchor, td)));
+    } else {
+      dragging = true; dragMoved = false; dragAnchor = td;
+      dragBase = new Set(sel); dragStartSel = sel.has(td);
+      selAdd(td); selAnchor = td;
+    }
+    paintSelBar(); syncSize();
+  } else if (e.shiftKey) {
+    const from = (selAnchor && selAnchor.isConnected) ? selAnchor
+               : (lastCell && lastCell.isConnected && isSelectable(lastCell)) ? lastCell : null;
+    if (!from) return;
+    e.preventDefault();
+    selAnchor = from;
+    selSet(rectSel(from, td));
+    hidePad(); paintSelBar(); syncSize();
+  } else if (e.ctrlKey || e.metaKey) {
+    e.preventDefault();
+    sel.has(td) ? selDel(td) : selAdd(td);
+    selAnchor = td;
+    hidePad(); paintSelBar(); syncSize();
+  } else {
+    if (sel.size) selClear();          // 그냥 누르면 선택을 풉니다
+    selAnchor = td;
+  }
+});
+paper.addEventListener('mouseover', e => {
+  if (!dragging || !dragAnchor) return;
+  const td = e.target.closest('[data-x]');
+  if (!isSelectable(td)) return;
+  if (td !== dragAnchor) dragMoved = true;
+  if (!dragMoved) return;
+  selSet(Array.from(dragBase).concat(rectSel(dragAnchor, td)));
+  paintSelBar();
+});
+document.addEventListener('mouseup', () => {
+  if (!dragging) return;
+  dragging = false;
+  if (!dragMoved && dragStartSel && dragAnchor) selDel(dragAnchor);   // 눌렀다 떼기만 하면 빼기
+  paintSelBar(); syncSize();
+});
+
+/* ---------- 위쪽 띠 ---------- */
+const selBar = document.createElement('div');
+selBar.id = 'selBar'; selBar.className = 'selbar';
+document.body.appendChild(selBar);
+let undoBarT = null, undoBarOn = false, undoBox = null;
+
+function selBox(list){
+  let L = Infinity, T = Infinity, B = -Infinity;
+  (list || Array.from(sel)).forEach(td => {
+    if (!td.isConnected) return;
+    const r = td.getBoundingClientRect();
+    L = Math.min(L, r.left); T = Math.min(T, r.top); B = Math.max(B, r.bottom);
+  });
+  return L === Infinity ? null : {L: L + window.scrollX, T: T + window.scrollY, B: B + window.scrollY};
+}
+function placeBar(box){
+  if (!box) return;
+  selBar.style.left = '0px'; selBar.style.top = '0px';
+  const w = selBar.offsetWidth, h = selBar.offsetHeight;
+  let top = box.T - h - 8;
+  if (top - window.scrollY < 6) top = box.B + 8;
+  let left = Math.max(window.scrollX + 8, Math.min(box.L, window.scrollX + window.innerWidth - w - 12));
+  selBar.style.left = left + 'px'; selBar.style.top = top + 'px';
+}
+function paintSelBar(){
+  if (undoBarOn) return;
+  const n = Array.from(sel).filter(td => td.isConnected).length;
+  if (!n) { selBar.classList.remove('show'); return; }
+  selBar.innerHTML = '<span class="n">' + n + '칸 선택</span>'
+    + '<button data-sb="clear" class="del">내용 지우기 <small>Delete</small></button>'
+    + '<button data-sb="fmt">서식 지우기</button>'
+    + '<button data-sb="off" class="gh">해제</button>';
+  selBar.classList.add('show');
+  placeBar(selBox());
+}
+function showUndoBar(box, n){
+  undoBarOn = true; undoBox = box;
+  selBar.innerHTML = '<span class="n">' + n + '칸을 지웠습니다</span>'
+    + '<button data-sb="undo">되돌리기 <small>Ctrl+Z</small></button>'
+    + '<button data-sb="x" class="gh" aria-label="닫기">✕</button>';
+  selBar.classList.add('show');
+  placeBar(box);
+  clearTimeout(undoBarT);
+  undoBarT = setTimeout(hideUndoBar, 8000);
+}
+function hideUndoBar(){
+  clearTimeout(undoBarT);
+  if (!undoBarOn) return;
+  undoBarOn = false;
+  selBar.classList.remove('show');
+  paintSelBar();
+}
+selBar.addEventListener('mousedown', e => {
+  const b = e.target.closest('[data-sb]'); if (!b) return;
+  e.preventDefault();
+  const k = b.dataset.sb;
+  if (k === 'clear') clearCells(Array.from(sel));
+  else if (k === 'fmt') { editStyle(() => []); setStatus('서식을 지웠습니다'); }
+  else if (k === 'off') { selClear(); syncSize(); }
+  else if (k === 'undo') doUndo();
+  else if (k === 'x') hideUndoBar();
+});
+window.addEventListener('scroll', () => {
+  if (!selBar.classList.contains('show')) return;
+  if (undoBarOn) placeBar(undoBox); else placeBar(selBox());
+}, true);
+window.addEventListener('resize', () => { if (selBar.classList.contains('show') && !undoBarOn) placeBar(selBox()); });
+
+/* ---------- 지우기 · 되돌리기 ---------- */
+const undoStack = [];
+function pushUndo(){
+  if (!week) return;
+  undoStack.push({wk: week.key, days: JSON.stringify(week.days)});
+  if (undoStack.length > 30) undoStack.shift();
+}
+function doUndo(){
+  const u = undoStack.pop();
+  hideUndoBar();
+  if (!u) { setStatus('되돌릴 것이 없습니다'); return; }
+  if (!week || u.wk !== week.key) { undoStack.length = 0; setStatus('다른 주차에서 한 일이라 되돌릴 수 없습니다'); return; }
+  week.days = JSON.parse(u.days);
+  render(); markDirty();
+  setStatus('되돌렸습니다');
+}
+function clearCells(tds){
+  tds = (tds || []).filter(td => td.isConnected && isSelectable(td));
+  if (!tds.length) { setStatus('지울 칸을 먼저 고르세요'); return; }
+  pushUndo();
+  const box = selBox(tds);
+  tds.forEach(td => {
+    const x = td.dataset.x, day = week.days[+td.dataset.d];
+    if (x === 'cell') cellOf(td)[td.dataset.f] = '';
+    else if (x === 'cls') { day.cls = day.cls || []; day.cls[+td.dataset.p] = ''; }
+    else if (x === 'note') { day.note = ''; day.noteH = 1; }
+  });
+  hidePad();
+  render();
+  markDirty();
+  showUndoBar(box, tds.length);
+  setStatus(tds.length + '칸의 내용을 지웠습니다 (서식은 그대로)');
+}
+/* 서식 바꾸기도 되돌릴 수 있게 */
+const _editStyle = editStyle;
+editStyle = function(fn){ if (activeCells().length) pushUndo(); return _editStyle(fn); };
+
+document.addEventListener('keydown', e => {
+  const ae = document.activeElement;
+  if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
+  if (document.getElementById('memoEd').classList.contains('show')) return;
+  const inCell = !!(ae && ae.isContentEditable);
+  if ((e.key === 'Delete' || e.key === 'Backspace') && sel.size) {
+    const atd = inCell && ae.closest ? ae.closest('[data-x]') : null;
+    if (inCell && !(sel.size >= 2 || (atd && !sel.has(atd)))) return;   // 한 칸 안에서 글자 지우기
+    e.preventDefault();
+    clearCells(Array.from(sel));
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z') && undoStack.length) {
+    if (inCell && !undoBarOn) return;                                    // 칸 안 글자 되돌리기는 브라우저에 맡깁니다
+    e.preventDefault();
+    doUndo();
+  }
+  if (e.key === 'Escape') { hideCtx(); hideTip(); if (sel.size && !inCell) { selClear(); syncSize(); } }
+});
+
+/* ============================================================
+   3) 칸 메모
+   ============================================================ */
+function memoGet(td){
+  const x = td.dataset.x, day = week.days[+td.dataset.d];
+  if (x === 'cell') { const c = cellOf(td); return (c.mm && c.mm[td.dataset.f]) || ''; }
+  if (x === 'cls') return (day.clsMm || [])[+td.dataset.p] || '';
+  if (x === 'note') return day.noteMm || '';
+  return '';
+}
+function memoSet(td, v){
+  v = String(v || '').replace(/\r/g, '').replace(/\s+$/, '');
+  const x = td.dataset.x, day = week.days[+td.dataset.d];
+  if (memoGet(td) === v) return false;
+  pushUndo();
+  if (x === 'cell') {
+    const c = cellOf(td), f = td.dataset.f;
+    c.mm = c.mm || {};
+    if (v) c.mm[f] = v; else delete c.mm[f];
+    if (!Object.keys(c.mm).length) delete c.mm;
+  } else if (x === 'cls') {
+    const pi = +td.dataset.p;
+    day.clsMm = day.clsMm || [];
+    while (day.clsMm.length <= pi) day.clsMm.push('');
+    day.clsMm[pi] = v;
+  } else if (x === 'note') day.noteMm = v;
+  td.classList.toggle('has-memo', !!v);
+  markDirty();
+  return true;
+}
+
+/* ---------- 마우스를 올리면 보이는 노란 메모 ---------- */
+const memoTip = document.createElement('div');
+memoTip.id = 'memoTip'; memoTip.className = 'memo-tip';
+document.body.appendChild(memoTip);
+let tipT = null, tipTd = null, lastTouch = 0;
+function showTip(td){
+  const v = memoGet(td); if (!v) return;
+  tipTd = td;
+  memoTip.innerHTML = '<b>메모 · ' + esc(tdTitle(td)) + '</b>' + esc(v).replace(/\n/g, '<br>');
+  memoTip.classList.add('show');
+  const r = td.getBoundingClientRect();
+  const w = memoTip.offsetWidth;
+  let left = r.right + window.scrollX + 6;
+  if (r.right + 6 + w > window.innerWidth - 8) left = Math.max(window.scrollX + 8, r.left + window.scrollX - w - 6);
+  memoTip.style.left = left + 'px';
+  memoTip.style.top = (r.top + window.scrollY - 4) + 'px';
+}
+function hideTip(){ clearTimeout(tipT); tipTd = null; memoTip.classList.remove('show'); }
+paper.addEventListener('mouseover', e => {
+  if (Date.now() - lastTouch < 800) return;
+  const td = e.target.closest('td.has-memo');
+  if (!td) return;
+  if (td === tipTd) return;
+  clearTimeout(tipT);
+  tipT = setTimeout(() => { if (!memoEd.classList.contains('show')) showTip(td); }, 120);
+});
+paper.addEventListener('mouseout', e => {
+  const td = e.target.closest('td.has-memo'); if (!td) return;
+  if (e.relatedTarget && td.contains(e.relatedTarget)) return;
+  hideTip();
+});
+/* 휴대폰 : 메모 있는 칸을 누르면 잠깐 보여 줍니다 */
+paper.addEventListener('click', e => {
+  if (Date.now() - lastTouch > 800) return;
+  const td = e.target.closest('td.has-memo'); if (!td) return;
+  showTip(td);
+  clearTimeout(tipT); tipT = setTimeout(hideTip, 4000);
+});
+
+/* ---------- 메모 쓰기 창 ---------- */
+const memoEd = document.createElement('div');
+memoEd.id = 'memoEd'; memoEd.className = 'memo-ed';
+memoEd.innerHTML = '<div class="h">메모 <span id="memoEdT"></span></div>'
+  + '<textarea id="memoEdTa" placeholder="이 칸에 남겨 둘 메모 (출석부 화면에서만 보입니다)"></textarea>'
+  + '<div class="f"><button class="p" data-me="save">저장</button><button data-me="del">메모 지우기</button>'
+  + '<span style="flex:1"></span><button data-me="close">닫기</button></div>'
+  + '<div class="ft">Ctrl+Enter 저장 · Esc 닫기 · 리포트·다음 주로는 넘어가지 않습니다</div>';
+document.body.appendChild(memoEd);
+let memoTd = null;
+function openMemo(td){
+  hideTip(); hidePad(); hideCtx();
+  memoTd = td;
+  document.getElementById('memoEdT').textContent = tdTitle(td);
+  const ta = document.getElementById('memoEdTa');
+  ta.value = memoGet(td);
+  memoEd.querySelector('[data-me="del"]').style.display = ta.value ? '' : 'none';
+  memoEd.classList.add('show');
+  const r = td.getBoundingClientRect(), w = memoEd.offsetWidth, h = memoEd.offsetHeight;
+  let left = r.right + window.scrollX + 8;
+  if (r.right + 8 + w > window.innerWidth - 8) left = Math.max(window.scrollX + 8, r.left + window.scrollX - w - 8);
+  let top = r.top + window.scrollY - 10;
+  if (r.top - 10 + h > window.innerHeight - 8) top = Math.max(window.scrollY + 8, window.scrollY + window.innerHeight - h - 8);
+  memoEd.style.left = left + 'px'; memoEd.style.top = top + 'px';
+  ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+  setTimeout(() => { if (document.activeElement !== ta) ta.focus(); }, 0);
+}
+function closeMemo(save){
+  if (!memoEd.classList.contains('show')) return;
+  const td = memoTd;
+  if (save && td && td.isConnected) {
+    const v = document.getElementById('memoEdTa').value;
+    if (memoSet(td, v)) setStatus(v.trim() ? '메모를 저장했습니다' : '메모를 지웠습니다');
+  }
+  memoEd.classList.remove('show');
+  memoTd = null;
+}
+memoEd.addEventListener('mousedown', e => {
+  const b = e.target.closest('[data-me]'); if (!b) return;
+  e.preventDefault();
+  const k = b.dataset.me;
+  if (k === 'save') closeMemo(true);
+  else if (k === 'del') { document.getElementById('memoEdTa').value = ''; closeMemo(true); }
+  else closeMemo(false);
+});
+memoEd.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); closeMemo(true); }
+  else if (e.key === 'Escape') { e.preventDefault(); closeMemo(false); }
+});
+/* 창 밖을 누르면 적은 내용을 저장하고 닫습니다 */
+document.addEventListener('mousedown', e => {
+  if (memoEd.classList.contains('show') && !memoEd.contains(e.target)) closeMemo(true);
+  if (ctxEl.classList.contains('show') && !ctxEl.contains(e.target)) hideCtx();
+  if (!e.target.closest('td.has-memo')) hideTip();
+}, true);
+
+/* ---------- 오른쪽 클릭(길게 누르기) 메뉴 ---------- */
+const ctxEl = document.createElement('div');
+ctxEl.id = 'ctxMenu'; ctxEl.className = 'ctx';
+document.body.appendChild(ctxEl);
+let ctxTd = null;
+function hideCtx(){ ctxEl.classList.remove('show'); ctxTd = null; }
+function openCtx(td, x, y){
+  hideTip(); hidePad();
+  if (!sel.has(td) && sel.size) selClear();
+  ctxTd = td;
+  const many = sel.size > 1 ? sel.size : 0;
+  const has = !!memoGet(td);
+  ctxEl.innerHTML =
+      '<div class="it" data-cm="memo">📝 ' + (has ? '메모 고치기' : '메모 달기') + '</div>'
+    + (has ? '<div class="it" data-cm="memodel">🗑 메모 지우기</div>' : '')
+    + '<hr>'
+    + '<div class="it" data-cm="clear">✂ 내용 지우기' + (many ? ' <small>' + many + '칸</small>' : '') + '</div>'
+    + '<div class="it" data-cm="fmt">🎨 서식 지우기' + (many ? ' <small>' + many + '칸</small>' : '') + '</div>'
+    + '<hr>'
+    + '<div class="it sub" data-cm="multi">' + (multi ? '여러 칸 선택 끄기' : '여러 칸 선택') + '</div>';
+  ctxEl.classList.add('show');
+  const w = ctxEl.offsetWidth, h = ctxEl.offsetHeight;
+  const L = Math.min(x, window.innerWidth - w - 8), T = Math.min(y, window.innerHeight - h - 8);
+  ctxEl.style.left = (Math.max(4, L) + window.scrollX) + 'px';
+  ctxEl.style.top = (Math.max(4, T) + window.scrollY) + 'px';
+}
+paper.addEventListener('contextmenu', e => {
+  const td = e.target.closest('[data-x]');
+  if (!isSelectable(td)) return;
+  e.preventDefault();
+  closeMemo(true);
+  openCtx(td, e.clientX, e.clientY);
+});
+ctxEl.addEventListener('mousedown', e => {
+  const it = e.target.closest('[data-cm]'); if (!it) return;
+  e.preventDefault();
+  const k = it.dataset.cm, td = ctxTd;
+  hideCtx();
+  if (!td || !td.isConnected) return;
+  const list = (sel.size > 1 && sel.has(td)) ? Array.from(sel) : [td];
+  if (k === 'memo') openMemo(td);
+  else if (k === 'memodel') { if (memoSet(td, '')) setStatus('메모를 지웠습니다'); }
+  else if (k === 'clear') clearCells(list);
+  else if (k === 'fmt') {
+    if (sel.size) editStyle(() => []);
+    else { const keep = lastCell; lastCell = td; editStyle(() => []); lastCell = keep; }
+    syncSize(); setStatus('서식을 지웠습니다');
+  }
+  else if (k === 'multi') setMulti(!multi);
+});
+/* 휴대폰 · 태블릿 : 길게 누르면 메뉴 */
+let lpT = null, lpXY = null, lpOpened = false;
+paper.addEventListener('touchstart', e => {
+  lastTouch = Date.now();
+  const td = e.target.closest('[data-x]');
+  if (!isSelectable(td) || e.touches.length !== 1) return;
+  const t = e.touches[0];
+  lpXY = {x: t.clientX, y: t.clientY}; lpOpened = false;
+  clearTimeout(lpT);
+  lpT = setTimeout(() => {
+    if (ctxEl.classList.contains('show')) return;
+    lpOpened = true;
+    openCtx(td, lpXY.x, lpXY.y);
+  }, 550);
+}, {passive:true});
+paper.addEventListener('touchmove', e => {
+  if (!lpXY) return;
+  const t = e.touches[0];
+  if (Math.abs(t.clientX - lpXY.x) > 10 || Math.abs(t.clientY - lpXY.y) > 10) clearTimeout(lpT);
+}, {passive:true});
+paper.addEventListener('touchend', e => {
+  lastTouch = Date.now();
+  clearTimeout(lpT);
+  if (lpOpened) { e.preventDefault(); lpOpened = false; }
+});
+document.addEventListener('touchstart', e => {
+  if (ctxEl.classList.contains('show') && !ctxEl.contains(e.target)) hideCtx();
+  if (memoEd.classList.contains('show') && !memoEd.contains(e.target)) closeMemo(true);
+}, {passive:true, capture:true});
+window.addEventListener('scroll', () => { hideCtx(); hideTip(); }, true);
 
 /* ============================================================
    시작

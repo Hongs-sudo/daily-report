@@ -2338,7 +2338,7 @@ function entryHTML(d){
     h+='<button type="button" data-v="'+a+'" aria-pressed="'+(d.attendance===a)+'">'+a+'</button>';
   });
   h+='</div>';
-  if(d.attendance==="지각"){
+  if(hasArr(d.attendance)){
     h+='<span class="tiny muted">도착</span>';
     h+='<input type="time" class="mini" data-field="arriveAt" value="'+esc(d.arriveAt||"")+'" title="도착 시각" style="width:auto;flex:none">';
   }
@@ -2588,7 +2588,7 @@ $("#entries").addEventListener("click", function(e){
     var f=seg.getAttribute("data-field"), was=dd[f];
     dd[f] = segBtn.getAttribute("data-v");
     markDirty(dd);
-    if(f==="attendance" && (was==="지각" || dd[f]==="지각")){
+    if(f==="attendance" && (hasArr(was)!==hasArr(dd[f]) || dd[f]==="지각")){
       rerenderEntry(dd);                       // 도착 시각 칸을 넣거나 뺍니다
       if(dd[f]==="지각"){
         var el=$('input[data-field="arriveAt"]', entryEl(dd.key));
@@ -2808,7 +2808,7 @@ function draftToRecord(d){
     date: curDate, type: curType, period: d.period||"미지정",
     studentId: d.studentId, studentName: d.studentName,
     attendance: d.attendance,
-    arriveAt: d.attendance==="지각"? (d.arriveAt||"") : "",
+    arriveAt: hasArr(d.attendance)? (d.arriveAt||"") : "",
     att: d.attFrom||undefined, attMemo: d.attMemo||"",
     prev: d.prev.filter(function(p){return p.book||p.range;}),
     prevFrom: d.prevFrom||"", prevDate: d.prevDate||"",
@@ -2905,6 +2905,8 @@ function donutSVG(pct){
 }
 
 /* 출결 표시 — 지각이면 도착 시각을 덧붙입니다 */
+/* 도착 시각을 적어 두는 출결 (리포트에는 지각일 때만 나갑니다) */
+function hasArr(a){ return a==="지각" || a==="출석"; }
 function attendText(rec){
   var a=(rec.attendance==null? "출석" : rec.attendance);
   if(!a) return "";
@@ -3243,7 +3245,7 @@ function stuData(rec){
   });
   var msg = (rec.reporting && !isRichEmpty(rec.reporting))? sanitizeRich(rec.reporting) : "";
   return { rec:rec, stu:stu, m:m, prog:prog, hw:hw, msg:msg, lb:peerBoard(rec),
-           att:(rec.attendance==null?"출석":rec.attendance), arrive:rec.arriveAt||"" };
+           att:(rec.attendance==null?"출석":rec.attendance), arrive:(rec.attendance==="지각"? (rec.arriveAt||"") : "") };
 }
 /* 결석·휴회면 인사말을 바꿉니다 */
 function stuGreet(d){
@@ -6864,16 +6866,17 @@ function m3(b,l,r,prefL){
   if(jeq(r,b)) return l;
   return prefL? l : r;
 }
-var CELL_F=["n","s","g","h","a","st"];
+var CELL_F=["n","s","g","h","a","st","mm"];
 function blankCellX(){ return {n:"",s:"",g:"",h:"",a:"",st:{}}; }
 function cellKey(c){ return c && c.n ? String(c.n).replace(/\s+/g,"") : ""; }
 function mergeCell(b,l,r,prefL){
   var o={};
   CELL_F.forEach(function(f){
     var bv=b? b[f] : undefined, lv=l[f], rv=r[f];
-    if(f==="st"){ bv=bv||{}; lv=lv||{}; rv=rv||{}; }
+    if(f==="st" || f==="mm"){ bv=bv||{}; lv=lv||{}; rv=rv||{}; }
     o[f]=m3(bv,lv,rv,prefL);
     if(f==="st" && (o[f]===""||o[f]==null)) o[f]={};
+    if(f==="mm" && (!o[f] || typeof o[f]!=="object" || !Object.keys(o[f]).length)) delete o[f];
   });
   return o;
 }
@@ -6926,13 +6929,16 @@ function mergeWeek(b,l,r,prefL){
   for(var d=0; d<6; d++){
     var bd=(b.days||[])[d]||{}, ld=(l.days||[])[d]||{}, rd=(r.days||[])[d]||{};
     var od={};
-    ["note","noteSt","noteH"].forEach(function(f){ var v=m3(bd[f],ld[f],rd[f],prefL); if(v!==""||ld[f]!==undefined||rd[f]!==undefined) od[f]=v; });
+    ["note","noteSt","noteH","noteMm"].forEach(function(f){ var v=m3(bd[f],ld[f],rd[f],prefL); if(v!==""||ld[f]!==undefined||rd[f]!==undefined) od[f]=v; });
     var nc=Math.max((ld.cls||[]).length,(rd.cls||[]).length, np);
     od.cls=[]; od.clsSt=[];
+    var anyMm=false, clsMm=[];
     for(var i=0;i<nc;i++){
       od.cls.push(m3((bd.cls||[])[i],(ld.cls||[])[i],(rd.cls||[])[i],prefL));
       od.clsSt.push(m3((bd.clsSt||[])[i],(ld.clsSt||[])[i],(rd.clsSt||[])[i],prefL));
+      var mv=m3((bd.clsMm||[])[i],(ld.clsMm||[])[i],(rd.clsMm||[])[i],prefL); clsMm.push(mv); if(mv) anyMm=true;
     }
+    if(anyMm || ld.clsMm || rd.clsMm) od.clsMm=clsMm;
     var npp=Math.max((ld.p||[]).length,(rd.p||[]).length);
     od.p=[];
     for(var q=0;q<npp;q++) od.p.push(mergeRows((bd.p||[])[q],(ld.p||[])[q],(rd.p||[])[q],prefL));
@@ -7161,7 +7167,7 @@ function to12(t){
 function valsFromCell(ci,d,p){
   return {
     attendance: ci.mark? MARK2ATT[ci.mark] : (ci.text.length? "" : null),
-    arriveAt:   (ci.mark==="△" && ci.time)? to24(ci.time,d,p) : "",
+    arriveAt:   ((ci.mark==="△" || ci.mark==="○") && ci.time)? to24(ci.time,d,p) : "",
     rate:       ci.rate,
     memo:       [ci.text.join(" "), ci.memo.join(" ")].filter(Boolean).join(" · ")   // 칸 안 줄바꿈은 띄어쓰기로
   };
@@ -7169,7 +7175,7 @@ function valsFromCell(ci,d,p){
 function recVals(r){
   return {
     attendance: (r.attendance==null? "출석" : r.attendance),
-    arriveAt:   r.attendance==="지각"? (r.arriveAt||"") : "",
+    arriveAt:   hasArr(r.attendance)? (r.arriveAt||"") : "",
     rate:       (r.prevRate==null? null : r.prevRate)
   };
 }
@@ -7185,7 +7191,7 @@ function setRate(obj, v){               // obj : 기록 또는 카드
 }
 function applyToRec(r, cv){
   if(cv.attendance!==null) r.attendance=cv.attendance;
-  r.arriveAt = r.attendance==="지각"? (cv.arriveAt || "") : "";
+  r.arriveAt = hasArr(r.attendance)? (cv.arriveAt || "") : "";
   setRate(r, cv.rate);
   r.attMemo = cv.memo;
 }
@@ -7193,8 +7199,8 @@ function applyToCell(cell, r, d, p){
   var ci=cellInfo(cell.a, cell.h);
   var v=recVals(r);
   var mark = v.attendance? (ATT2MARK[v.attendance]||"") : "";
-  var time = v.attendance==="지각"? (v.arriveAt? to12(v.arriveAt) : ci.time)
-           : (v.attendance==="출석" || v.attendance==="보강")? ci.time : "";   // 결석 · 휴회면 시각을 지웁니다
+  var time = hasArr(v.attendance)? (v.arriveAt? to12(v.arriveAt) : ci.time)
+           : v.attendance==="보강"? ci.time : "";   // 결석 · 휴회면 시각을 지웁니다
   cell.a = [time].concat(ci.text).concat([mark]).filter(Boolean).join("\n");
   cell.h = [v.rate===null? "" : v.rate+"%"].concat(ci.memo).filter(Boolean).join("\n");
 }
@@ -7231,14 +7237,14 @@ function prefillFromAtt(dr, rateOnly, prefP){
   if(!rateOnly){
     dr.period = f.p===0? "1교시" : f.p===1? "2교시" : dr.period;
     if(cv.attendance!==null) dr.attendance=cv.attendance;
-    dr.arriveAt = dr.attendance==="지각"? cv.arriveAt : "";
+    dr.arriveAt = hasArr(dr.attendance)? cv.arriveAt : "";
     dr.attMemo = cv.memo;
   }
   if(cv.rate!==null) setRate(dr, cv.rate);
   var rate = (function(){ var vs=(dr.prev||[]).filter(function(x){ return x.rate!=null; }).map(function(x){ return +x.rate; });
                           return vs.length? Math.round(vs.reduce(function(a,b){return a+b;},0)/vs.length) : null; })();
   dr.attFrom = {a:f.cell.a||"", h:f.cell.h||"",
-                v:{attendance:dr.attendance, arriveAt:dr.attendance==="지각"? (dr.arriveAt||"") : "", rate:rate}};
+                v:{attendance:dr.attendance, arriveAt:hasArr(dr.attendance)? (dr.arriveAt||"") : "", rate:rate}};
 }
 
 /* 한 바퀴 맞추기 */
@@ -7279,13 +7285,13 @@ function linkPass(){
           if(!link){
             /* 처음 잇기 : 서로 비어 있는 것만 채웁니다 */
             if(cv.attendance!==null && (rv.attendance==="출석"||rv.attendance==="") && cv.attendance!==rv.attendance){ r.attendance=cv.attendance; recCh=true; }
-            if(r.attendance==="지각" && !r.arriveAt && cv.arriveAt){ r.arriveAt=cv.arriveAt; recCh=true; }
+            if(hasArr(r.attendance) && !r.arriveAt && cv.arriveAt){ r.arriveAt=cv.arriveAt; recCh=true; }
             if(cv.rate!==null && rv.rate===null){ setRate(r, cv.rate); recCh=true; }
             if(cv.memo && r.attMemo!==cv.memo){ r.attMemo=cv.memo; recCh=true; }
             var v2=recVals(r);
             if(!ci.mark && !ci.text.length && v2.attendance){ applyToCell(cell, r, d, p); cellCh=true; }
             else if(ci.rate===null && v2.rate!==null){ applyToCell(cell, r, d, p); cellCh=true; }
-            else if(ci.mark==="△" && !ci.time && v2.arriveAt){ applyToCell(cell, r, d, p); cellCh=true; }
+            else if((ci.mark==="△" || ci.mark==="○") && !ci.time && v2.arriveAt){ applyToCell(cell, r, d, p); cellCh=true; }
           }else{
             var cellMoved = (link.a||"")!==(cell.a||"") || (link.h||"")!==(cell.h||"");
             var recMoved  = JSON.stringify(link.v)!==JSON.stringify(rv);
@@ -7357,7 +7363,7 @@ document.addEventListener("click", function(e){ if(e.target && e.target.id==="bt
 /* =========================================================
    앱 버전 · 새 버전 자동 적용
    ========================================================= */
-var APP_VERSION="v41";
+var APP_VERSION="v42";
 var swReg=null, swReloading=false;
 var hadController=!!(navigator.serviceWorker && navigator.serviceWorker.controller);
 function checkUpdate(){ try{ if(swReg) swReg.update(); }catch(e){} }
