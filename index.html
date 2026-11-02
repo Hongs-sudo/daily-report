@@ -7376,7 +7376,7 @@ document.addEventListener("click", function(e){ if(e.target && e.target.id==="bt
 /* =========================================================
    앱 버전 · 새 버전 자동 적용
    ========================================================= */
-var APP_VERSION="v43";
+var APP_VERSION="v44";
 var swReg=null, swReloading=false;
 var hadController=!!(navigator.serviceWorker && navigator.serviceWorker.controller);
 function checkUpdate(){ try{ if(swReg) swReg.update(); }catch(e){} }
@@ -9162,6 +9162,251 @@ function paintConn(){
     }
   }, true);
   setInterval(function(){ try{ paintConn(); }catch(e){} }, 30000);
+})();
+
+/* =========================================================
+   v44 : 선생님도 학생 넘기기 (전반)
+   · team/roster            : 원장님 앱이 적어 두는 반 목록 (이름 · 받는 칸 열쇠만, 메일은 없음)
+   · teachers/{메일}.key    : 선생님마다 받는 칸 열쇠
+   · moveBox/{열쇠}/items   : 넘긴 학생이 들어가는 칸 (원장님 반 열쇠는 "owner")
+   선생님이 넘기면 받는 반에 바로 들어가고, 원장님 칸에는 알림이 남습니다.
+   ========================================================= */
+var MB="moveBox", OWNER_KEY="owner", mvAt=0, mvOwnerAt=0;
+function mvRosterRef(db){ return db.collection("team").doc("roster"); }
+function mvLabelOf(name){ name=String(name||"").trim(); return /T$|원장$|님$/.test(name)? name : name+"T"; }
+
+/* ---------- 원장님 : 반 목록 적어 두기 ---------- */
+function mvRosterSync(force){
+  if(VIEW || isTeacher() || googleEmail()!==OWNER_EMAIL || !fbDB) return Promise.resolve(false);
+  var list=teamList(), ch=false;
+  list.forEach(function(t){ if(!t.key){ t.key="k"+uid().replace(/[^A-Za-z0-9]/g,""); ch=true; } });
+  if(ch) teamSaveList((DB.meta.teachers||[]).map(function(x){
+    var y=list.filter(function(t){ return t.id===x.id; })[0]; return y||x; }));
+  var roster={owner:{key:OWNER_KEY, name:(DB.meta.teacher||"원장")}, list:list.map(function(t){ return {key:t.key, name:mvLabelOf(t.name)}; })};
+  var sig=JSON.stringify(roster)+"|"+list.map(function(t){ return t.email; }).join(",");
+  if(!force && DB.meta.rosterSig===sig) return Promise.resolve(false);
+  return Promise.all(list.map(function(t){
+    return fbDB.collection(TT).doc(t.email).set({key:t.key}, {merge:true});
+  })).then(function(){
+    return mvRosterRef(fbDB).set({owner:roster.owner, list:roster.list, at:new Date().toISOString()});
+  }).then(function(){ DB.meta.rosterSig=sig; save(); return true; })
+    .catch(function(e){ console.warn("반 목록 저장 실패", e); return false; });
+}
+
+/* ---------- 선생님 : 내 받는 칸 열쇠 ---------- */
+function mvMyKey(){
+  if(DB.meta.myKey) return Promise.resolve(DB.meta.myKey);
+  return fbReady().then(function(db){ return db.collection(TT).doc(fbsEmail()).get(); }).then(function(s){
+    var k=s.exists? (s.data()||{}).key : null;
+    if(k){ DB.meta.myKey=k; rawSet(JSON.stringify(DB)); }
+    return k||null;
+  });
+}
+function mvRecords(ids, fromLabel){
+  return handRecords(ids).map(function(r){ r.from=fromLabel; return r; });
+}
+function mvItem(kind, extra){
+  var o={id:uid(), at:new Date().toISOString(), kind:kind};
+  Object.keys(extra||{}).forEach(function(k){ o[k]=extra[k]; });
+  return o;
+}
+function mvPush(db, key, item){
+  var p=JSON.stringify(item);
+  while(p.length>850000 && item.records && item.records.length){          // 너무 크면 오래된 기록부터 덜어 냅니다
+    item.records.sort(function(a,b){ return a.date<b.date? -1 : 1; });
+    item.records.splice(0, Math.max(1, Math.ceil(item.records.length/5)));
+    item.trimmed=true; p=JSON.stringify(item);
+  }
+  return db.collection(MB).doc(key).collection("items").doc(item.id)
+    .set({at:item.at, kind:item.kind, from:googleEmail(), p:p});
+}
+
+/* ---------- 선생님 : 학생 넘기기 창 ---------- */
+function openMove(){
+  if(!fbsOn() || googleEmail()!==fbsEmail()){ toast("먼저 Google로 로그인해 주세요"); return; }
+  toast("반 목록을 불러오는 중…");
+  var me=fbsEmail(), myKey=null, roster=null;
+  fbReady().then(function(db){
+    return Promise.all([mvMyKey().catch(function(){ return null; }),
+                        mvRosterRef(db).get().then(function(s){ return s.exists? s.data() : null; }).catch(function(){ return null; })]);
+  }).then(function(r){
+    myKey=r[0]; roster=r[1]||{};
+    var opts=[{key:OWNER_KEY, name:((roster.owner||{}).name||"원장")+"님 반"}];
+    (roster.list||[]).forEach(function(x){ if(x.key && x.key!==myKey) opts.push({key:x.key, name:x.name+" 반"}); });
+    var myName=mvLabelOf(DB.meta.teacher||"");
+    var h='<div class="tm-lab" style="margin-top:0">어느 반으로 보낼까요?</div><select id="mvT">'
+      +opts.map(function(o){ return '<option value="'+esc(o.key)+'">'+esc(o.name)+'</option>'; }).join("")+'</select>'
+      +(roster.list? '' : '<div class="small muted" style="margin-top:6px">다른 선생님 반은 원장님이 앱을 한 번 열면 여기에 나타납니다.</div>')
+      +'<div class="tm-lab">넘길 학생 · <span id="mvCnt">0</span>명 고름</div>'+stuPickHTML("mvList",[])
+      +'<label class="tm-chk"><input type="checkbox" id="mvRec" checked><span>최근 '+TEAM_HAND_MONTHS+'개월 수업 기록 함께 넘기기<small>받는 쪽에서 지난 과제·진도를 이어서 쓸 수 있습니다</small></span></label>'
+      +'<label class="tm-chk"><input type="checkbox" id="mvRest" checked><span>넘긴 학생은 내 명단에서 <b>쉬게 두기</b><small>지우는 것이 아니라 숨김입니다. 함께 맡는 학생이면 체크를 빼 주세요</small></span></label>'
+      +'<div class="small" id="mvNote" style="margin-top:10px;padding:9px 11px;border-radius:10px;background:#f2f8fb;color:#2c4a5e;line-height:1.6"></div>'
+      +'<div class="tm-msg" id="mvMsg"></div>';
+    openDialog("학생 넘기기 (전반)", h, [["넘기기","primary",function(){ mvSend(opts, myName); }],["닫기","ghost",closeDlg]]);
+    stuPickWire("mvList","mvCnt");
+    function note(){
+      var o=opts.filter(function(x){ return x.key===$("#mvT").value; })[0]||opts[0];
+      $("#mvNote").innerHTML= o.key===OWNER_KEY
+        ? '📮 원장님 앱에 바로 들어갑니다.'
+        : '📮 받는 선생님은 앱을 열면 학생이 바로 들어옵니다. 원장님께도 <b>“'+esc(myName)+' → '+esc(o.name.replace(/ 반$/,""))+'”</b> 알림이 갑니다.';
+    }
+    $("#mvT").addEventListener("change", note); note();
+  }).catch(function(e){ toast(fbErr(e).message); });
+}
+function mvSend(opts, myName){
+  var key=$("#mvT").value, o=opts.filter(function(x){ return x.key===key; })[0];
+  var ids=stuPicked("mvList"), m=$("#mvMsg");
+  function say(t,bad){ m.textContent=t; m.style.color=bad? "var(--low)" : "var(--ink-2)"; }
+  if(!ids.length){ say("학생을 골라 주세요",1); return; }
+  var stus=handStudents(ids), names=stus.map(function(s){ return s.name; });
+  var rest=$("#mvRest").checked, withRec=$("#mvRec").checked;
+  var toName=o.name.replace(/ 반$/,"");
+  say("보내는 중…");
+  var btn=$("#dlgFoot .btn.primary"); if(btn) btn.disabled=true;
+  var item=mvItem("students", {fromName:myName, toName:toName, toKey:key, students:stus, records: withRec? mvRecords(ids, myName) : []});
+  fbReady().then(function(db){
+    var jobs=[mvPush(db, key, item)];
+    if(key!==OWNER_KEY) jobs.push(mvPush(db, OWNER_KEY, mvItem("moved", {fromName:myName, toName:toName, toKey:key,
+      names:names, ids:ids, recN:item.records.length})));
+    return Promise.all(jobs);
+  }).then(function(){
+    if(rest) DB.students.forEach(function(s){ if(ids.indexOf(s.id)>=0) s.active=false; });
+    save(); closeDlg(); refreshPickers(); renderSettings();
+    toast(toName+"에게 학생 "+ids.length+"명("+names.join(", ")+")을 보냈습니다");
+  }).catch(function(e){ if(btn) btn.disabled=false; say(fbErr(e).message,1); });
+}
+
+/* ---------- 받기 : 선생님 ---------- */
+function mvApplyStudents(it){
+  var r=inboxApply({kind:"students", students:it.students||[], records:it.records||[]});
+  return (it.fromName||"다른 선생님")+"이 보낸 "+r;
+}
+function mvTeacherCheck(force){
+  if(!isTeacher() || !fbsOn() || googleEmail()!==fbsEmail()) return;
+  if(!force && Date.now()-mvAt<60000) return;
+  mvAt=Date.now();
+  var col;
+  mvMyKey().then(function(k){
+    if(!k) return null;
+    col=fbDB.collection(MB).doc(k).collection("items");
+    return col.get();
+  }).then(function(qs){
+    if(!qs) return;
+    var done=DB.meta.inboxDone||[], fresh=[], docs=[];
+    qs.forEach(function(d){ docs.push(d.id); var it=null; try{ it=JSON.parse(d.data().p||"null"); }catch(e){} if(it && it.id && done.indexOf(it.id)<0) fresh.push(it); });
+    fresh.sort(function(a,b){ return String(a.at)<String(b.at)? -1 : 1; });
+    if(fresh.length){
+      var msg=fresh.filter(function(it){ return it.kind==="students"; }).map(mvApplyStudents);
+      DB.meta.inboxDone=done.concat(fresh.map(function(it){ return it.id; })).slice(-200);
+      save(); refreshPickers(); try{ loadDay(); }catch(e){}
+      if($("#view-settings").classList.contains("on")) renderSettings();
+      if(msg.length) toast(msg.join(" · ")+" 을(를) 받았습니다");
+    }
+    docs.forEach(function(id){ col.doc(id)["delete"]().catch(function(){}); });
+  }).catch(function(e){ console.warn("넘겨받기 확인 실패", e); });
+}
+
+/* ---------- 받기 : 원장님 ---------- */
+function mvTeamByKey(k){ return teamList().filter(function(t){ return t.key===k; })[0]||null; }
+function mvTeamByMail(em){ return teamList().filter(function(t){ return t.email===em; })[0]||null; }
+function mvOwnerCheck(force){
+  if(VIEW || isTeacher() || !fbOn()) return;
+  if(!fbDB){ fbReady().then(function(){ if(fbDB) mvOwnerCheck(force); }).catch(function(){}); return; }
+  if(googleEmail()!==OWNER_EMAIL) return;
+  if(!force && Date.now()-mvOwnerAt<60000) return;
+  mvOwnerAt=Date.now();
+  var col=fbDB.collection(MB).doc(OWNER_KEY).collection("items");
+  col.get().then(function(qs){
+    var done=DB.meta.inboxDone||[], fresh=[], docs=[];
+    qs.forEach(function(d){
+      docs.push(d.id);
+      var it=null; try{ it=JSON.parse(d.data().p||"null"); }catch(e){}
+      if(it && it.id && done.indexOf(it.id)<0){ it._from=(d.data()||{}).from||""; fresh.push(it); }
+    });
+    if(!fresh.length){ docs.forEach(function(id){ col.doc(id)["delete"]().catch(function(){}); }); return; }
+    fresh.sort(function(a,b){ return String(a.at)<String(b.at)? -1 : 1; });
+    var log=DB.meta.moveLog||[], msg=[];
+    fresh.forEach(function(it){
+      var src=mvTeamByMail(it._from), ids=it.ids || (it.students||[]).map(function(s){ return s.id; });
+      var names=it.names || (it.students||[]).map(function(s){ return s.name; });
+      if(it.kind==="students"){
+        var r=inboxApply({kind:"students", students:it.students||[], records:it.records||[]});
+        msg.push((it.fromName||"선생님")+"이 보낸 "+r);
+      }
+      /* 원장님 선생님 목록의 '넘긴 학생'도 맞춰 둡니다 */
+      if(src){ var a=jcopy(src); a.students=(a.students||[]).filter(function(x){ return ids.indexOf(x)<0; }); teamUpsert(a); }
+      if(it.kind==="moved"){
+        var dst=mvTeamByKey(it.toKey);
+        if(dst){ var b=jcopy(dst), u={}; (b.students||[]).concat(ids).forEach(function(x){ u[x]=1; }); b.students=Object.keys(u); teamUpsert(b); }
+      }
+      log.push({id:it.id, at:it.at, from:it.fromName||"", to:it.kind==="students"? "원장님 반" : (it.toName||""), names:names, seen:false});
+    });
+    DB.meta.moveLog=log.slice(-30);
+    DB.meta.inboxDone=done.concat(fresh.map(function(it){ return it.id; })).slice(-200);
+    save(); refreshPickers(); try{ loadDay(); }catch(e){}
+    if($("#view-settings").classList.contains("on")) renderSettings();
+    toast(msg.length? msg.join(" · ")+" 을(를) 받았습니다" : "선생님 사이 전반 알림이 있습니다 (설정 · 백업)");
+    docs.forEach(function(id){ col.doc(id)["delete"]().catch(function(){}); });
+  }).catch(function(e){ console.warn("원장 받는 칸 확인 실패", e); });
+}
+
+/* ---------- 화면 ---------- */
+(function(){
+  var _rt=renderTm;
+  renderTm=function(){
+    var r=_rt.apply(this, arguments);
+    try{
+      var card=$("#tmCard"); if(!card || VIEW) return r;
+      if(isTeacher()){
+        var ib=card.querySelector('[data-tm="inbox"]');
+        if(ib && !card.querySelector('[data-tm="move"]')){
+          var b=document.createElement("button"); b.className="btn"; b.setAttribute("data-tm","move"); b.textContent="학생 넘기기";
+          ib.parentNode.insertBefore(b, ib);
+        }
+        mvTeacherCheck(false);
+      }else if(googleEmail()===OWNER_EMAIL){
+        var log=(DB.meta.moveLog||[]).slice(-6).reverse();
+        if(log.length){
+          var unseen=log.filter(function(x){ return !x.seen; }).length;
+          var h='<div class="mv-log"><div class="mv-h">선생님 사이 전반'+(unseen? ' <span class="mv-new">새 알림 '+unseen+'</span>' : '')
+            +(unseen? '<button class="btn sm" data-tm="mvseen">확인</button>' : '')+'</div>'
+            +log.map(function(x){
+              return '<div class="mv-row'+(x.seen? '' : ' new')+'">'+esc(fmtShort((x.at||"").slice(0,10)))+' · <b>'+esc(x.from)+'</b> → <b>'+esc(x.to)+'</b> : '
+                +esc((x.names||[]).join(", "))+' ('+(x.names||[]).length+'명)</div>';
+            }).join("")+'</div>';
+          card.insertAdjacentHTML("beforeend", h);
+        }
+        mvRosterSync(false).then(function(){ mvOwnerCheck(false); });
+      }
+    }catch(e){ console.warn(e); }
+    return r;
+  };
+  var css=document.createElement("style");
+  css.textContent=".mv-log{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fbfcfd}"
+    +".mv-h{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px;margin-bottom:6px}"
+    +".mv-new{background:#e5484d;color:#fff;border-radius:999px;font-size:11px;padding:2px 8px}"
+    +".mv-h .btn{margin-left:auto}"
+    +".mv-row{font-size:12.5px;color:var(--ink-2);padding:3px 0}"
+    +".mv-row.new{color:#7a5200;font-weight:600}";
+  document.head.appendChild(css);
+  document.addEventListener("click", function(e){
+    var b=e.target.closest('[data-tm="move"],[data-tm="mvseen"]'); if(!b) return;
+    e.preventDefault();
+    if(b.getAttribute("data-tm")==="move") openMove();
+    else { (DB.meta.moveLog||[]).forEach(function(x){ x.seen=true; }); save(); renderSettings(); }
+  });
+  /* 맞출 때마다 넘겨받은 것도 확인 (1분에 한 번까지) */
+  var _sn2=syncNow;
+  syncNow=function(){
+    var p=_sn2.apply(this, arguments);
+    return Promise.resolve(p).then(function(ok){
+      try{ if(isTeacher()) mvTeacherCheck(false); else mvOwnerCheck(false); }catch(e){}
+      return ok;
+    });
+  };
+  /* 선생님 등록 · 빼기 뒤에는 반 목록도 새로 */
+  var _tu=teamSaveList;
+  teamSaveList=function(){ var r=_tu.apply(this, arguments); setTimeout(function(){ mvRosterSync(false); }, 300); return r; };
 })();
 
 load();
